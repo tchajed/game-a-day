@@ -15,6 +15,7 @@ interface PlaytestState {
   level: number;
   phase: Phase;
   started: boolean;
+  levelReady: boolean;
   prefix: Array<{ color: string; value: number }>;
   rules: Array<{ id: string; status: MonitorStatus; answered?: Answer }>;
   lives: number;
@@ -159,9 +160,13 @@ function TutorialPanel({ onStart }: { onStart: () => void }) {
                 return (
                   <React.Fragment key={rule.id}>
                     {index > 0 && <i>+</i>}
-                    <button className={`practice-signal ${color} ${caught ? 'caught' : ''}`} onClick={() => flagPracticeRule(rule.id)} disabled={caught}>
-                      <b>{caught ? '✓' : index === 0 ? '9' : '5'}</b><small>{color.toUpperCase()}{caught ? ' · CAUGHT' : ''}</small>
-                    </button>
+                    {caught ? (
+                      <div className="removed-practice-signal"><b>REMOVED</b><small>Sequence repaired</small></div>
+                    ) : (
+                      <button className={`practice-signal ${color}`} onClick={() => flagPracticeRule(rule.id)}>
+                        <b>{index === 0 ? '9' : '5'}</b><small>{color.toUpperCase()}</small>
+                      </button>
+                    )}
                   </React.Fragment>
                 );
               })}
@@ -182,6 +187,31 @@ function TutorialPanel({ onStart }: { onStart: () => void }) {
             {practiceComplete ? 'Start live sequence' : `Catch ${practiceRules.length - practiceFlags.length} more`} <span>→</span>
           </button>
         )}
+      </section>
+    </div>
+  );
+}
+
+function LevelBriefing({ level, onStart }: { level: Level; onStart: () => void }) {
+  return (
+    <div className="overlay briefing-overlay">
+      <section className="modal briefing-modal" role="dialog" aria-modal="true" aria-labelledby="briefing-title">
+        <span className="eyebrow">LEVEL {level.number} · RULE BRIEFING</span>
+        <h1 id="briefing-title">{level.name}</h1>
+        <p>{level.lesson}</p>
+        <div className="briefing-rules">
+          {level.rules.map((rule, index) => (
+            <div className="briefing-rule" key={rule.id}>
+              <span>R{String(index + 1).padStart(2, '0')}</span>
+              <div><b>{rule.title}</b><small>{rule.detail}</small></div>
+              <code>{rule.ltl}</code>
+            </div>
+          ))}
+        </div>
+        <div className="tutorial-warning"><span>!</span><p>The feed is paused. Take your time—<b>the sequence starts only when you are ready.</b></p></div>
+        <button className="primary-button" onClick={onStart} autoFocus>
+          Start level {level.number} <span>→</span>
+        </button>
       </section>
     </div>
   );
@@ -208,10 +238,11 @@ function ResultPanel({ phase, level, score, lives, onAction }: { phase: Phase; l
 
 function App() {
   const [started, setStarted] = useState(false);
+  const [levelReady, setLevelReady] = useState(false);
   const [levelIndex, setLevelIndex] = useState(0);
   const [phase, setPhase] = useState<Phase>('running');
-  const [prefix, setPrefix] = useState<Signal[]>([levels[0].sequence[0]]);
-  const [nextIndex, setNextIndex] = useState(1);
+  const [prefix, setPrefix] = useState<Signal[]>([]);
+  const [nextIndex, setNextIndex] = useState(0);
   const [answered, setAnswered] = useState<Answers>({});
   const [lives, setLives] = useState(3);
   const [score, setScore] = useState(0);
@@ -230,10 +261,10 @@ function App() {
   const progressKey = `${levelIndex}-${nextIndex}-${paused}-${phase}`;
 
   const loadLevel = useCallback((index: number, resetScore = false) => {
-    const target = levels[index];
     setLevelIndex(index);
-    setPrefix([target.sequence[0]]);
-    setNextIndex(1);
+    setPrefix([]);
+    setNextIndex(0);
+    setLevelReady(false);
     setAnswered({});
     setLives(3);
     setStreak(0);
@@ -242,6 +273,18 @@ function App() {
     setPhase('running');
     if (resetScore) setScore(0);
   }, []);
+
+  const beginLevel = useCallback(() => {
+    setPrefix([level.sequence[0]]);
+    setNextIndex(1);
+    setAnswered({});
+    setLives(3);
+    setStreak(0);
+    setPaused(false);
+    setMessage('Signal received — click the signal that breaks a rule');
+    setPhase('running');
+    setLevelReady(true);
+  }, [level]);
 
   const advanceSequence = useCallback(() => {
     const current = live.current;
@@ -284,13 +327,13 @@ function App() {
   }, [level, levelIndex, playSound]);
 
   useEffect(() => {
-    if (!started || phase !== 'running' || paused) return undefined;
+    if (!started || !levelReady || phase !== 'running' || paused) return undefined;
     const timer = window.setTimeout(advanceSequence, duration);
     return () => window.clearTimeout(timer);
-  }, [started, phase, paused, nextIndex, duration, advanceSequence]);
+  }, [started, levelReady, phase, paused, nextIndex, duration, advanceSequence]);
 
   const flagSignal = useCallback((signalIndex: number) => {
-    if (!started || phase !== 'running' || signalIndex < 0 || signalIndex >= prefix.length) return false;
+    if (!started || !levelReady || phase !== 'running' || signalIndex < 0 || signalIndex >= prefix.length) return false;
     const throughSignal = prefix.slice(0, signalIndex + 1);
     const beforeSignal = prefix.slice(0, signalIndex);
     const brokenHere = level.rules.filter((rule) =>
@@ -301,9 +344,10 @@ function App() {
     if (brokenHere.length) {
       const bonus = brokenHere.reduce((total, _, index) => total + 100 + (streak + index) * 25, 0);
       setAnswered((old) => ({ ...old, ...Object.fromEntries(brokenHere.map((rule) => [rule.id, 'caught' as const])) }));
+      setPrefix((old) => old.filter((_, index) => index !== signalIndex));
       setScore((old) => old + bonus);
       setStreak((old) => old + brokenHere.length);
-      setMessage(`${brokenHere.length > 1 ? `${brokenHere.length} counterexamples` : 'Counterexample'} caught  +${bonus}`);
+      setMessage(`${brokenHere.length > 1 ? `${brokenHere.length} counterexamples` : 'Counterexample'} caught and removed  +${bonus}`);
       playSound('correct');
       return true;
     }
@@ -314,7 +358,7 @@ function App() {
     playSound('error');
     if (remaining <= 0) setPhase('gameover');
     return false;
-  }, [answered, level.rules, lives, phase, playSound, prefix, started, streak]);
+  }, [answered, level.rules, levelReady, lives, phase, playSound, prefix, started, streak]);
 
   const handleResult = () => {
     if (phase === 'gameover') loadLevel(levelIndex);
@@ -329,12 +373,13 @@ function App() {
         level: levelIndex,
         phase,
         started,
+        levelReady,
         prefix: prefix.map(({ color, value }) => ({ color, value })),
         rules: level.rules.map((rule) => ({ id: rule.id, status: rule.evaluate(prefix), answered: answered[rule.id] })),
         lives,
         score,
         streak,
-        paused: paused || !started,
+        paused: paused || !started || !levelReady,
       }),
       flag: (ruleId: string) => {
         const rule = level.rules.find(({ id }) => id === ruleId);
@@ -354,10 +399,13 @@ function App() {
         if (Number.isInteger(index) && index >= 0 && index < levels.length) loadLevel(index);
       },
       restart: () => loadLevel(levelIndex),
-      start: () => setStarted(true),
+      start: () => {
+        setStarted(true);
+        beginLevel();
+      },
     });
     window.__SIGNAL_SEQUENCE__ = api;
-  }, [advanceSequence, answered, flagSignal, level, levelIndex, lives, loadLevel, paused, phase, prefix, score, started, streak]);
+  }, [advanceSequence, answered, beginLevel, flagSignal, level, levelIndex, levelReady, lives, loadLevel, paused, phase, prefix, score, started, streak]);
 
   const statuses = useMemo(() => level.rules.map((rule) => rule.evaluate(prefix)), [level, prefix]);
   const unresolvedCount = statuses.filter((status, index) =>
@@ -404,16 +452,16 @@ function App() {
                   </div>
                 </React.Fragment>
               ))}
-              {phase === 'running' && nextIndex < level.sequence.length && <div className="incoming"><i /><i /><i /></div>}
+              {levelReady && phase === 'running' && nextIndex < level.sequence.length && <div className="incoming"><i /><i /><i /></div>}
             </div>
           </div>
 
           <div className="deadline-row">
             <span>NEXT SIGNAL</span>
             <div className="deadline-track">
-              {phase === 'running' && !paused && <i key={progressKey} style={{ '--duration': `${duration}ms` } as CSSVars} />}
+              {levelReady && phase === 'running' && !paused && <i key={progressKey} style={{ '--duration': `${duration}ms` } as CSSVars} />}
             </div>
-            <b>{paused ? 'PAUSED' : phase === 'running' ? `${(duration / 1000).toFixed(1)}s` : '—'}</b>
+            <b>{!levelReady || paused ? 'PAUSED' : phase === 'running' ? `${(duration / 1000).toFixed(1)}s` : '—'}</b>
           </div>
         </div>
 
@@ -427,7 +475,7 @@ function App() {
               <RuleCard key={rule.id} rule={rule} prefix={prefix} answered={answered[rule.id]} showLtl={showLtl} index={index} />
             ))}
           </div>
-          <div className="monitor-tip"><span>!</span><p><b>See a counterexample?</b> Click the offending signal before the next one arrives.</p></div>
+          <div className="monitor-tip"><span>!</span><p><b>See a counterexample?</b> Click it to remove it; the remaining rules evaluate the repaired sequence.</p></div>
         </aside>
       </section>
 
@@ -436,11 +484,12 @@ function App() {
         <div className="controls">
           <button onClick={() => setMuted((old) => !old)}>{muted ? 'SOUND OFF' : 'SOUND ON'}</button>
           <button onClick={() => setSpeedIndex((old) => (old + 1) % SPEEDS.length)}>{SPEEDS[speedIndex]}× SPEED</button>
-          <button className="pause-button" onClick={() => phase === 'running' && setPaused((old) => !old)} disabled={phase !== 'running'}>{paused ? '▶ RESUME' : 'Ⅱ PAUSE'}</button>
+          <button className="pause-button" onClick={() => phase === 'running' && setPaused((old) => !old)} disabled={!levelReady || phase !== 'running'}>{paused ? '▶ RESUME' : 'Ⅱ PAUSE'}</button>
         </div>
       </footer>
 
-      {!started && <TutorialPanel onStart={() => setStarted(true)} />}
+      {!started && <TutorialPanel onStart={() => { setStarted(true); beginLevel(); }} />}
+      {started && !levelReady && <LevelBriefing level={level} onStart={beginLevel} />}
       {['levelComplete', 'gameover', 'complete'].includes(phase) && <ResultPanel phase={phase} level={level} score={score} lives={lives} onAction={handleResult} />}
     </main>
   );
