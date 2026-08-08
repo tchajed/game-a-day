@@ -9,6 +9,7 @@ The player is a temporal-logic monitor watching a live stream of colored, number
 - States arrive in real time, one every 2.5 seconds at normal speed.
 - The full finite prefix remains visible as a horizontal timeline.
 - Click a rule card when that rule becomes **broken**.
+- The monitor never reveals a break before the player acts: both possible and secretly broken rules appear **Unresolved**. Guaranteed, caught, and missed outcomes are revealed.
 - A correct flag scores points and builds a streak.
 - A false flag or failure to flag a newly broken rule before the next state costs one integrity point.
 - The player starts each level with three integrity points.

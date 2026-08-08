@@ -47,21 +47,26 @@ function SignalMark({ signal }) {
 }
 
 function StatusPill({ status, answered }) {
-  const actual = answered === 'caught' ? 'flagged' : answered === 'missed' ? 'missed' : status;
-  const labels = { possible: 'Possible', satisfied: 'Satisfied', broken: 'Flag now', flagged: 'Caught', missed: 'Missed' };
+  const actual = answered === 'caught'
+    ? 'flagged'
+    : answered === 'missed'
+      ? 'missed'
+      : status === 'satisfied' ? 'satisfied' : 'possible';
+  const labels = { possible: 'Unresolved', satisfied: 'Guaranteed', flagged: 'Caught', missed: 'Missed' };
   return <span className={`status-pill ${actual}`}><i />{labels[actual]}</span>;
 }
 
 function RuleCard({ rule, prefix, answered, showLtl, onFlag, index }) {
   const status = rule.evaluate(prefix);
   const resolved = Boolean(answered);
+  const visibleStatus = status === 'satisfied' ? 'satisfied' : 'possible';
   return (
     <button
-      className={`rule-card ${status} ${answered || ''}`}
+      className={`rule-card ${visibleStatus} ${answered || ''}`}
       onClick={() => onFlag(rule)}
       disabled={resolved}
       style={{ '--delay': `${index * 70}ms` }}
-      aria-label={`${rule.title}. ${status}`}
+      aria-label={`${rule.title}. ${answered ? 'resolved' : visibleStatus}`}
     >
       <span className="rule-index">R{String(index + 1).padStart(2, '0')}</span>
       <span className="rule-copy">
@@ -221,7 +226,8 @@ function App() {
   };
 
   const statuses = useMemo(() => level.rules.map((rule) => rule.evaluate(prefix)), [level, prefix]);
-  const possibleCount = statuses.filter((s) => s === 'possible').length;
+  const unresolvedCount = statuses.filter((status, index) =>
+    status !== 'satisfied' && !answered[level.rules[index].id]).length;
 
   return (
     <main className="app-shell">
@@ -269,7 +275,7 @@ function App() {
 
         <aside className="rules-panel">
           <div className="section-heading rules-heading">
-            <div>RULE MONITOR <small>{possibleCount} STILL POSSIBLE</small></div>
+            <div>RULE MONITOR <small>{unresolvedCount} UNRESOLVED</small></div>
             <label className="ltl-toggle"><input type="checkbox" checked={showLtl} onChange={(e) => setShowLtl(e.target.checked)} /><span /> SHOW LTL</label>
           </div>
           <div className="rule-list">
@@ -282,7 +288,7 @@ function App() {
       </section>
 
       <footer className="controlbar">
-        <div className="legend"><span><i className="possible" />Possible</span><span><i className="satisfied" />Satisfied</span><span><i className="broken" />Broken</span></div>
+        <div className="legend"><span><i className="possible" />Unresolved</span><span><i className="satisfied" />Guaranteed</span><span><i className="broken" />Caught / missed</span></div>
         <div className="controls">
           <button onClick={() => setMuted((old) => !old)} title="Toggle sound">{muted ? 'SOUND OFF' : 'SOUND ON'}</button>
           <button onClick={() => setSpeedIndex((old) => (old + 1) % SPEEDS.length)} title="Change speed">{SPEEDS[speedIndex]}× SPEED</button>
