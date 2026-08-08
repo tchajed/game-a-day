@@ -56,6 +56,8 @@ body::before {
 .section-heading small { color: #49675f; font: inherit; margin-left: 12px; }
 .live-dot { display: inline-block; width: 6px; height: 6px; margin: 0 8px 1px 0; border-radius: 50%; background: var(--red); box-shadow: 0 0 0 4px rgba(255,111,97,.08), 0 0 12px var(--red); animation: blink 1.4s infinite; }
 .stream-message { color: var(--green); letter-spacing: .08em; }
+.micro-brief { display: flex; gap: 10px; align-items: baseline; margin-top: 7px; color: #66837a; font-size: 10px; }
+.micro-brief b { color: var(--amber); font: 500 8px 'DM Mono', monospace; letter-spacing: .13em; white-space: nowrap; }
 
 .timeline-wrap { flex: 1; min-height: 310px; display: flex; align-items: center; overflow-x: auto; scrollbar-width: thin; scrollbar-color: #24443b transparent; mask-image: linear-gradient(90deg, transparent 0, black 18px, black calc(100% - 18px), transparent 100%); }
 .timeline { min-width: 100%; padding: 50px 18px 30px; display: flex; align-items: center; justify-content: center; }

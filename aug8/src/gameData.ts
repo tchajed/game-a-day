@@ -1,26 +1,43 @@
-const C = {
+export const palette = {
   cyan: '#35d9d0',
   coral: '#ff6f61',
   violet: '#9b7cff',
   gold: '#ffc857',
+} as const;
+
+export type SignalColor = keyof typeof palette;
+export type Signal = { color: SignalColor; value: number; hex: string };
+export type MonitorStatus = 'possible' | 'satisfied' | 'broken';
+export type Monitor = (prefix: Signal[]) => MonitorStatus;
+export type Rule = { id: string; title: string; detail: string; ltl: string; evaluate: Monitor };
+export type Level = {
+  number: string;
+  name: string;
+  kicker: string;
+  lesson: string;
+  hint: string;
+  interval: number;
+  rules: Rule[];
+  sequence: Signal[];
 };
 
-const state = (color, value) => ({ color, value, hex: C[color] });
+const state = (color: SignalColor, value: number): Signal => ({ color, value, hex: palette[color] });
+const predicate = (test: (signal: Signal) => boolean) => test;
 
-const monitors = {
-  always: (test) => (prefix) =>
+export const monitors = {
+  always: (test: (signal: Signal) => boolean): Monitor => (prefix) =>
     prefix.some((signal) => !test(signal)) ? 'broken' : 'possible',
-  eventually: (test) => (prefix) =>
+  eventually: (test: (signal: Signal) => boolean): Monitor => (prefix) =>
     prefix.some(test) ? 'satisfied' : 'possible',
-  next: (test) => (prefix) =>
+  next: (test: (signal: Signal) => boolean): Monitor => (prefix) =>
     prefix.length < 2 ? 'possible' : test(prefix[1]) ? 'satisfied' : 'broken',
-  until: (hold, release) => (prefix) => {
+  until: (hold: (signal: Signal) => boolean, release: (signal: Signal) => boolean): Monitor => (prefix) => {
     const releaseAt = prefix.findIndex(release);
     const observed = releaseAt === -1 ? prefix : prefix.slice(0, releaseAt);
     if (observed.some((signal) => !hold(signal))) return 'broken';
     return releaseAt >= 0 ? 'satisfied' : 'possible';
   },
-  responseNext: (trigger, response) => (prefix) => {
+  responseNext: (trigger: (signal: Signal) => boolean, response: (signal: Signal) => boolean): Monitor => (prefix) => {
     for (let i = 0; i < prefix.length - 1; i += 1) {
       if (trigger(prefix[i]) && !response(prefix[i + 1])) return 'broken';
     }
@@ -28,7 +45,7 @@ const monitors = {
   },
 };
 
-export const levels = [
+export const levels: Level[] = [
   {
     number: '01',
     name: 'Stay in bounds',
@@ -42,7 +59,7 @@ export const levels = [
         title: 'Keep values below eight',
         detail: 'Every signal must have a value less than 8.',
         ltl: 'G (value < 8)',
-        evaluate: monitors.always((s) => s.value < 8),
+        evaluate: monitors.always(predicate((s) => s.value < 8)),
       },
       {
         id: 'no-violet',
@@ -172,4 +189,3 @@ export const levels = [
   },
 ];
 
-export const palette = C;
