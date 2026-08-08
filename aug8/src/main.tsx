@@ -29,6 +29,7 @@ declare global {
     __SIGNAL_SEQUENCE__?: {
       getState: () => PlaytestState;
       flag: (ruleId: string) => boolean;
+      clickSignal: (index: number) => boolean;
       pause: (value?: boolean) => void;
       setSpeed: (multiplier: number) => void;
       advance: () => void;
@@ -71,12 +72,12 @@ function useSound(enabled: boolean) {
   }, [enabled]);
 }
 
-function SignalMark({ signal }: { signal: Signal }) {
+function SignalMark({ signal, onClick, resolution }: { signal: Signal; onClick: () => void; resolution?: Answer }) {
   return (
-    <div className="signal-mark" style={{ '--signal': signal.hex } as CSSVars}>
-      <span className="signal-core">{signal.value}</span>
-      <span className="signal-name">{signal.color}</span>
-    </div>
+    <button className={`signal-mark ${resolution ?? ''}`} style={{ '--signal': signal.hex } as CSSVars} onClick={onClick} aria-label={`${signal.color} ${signal.value}${resolution ? `, ${resolution}` : ''}`}>
+      <span className="signal-core">{resolution === 'caught' ? '✓' : resolution === 'missed' ? '×' : signal.value}</span>
+      <span className="signal-name">{signal.color}{resolution ? ` · ${resolution}` : ''}</span>
+    </button>
   );
 }
 
@@ -95,18 +96,15 @@ interface RuleCardProps {
   prefix: Signal[];
   answered?: Answer;
   showLtl: boolean;
-  onFlag: (rule: Rule) => void;
   index: number;
 }
 
-function RuleCard({ rule, prefix, answered, showLtl, onFlag, index }: RuleCardProps) {
+function RuleCard({ rule, prefix, answered, showLtl, index }: RuleCardProps) {
   const status = rule.evaluate(prefix);
   const visibleStatus = status === 'satisfied' ? 'satisfied' : 'possible';
   return (
-    <button
+    <div
       className={`rule-card ${visibleStatus} ${answered ?? ''}`}
-      onClick={() => onFlag(rule)}
-      disabled={Boolean(answered)}
       style={{ '--delay': `${index * 70}ms` } as CSSVars}
       aria-label={`${rule.title}. ${answered ? 'resolved' : visibleStatus}`}
       data-rule-id={rule.id}
@@ -118,37 +116,72 @@ function RuleCard({ rule, prefix, answered, showLtl, onFlag, index }: RuleCardPr
         {showLtl && <code>{rule.ltl}</code>}
       </span>
       <StatusPill status={status} answered={answered} />
-    </button>
+    </div>
   );
 }
 
 function TutorialPanel({ onStart }: { onStart: () => void }) {
+  const [practiceStarted, setPracticeStarted] = useState(false);
+  const [practiceFlags, setPracticeFlags] = useState<string[]>([]);
+  const practiceRules = levels[0].rules;
+  const practiceComplete = practiceFlags.length === practiceRules.length;
+
+  const flagPracticeRule = (id: string) => {
+    setPracticeFlags((old) => old.includes(id) ? old : [...old, id]);
+  };
+
   return (
     <div className="overlay tutorial-overlay">
       <section className="modal tutorial-modal" role="dialog" aria-modal="true" aria-labelledby="tutorial-title">
-        <span className="eyebrow">OPERATOR BRIEFING · 01</span>
-        <h1 id="tutorial-title">Catch the rule<br />when it breaks.</h1>
-        <p>Signals arrive one at a time. Watch the live stream and decide when a rule can no longer be true.</p>
+        <span className="eyebrow">OPERATOR BRIEFING · {practiceStarted ? '02' : '01'}</span>
+        <h1 id="tutorial-title">{practiceStarted ? <>Catch both<br />counterexamples.</> : <>Rules come<br />before signals.</>}</h1>
+        <p>{practiceStarted
+          ? 'Practice is untimed. Each signal below breaks one rule—click the offending signals.'
+          : 'Read every rule before opening the live feed. Once signals arrive, compare each one against this monitor.'}</p>
 
-        <div className="tutorial-steps">
-          <div className="tutorial-step">
-            <span className="step-number">01</span>
-            <div><b>Watch the signal</b><small>Each new color and value extends the sequence.</small></div>
+        {!practiceStarted ? (
+          <div className="tutorial-rule-preview">
+            {practiceRules.map((rule, index) => (
+              <div className="preview-rule" key={rule.id}>
+                <span>R{String(index + 1).padStart(2, '0')}</span>
+                <div><b>{rule.title}</b><small>{rule.detail}</small></div>
+                <i>UNRESOLVED</i>
+              </div>
+            ))}
           </div>
-          <div className="tutorial-step">
-            <span className="step-number">02</span>
-            <div><b>Find a counterexample</b><small>Compare it with every rule in the monitor.</small></div>
+        ) : (
+          <div className="practice-board">
+            <div className="practice-signals" aria-label="Practice signals">
+              <span>CLICK THE OFFENDING SIGNALS</span>
+              {practiceRules.map((rule, index) => {
+                const caught = practiceFlags.includes(rule.id);
+                const color = index === 0 ? 'cyan' : 'violet';
+                return (
+                  <React.Fragment key={rule.id}>
+                    {index > 0 && <i>+</i>}
+                    <button className={`practice-signal ${color} ${caught ? 'caught' : ''}`} onClick={() => flagPracticeRule(rule.id)} disabled={caught}>
+                      <b>{caught ? '✓' : index === 0 ? '9' : '5'}</b><small>{color.toUpperCase()}{caught ? ' · CAUGHT' : ''}</small>
+                    </button>
+                  </React.Fragment>
+                );
+              })}
+            </div>
+            <div className="practice-rule-reminder">
+              {practiceRules.map((rule, index) => <span key={rule.id}><i>R{String(index + 1).padStart(2, '0')}</i> {rule.title}</span>)}
+            </div>
           </div>
-          <div className="tutorial-step">
-            <span className="step-number">03</span>
-            <div><b>Flag it before time runs out</b><small>Click the broken rule before the next signal arrives.</small></div>
-          </div>
-        </div>
+        )}
 
-        <div className="tutorial-warning"><span>!</span><p>You have <b>3 integrity points.</b> Wrong calls and missed rules cost one.</p></div>
-        <button className="primary-button tutorial-start" onClick={onStart} autoFocus>
-          Start monitoring <span>→</span>
-        </button>
+        <div className="tutorial-warning"><span>{practiceComplete ? '✓' : '!'}</span><p>{practiceStarted ? practiceComplete ? <><b>Training clear.</b> The live sequence will be timed.</> : <>No timer yet—inspect the rules, then <b>click both offending signals.</b></> : <>You have <b>3 integrity points.</b> Wrong calls and missed counterexamples cost one.</>}</p></div>
+        {!practiceStarted ? (
+          <button className="primary-button tutorial-start" onClick={() => setPracticeStarted(true)} autoFocus>
+            Begin practice <span>→</span>
+          </button>
+        ) : (
+          <button className="primary-button tutorial-start" onClick={onStart} disabled={!practiceComplete}>
+            {practiceComplete ? 'Start live sequence' : `Catch ${practiceRules.length - practiceFlags.length} more`} <span>→</span>
+          </button>
+        )}
       </section>
     </div>
   );
@@ -187,7 +220,7 @@ function App() {
   const [muted, setMuted] = useState(false);
   const [speedIndex, setSpeedIndex] = useState(1);
   const [paused, setPaused] = useState(false);
-  const [message, setMessage] = useState('Signal received — click a rule when it becomes impossible');
+  const [message, setMessage] = useState('Signal received — click the signal that breaks a rule');
   const level = levels[levelIndex];
   const playSound = useSound(!muted);
   const live = useRef({ prefix, answered, lives, nextIndex });
@@ -205,7 +238,7 @@ function App() {
     setLives(3);
     setStreak(0);
     setPaused(false);
-    setMessage('Signal received — click a rule when it becomes impossible');
+    setMessage('Signal received — click the signal that breaks a rule');
     setPhase('running');
     if (resetScore) setScore(0);
   }, []);
@@ -256,26 +289,32 @@ function App() {
     return () => window.clearTimeout(timer);
   }, [started, phase, paused, nextIndex, duration, advanceSequence]);
 
-  const flagRule = useCallback((rule: Rule) => {
-    if (!started || phase !== 'running' || answered[rule.id]) return false;
-    const status = rule.evaluate(prefix);
-    if (status === 'broken') {
-      const bonus = 100 + streak * 25;
-      setAnswered((old) => ({ ...old, [rule.id]: 'caught' }));
+  const flagSignal = useCallback((signalIndex: number) => {
+    if (!started || phase !== 'running' || signalIndex < 0 || signalIndex >= prefix.length) return false;
+    const throughSignal = prefix.slice(0, signalIndex + 1);
+    const beforeSignal = prefix.slice(0, signalIndex);
+    const brokenHere = level.rules.filter((rule) =>
+      !answered[rule.id]
+      && rule.evaluate(throughSignal) === 'broken'
+      && rule.evaluate(beforeSignal) !== 'broken');
+
+    if (brokenHere.length) {
+      const bonus = brokenHere.reduce((total, _, index) => total + 100 + (streak + index) * 25, 0);
+      setAnswered((old) => ({ ...old, ...Object.fromEntries(brokenHere.map((rule) => [rule.id, 'caught' as const])) }));
       setScore((old) => old + bonus);
-      setStreak((old) => old + 1);
-      setMessage(`Counterexample caught  +${bonus}`);
+      setStreak((old) => old + brokenHere.length);
+      setMessage(`${brokenHere.length > 1 ? `${brokenHere.length} counterexamples` : 'Counterexample'} caught  +${bonus}`);
       playSound('correct');
       return true;
     }
     const remaining = lives - 1;
     setLives(remaining);
     setStreak(0);
-    setMessage(status === 'satisfied' ? 'Rule is already guaranteed' : 'Rule can still be true');
+    setMessage('That signal breaks no new rule');
     playSound('error');
     if (remaining <= 0) setPhase('gameover');
     return false;
-  }, [answered, lives, phase, playSound, prefix, started, streak]);
+  }, [answered, level.rules, lives, phase, playSound, prefix, started, streak]);
 
   const handleResult = () => {
     if (phase === 'gameover') loadLevel(levelIndex);
@@ -299,8 +338,11 @@ function App() {
       }),
       flag: (ruleId: string) => {
         const rule = level.rules.find(({ id }) => id === ruleId);
-        return rule ? flagRule(rule) : false;
+        if (!rule) return false;
+        const breakingIndex = prefix.findIndex((_, index) => rule.evaluate(prefix.slice(0, index + 1)) === 'broken');
+        return breakingIndex >= 0 ? flagSignal(breakingIndex) : false;
       },
+      clickSignal: flagSignal,
       pause: (value?: boolean) => setPaused((old) => value ?? !old),
       setSpeed: (multiplier: number) => {
         const closest = SPEEDS.reduce((best, speed, index) =>
@@ -315,7 +357,7 @@ function App() {
       start: () => setStarted(true),
     });
     window.__SIGNAL_SEQUENCE__ = api;
-  }, [advanceSequence, answered, flagRule, level, levelIndex, lives, loadLevel, paused, phase, prefix, score, started, streak]);
+  }, [advanceSequence, answered, flagSignal, level, levelIndex, lives, loadLevel, paused, phase, prefix, score, started, streak]);
 
   const statuses = useMemo(() => level.rules.map((rule) => rule.evaluate(prefix)), [level, prefix]);
   const unresolvedCount = statuses.filter((status, index) =>
@@ -348,7 +390,17 @@ function App() {
                   {i > 0 && <span className="timeline-link" />}
                   <div className="signal-slot">
                     <span className="signal-order">t{i}</span>
-                    <SignalMark signal={signal} />
+                    <SignalMark
+                      signal={signal}
+                      onClick={() => flagSignal(i)}
+                      resolution={level.rules.some((rule) => {
+                        const breaksHere = rule.evaluate(prefix.slice(0, i + 1)) === 'broken' && rule.evaluate(prefix.slice(0, i)) !== 'broken';
+                        return breaksHere && answered[rule.id] === 'caught';
+                      }) ? 'caught' : level.rules.some((rule) => {
+                        const breaksHere = rule.evaluate(prefix.slice(0, i + 1)) === 'broken' && rule.evaluate(prefix.slice(0, i)) !== 'broken';
+                        return breaksHere && answered[rule.id] === 'missed';
+                      }) ? 'missed' : undefined}
+                    />
                   </div>
                 </React.Fragment>
               ))}
@@ -372,10 +424,10 @@ function App() {
           </div>
           <div className="rule-list">
             {level.rules.map((rule, index) => (
-              <RuleCard key={rule.id} rule={rule} prefix={prefix} answered={answered[rule.id]} showLtl={showLtl} onFlag={flagRule} index={index} />
+              <RuleCard key={rule.id} rule={rule} prefix={prefix} answered={answered[rule.id]} showLtl={showLtl} index={index} />
             ))}
           </div>
-          <div className="monitor-tip"><span>!</span><p><b>See a counterexample?</b> Click the impossible rule before the next signal arrives.</p></div>
+          <div className="monitor-tip"><span>!</span><p><b>See a counterexample?</b> Click the offending signal before the next one arrives.</p></div>
         </aside>
       </section>
 

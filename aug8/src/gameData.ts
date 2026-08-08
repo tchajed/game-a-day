@@ -51,7 +51,7 @@ export const levels: Level[] = [
     name: 'Stay in bounds',
     kicker: 'SAFETY PROTOCOL',
     lesson: 'Always means every signal must obey the rule. One counterexample breaks it forever.',
-    hint: 'Watch each new signal. Flag a rule as soon as you see its first counterexample.',
+    hint: 'Watch each new signal. Click it as soon as it becomes a counterexample to any rule.',
     interval: 2800,
     rules: [
       {
@@ -79,7 +79,7 @@ export const levels: Level[] = [
     name: 'Promises & next steps',
     kicker: 'FUTURE CONDITIONS',
     lesson: 'Eventually becomes guaranteed once its event occurs. Next is decided by the second signal.',
-    hint: 'Not every rule will break. Satisfied promises lock in automatically—only flag broken rules.',
+    hint: 'Not every rule will break. Satisfied promises lock in—only click signals that break a rule.',
     interval: 2600,
     rules: [
       {
