@@ -14,6 +14,7 @@ const SPEEDS = [0.75, 1, 1.35] as const;
 interface PlaytestState {
   level: number;
   phase: Phase;
+  started: boolean;
   prefix: Array<{ color: string; value: number }>;
   rules: Array<{ id: string; status: MonitorStatus; answered?: Answer }>;
   lives: number;
@@ -33,6 +34,7 @@ declare global {
       advance: () => void;
       loadLevel: (index: number) => void;
       restart: () => void;
+      start: () => void;
     };
   }
 }
@@ -120,16 +122,49 @@ function RuleCard({ rule, prefix, answered, showLtl, onFlag, index }: RuleCardPr
   );
 }
 
-function ResultPanel({ phase, level, score, onAction }: { phase: Phase; level: Level; score: number; onAction: () => void }) {
+function TutorialPanel({ onStart }: { onStart: () => void }) {
+  return (
+    <div className="overlay tutorial-overlay">
+      <section className="modal tutorial-modal" role="dialog" aria-modal="true" aria-labelledby="tutorial-title">
+        <span className="eyebrow">OPERATOR BRIEFING · 01</span>
+        <h1 id="tutorial-title">Catch the rule<br />when it breaks.</h1>
+        <p>Signals arrive one at a time. Watch the live stream and decide when a rule can no longer be true.</p>
+
+        <div className="tutorial-steps">
+          <div className="tutorial-step">
+            <span className="step-number">01</span>
+            <div><b>Watch the signal</b><small>Each new color and value extends the sequence.</small></div>
+          </div>
+          <div className="tutorial-step">
+            <span className="step-number">02</span>
+            <div><b>Find a counterexample</b><small>Compare it with every rule in the monitor.</small></div>
+          </div>
+          <div className="tutorial-step">
+            <span className="step-number">03</span>
+            <div><b>Flag it before time runs out</b><small>Click the broken rule before the next signal arrives.</small></div>
+          </div>
+        </div>
+
+        <div className="tutorial-warning"><span>!</span><p>You have <b>3 integrity points.</b> Wrong calls and missed rules cost one.</p></div>
+        <button className="primary-button tutorial-start" onClick={onStart} autoFocus>
+          Start monitoring <span>→</span>
+        </button>
+      </section>
+    </div>
+  );
+}
+
+function ResultPanel({ phase, level, score, lives, onAction }: { phase: Phase; level: Level; score: number; lives: number; onAction: () => void }) {
   const failed = phase === 'gameover';
   const finished = phase === 'complete';
+  const missedRule = failed && lives > 0;
   return (
     <div className="overlay">
       <section className="modal result-modal">
         <div className={`result-glyph ${failed ? 'failed' : ''}`}>{failed ? '×' : '✓'}</div>
         <span className="eyebrow">{failed ? 'SIGNAL LOST' : finished ? 'CERTIFICATION COMPLETE' : 'SEQUENCE CLEARED'}</span>
-        <h1>{failed ? 'Monitor offline' : finished ? 'All signals resolved' : level.name}</h1>
-        <p>{failed ? 'Integrity reached zero. Recalibrate and watch for the first decisive counterexample.' : `Score ${score.toLocaleString()} · Temporal integrity confirmed.`}</p>
+        <h1>{failed ? missedRule ? 'Counterexample missed' : 'Monitor offline' : finished ? 'All signals resolved' : level.name}</h1>
+        <p>{failed ? missedRule ? 'The sequence ended with an unflagged broken rule. Every counterexample must be caught to proceed.' : 'Integrity reached zero. Recalibrate and watch for the first decisive counterexample.' : `Score ${score.toLocaleString()} · Temporal integrity confirmed.`}</p>
         <button className="primary-button" onClick={onAction}>
           {failed ? 'Retry level' : finished ? 'Run again' : 'Next sequence'} <span>→</span>
         </button>
@@ -139,6 +174,7 @@ function ResultPanel({ phase, level, score, onAction }: { phase: Phase; level: L
 }
 
 function App() {
+  const [started, setStarted] = useState(false);
   const [levelIndex, setLevelIndex] = useState(0);
   const [phase, setPhase] = useState<Phase>('running');
   const [prefix, setPrefix] = useState<Signal[]>([levels[0].sequence[0]]);
@@ -201,20 +237,27 @@ function App() {
       if (!missed.length) setMessage('Signal received');
       playSound('tick');
     } else {
-      setPhase(levelIndex === levels.length - 1 ? 'complete' : 'levelComplete');
-      setMessage('Sequence clear');
-      playSound('complete');
+      const sequenceHasMiss = missed.length > 0 || Object.values(current.answered).includes('missed');
+      if (sequenceHasMiss) {
+        setPhase('gameover');
+        setMessage('Sequence failed — counterexample missed');
+        if (!missed.length) playSound('error');
+      } else {
+        setPhase(levelIndex === levels.length - 1 ? 'complete' : 'levelComplete');
+        setMessage('Sequence clear');
+        playSound('complete');
+      }
     }
   }, [level, levelIndex, playSound]);
 
   useEffect(() => {
-    if (phase !== 'running' || paused) return undefined;
+    if (!started || phase !== 'running' || paused) return undefined;
     const timer = window.setTimeout(advanceSequence, duration);
     return () => window.clearTimeout(timer);
-  }, [phase, paused, nextIndex, duration, advanceSequence]);
+  }, [started, phase, paused, nextIndex, duration, advanceSequence]);
 
   const flagRule = useCallback((rule: Rule) => {
-    if (phase !== 'running' || answered[rule.id]) return false;
+    if (!started || phase !== 'running' || answered[rule.id]) return false;
     const status = rule.evaluate(prefix);
     if (status === 'broken') {
       const bonus = 100 + streak * 25;
@@ -232,7 +275,7 @@ function App() {
     playSound('error');
     if (remaining <= 0) setPhase('gameover');
     return false;
-  }, [answered, lives, phase, playSound, prefix, streak]);
+  }, [answered, lives, phase, playSound, prefix, started, streak]);
 
   const handleResult = () => {
     if (phase === 'gameover') loadLevel(levelIndex);
@@ -246,12 +289,13 @@ function App() {
       getState: () => ({
         level: levelIndex,
         phase,
+        started,
         prefix: prefix.map(({ color, value }) => ({ color, value })),
         rules: level.rules.map((rule) => ({ id: rule.id, status: rule.evaluate(prefix), answered: answered[rule.id] })),
         lives,
         score,
         streak,
-        paused,
+        paused: paused || !started,
       }),
       flag: (ruleId: string) => {
         const rule = level.rules.find(({ id }) => id === ruleId);
@@ -268,9 +312,10 @@ function App() {
         if (Number.isInteger(index) && index >= 0 && index < levels.length) loadLevel(index);
       },
       restart: () => loadLevel(levelIndex),
+      start: () => setStarted(true),
     });
     window.__SIGNAL_SEQUENCE__ = api;
-  }, [advanceSequence, answered, flagRule, level, levelIndex, lives, loadLevel, paused, phase, prefix, score, streak]);
+  }, [advanceSequence, answered, flagRule, level, levelIndex, lives, loadLevel, paused, phase, prefix, score, started, streak]);
 
   const statuses = useMemo(() => level.rules.map((rule) => rule.evaluate(prefix)), [level, prefix]);
   const unresolvedCount = statuses.filter((status, index) =>
@@ -343,7 +388,8 @@ function App() {
         </div>
       </footer>
 
-      {['levelComplete', 'gameover', 'complete'].includes(phase) && <ResultPanel phase={phase} level={level} score={score} onAction={handleResult} />}
+      {!started && <TutorialPanel onStart={() => setStarted(true)} />}
+      {['levelComplete', 'gameover', 'complete'].includes(phase) && <ResultPanel phase={phase} level={level} score={score} lives={lives} onAction={handleResult} />}
     </main>
   );
 }
