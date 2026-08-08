@@ -30,6 +30,8 @@ declare global {
       flag: (ruleId: string) => boolean;
       pause: (value?: boolean) => void;
       setSpeed: (multiplier: number) => void;
+      advance: () => void;
+      loadLevel: (index: number) => void;
       restart: () => void;
     };
   }
@@ -172,45 +174,47 @@ function App() {
     if (resetScore) setScore(0);
   }, []);
 
+  const advanceSequence = useCallback(() => {
+    const current = live.current;
+    const missed = level.rules.filter((rule) =>
+      rule.evaluate(current.prefix) === 'broken' && !current.answered[rule.id]);
+    let remainingLives = current.lives;
+
+    if (missed.length) {
+      const additions = Object.fromEntries(missed.map((rule) => [rule.id, 'missed' as const]));
+      setAnswered((old) => ({ ...old, ...additions }));
+      remainingLives = Math.max(0, current.lives - missed.length);
+      setLives(remainingLives);
+      setStreak(0);
+      setMessage(`${missed.length} rule${missed.length > 1 ? 's' : ''} missed`);
+      playSound('error');
+    }
+
+    if (remainingLives <= 0) {
+      setPhase('gameover');
+      return;
+    }
+
+    if (current.nextIndex < level.sequence.length) {
+      setPrefix((old) => [...old, level.sequence[current.nextIndex]]);
+      setNextIndex((old) => old + 1);
+      if (!missed.length) setMessage('Signal received');
+      playSound('tick');
+    } else {
+      setPhase(levelIndex === levels.length - 1 ? 'complete' : 'levelComplete');
+      setMessage('Sequence clear');
+      playSound('complete');
+    }
+  }, [level, levelIndex, playSound]);
+
   useEffect(() => {
     if (phase !== 'running' || paused) return undefined;
-    const timer = window.setTimeout(() => {
-      const current = live.current;
-      const missed = level.rules.filter((rule) =>
-        rule.evaluate(current.prefix) === 'broken' && !current.answered[rule.id]);
-      let remainingLives = current.lives;
-
-      if (missed.length) {
-        const additions = Object.fromEntries(missed.map((rule) => [rule.id, 'missed' as const]));
-        setAnswered((old) => ({ ...old, ...additions }));
-        remainingLives = Math.max(0, current.lives - missed.length);
-        setLives(remainingLives);
-        setStreak(0);
-        setMessage(`${missed.length} rule${missed.length > 1 ? 's' : ''} missed`);
-        playSound('error');
-      }
-
-      if (remainingLives <= 0) {
-        setPhase('gameover');
-        return;
-      }
-
-      if (current.nextIndex < level.sequence.length) {
-        setPrefix((old) => [...old, level.sequence[current.nextIndex]]);
-        setNextIndex((old) => old + 1);
-        if (!missed.length) setMessage('Signal received');
-        playSound('tick');
-      } else {
-        setPhase(levelIndex === levels.length - 1 ? 'complete' : 'levelComplete');
-        setMessage('Sequence clear');
-        playSound('complete');
-      }
-    }, duration);
+    const timer = window.setTimeout(advanceSequence, duration);
     return () => window.clearTimeout(timer);
-  }, [phase, paused, nextIndex, duration, level, levelIndex, playSound]);
+  }, [phase, paused, nextIndex, duration, advanceSequence]);
 
   const flagRule = useCallback((rule: Rule) => {
-    if (phase !== 'running' || paused || answered[rule.id]) return false;
+    if (phase !== 'running' || answered[rule.id]) return false;
     const status = rule.evaluate(prefix);
     if (status === 'broken') {
       const bonus = 100 + streak * 25;
@@ -228,7 +232,7 @@ function App() {
     playSound('error');
     if (remaining <= 0) setPhase('gameover');
     return false;
-  }, [answered, lives, paused, phase, playSound, prefix, streak]);
+  }, [answered, lives, phase, playSound, prefix, streak]);
 
   const handleResult = () => {
     if (phase === 'gameover') loadLevel(levelIndex);
@@ -237,7 +241,8 @@ function App() {
   };
 
   useEffect(() => {
-    window.__SIGNAL_SEQUENCE__ = {
+    const api = window.__SIGNAL_SEQUENCE__ ?? {} as NonNullable<Window['__SIGNAL_SEQUENCE__']>;
+    Object.assign(api, {
       getState: () => ({
         level: levelIndex,
         phase,
@@ -248,20 +253,24 @@ function App() {
         streak,
         paused,
       }),
-      flag: (ruleId) => {
+      flag: (ruleId: string) => {
         const rule = level.rules.find(({ id }) => id === ruleId);
         return rule ? flagRule(rule) : false;
       },
-      pause: (value) => setPaused((old) => value ?? !old),
-      setSpeed: (multiplier) => {
+      pause: (value?: boolean) => setPaused((old) => value ?? !old),
+      setSpeed: (multiplier: number) => {
         const closest = SPEEDS.reduce((best, speed, index) =>
           Math.abs(speed - multiplier) < Math.abs(SPEEDS[best] - multiplier) ? index : best, 0);
         setSpeedIndex(closest);
       },
+      advance: advanceSequence,
+      loadLevel: (index: number) => {
+        if (Number.isInteger(index) && index >= 0 && index < levels.length) loadLevel(index);
+      },
       restart: () => loadLevel(levelIndex),
-    };
-    return () => { delete window.__SIGNAL_SEQUENCE__; };
-  }, [answered, flagRule, level, levelIndex, lives, loadLevel, paused, phase, prefix, score, streak]);
+    });
+    window.__SIGNAL_SEQUENCE__ = api;
+  }, [advanceSequence, answered, flagRule, level, levelIndex, lives, loadLevel, paused, phase, prefix, score, streak]);
 
   const statuses = useMemo(() => level.rules.map((rule) => rule.evaluate(prefix)), [level, prefix]);
   const unresolvedCount = statuses.filter((status, index) =>

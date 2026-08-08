@@ -6,6 +6,7 @@ The player is a temporal-logic monitor watching a live stream of colored, number
 
 ## Interaction
 
+- The first state is already live when the page opens; there is no title screen or mandatory tutorial.
 - States arrive in real time, one every 2.5 seconds at normal speed.
 - The full finite prefix remains visible as a horizontal timeline.
 - Click a rule card when that rule becomes **broken**.
@@ -54,6 +55,7 @@ Audio is enabled by default but can be muted. It begins only after user interact
 
 ## Prototype scope
 
-- Desktop-first React web game with responsive behavior for narrow screens.
-- Four levels, tutorial callouts, scoring, streaks, integrity, pause, replay, speed, audio, and LTL visibility controls.
+- Desktop-first React + TypeScript web game, run with Bun, with responsive behavior for narrow screens.
+- Four levels, compact inline hints, scoring, streaks, integrity, pause, replay, speed, audio, and LTL visibility controls.
+- A browser API exposes state, rule actions, level loading, and deterministic signal advancement for AI playtesting.
 - No backend, accounts, level editor, or saved progression.

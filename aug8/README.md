@@ -1,23 +1,46 @@
-# LTL game
+# Signal / Sequence
 
-This is a (nerdy) game about linear temporal logic. The idea is that a level consists of a few LTL formulas and a sequence of states. The player is supposed to keep track of which of the LTL formulas can still be true (formally, which are true for some infinite extension of the finite prefix so far and which are definitely false). I'm imagining this as real time, so you have to think somewhat quickly, but of course this is really hard if there are 3 complicated formulas.
+> **Back-of-the-box pitch:** Signals keep arriving and the rules keep stacking. In **Signal / Sequence**, you are the last line of defense in a live temporal-monitoring console: scan each colored, numbered pulse, hold several promises in your head, and strike the instant one becomes impossible. Flag too early and you damage the system; hesitate until the next signal and the violation slips through. Four escalating sequences turn the normally cerebral language of linear temporal logic into a tense, five-minute game of pattern recognition under pressure.
 
-While this is a nerdy game, I want to have a mode where the LTL formula isn't literally shown and opt-in to seeing it. Instead of a formula, there should be some other more natural language-esque way of presenting it.
+A small real-time game about monitoring finite prefixes against linear temporal logic rules. Rules use natural language by default, with optional notation for `G`, `F`, `X`, and `U`.
 
-The prototype we're building should have at least four levels: the first three show what the tutorial progression might look like (as LTL features are added), and the last is something hard.
+## Play
 
-There are a few different ways to present states. The most natural is that the whole prefix is shown, and one state at a time is added at a regular time interval. But this could also be a turn-based game, or a rhythm game, or earlier states could disappear.
+```bash
+bun install
+bun run dev
+```
 
-I haven't decided on the exact syntax: should be past-time LTL or an until operator for example.
+The game starts immediately. Click a rule when the observed sequence makes it impossible. An incorrect click or a missed deadline costs integrity.
 
-## Technology
+## Verify
 
-I think this can just be built with React even with the real-time and audio components but use your judgment.
+```bash
+bun test
+bun run build
+```
 
-## Visuals
+## Programmatic playtesting
 
-I was thinking a pretty clean visual style, with states having properties like color and maybe a number (so the state formulas would be colors and maybe inequalities; nothing hard to evaluate on a single state). Let's play around with exactly what the states have. I didn't want color + shape because that becomes a different type of identification game.
+The browser exposes a deterministic test interface at `window.__SIGNAL_SEQUENCE__`:
 
-## Audio
+```ts
+const game = window.__SIGNAL_SEQUENCE__;
+game?.pause(true);
+game?.loadLevel(0);
+game?.advance();
+console.log(game?.getState());
+game?.flag('safe-range');
+game?.setSpeed(1.35);
+game?.restart();
+```
 
-Not really sure but let's try having audio.
+`getState()` returns the current prefix, true internal rule statuses, answers, lives, score, streak, and phase. `advance()` progresses one signal without waiting, making AI playtests deterministic.
+
+## Screenshots
+
+![Level one monitoring console](screenshots/signal-sequence-level-1.png)
+
+![Symbolic LTL view](screenshots/signal-sequence-ltl.png)
+
+See [`GAME_DESIGN.md`](GAME_DESIGN.md) for the prototype’s interaction and logic decisions.
