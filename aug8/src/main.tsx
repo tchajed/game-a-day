@@ -231,8 +231,8 @@ function TutorialPanel({ onStart, onEngageMusic }: { onStart: () => void; onEnga
         <span className="eyebrow">OPERATOR BRIEFING · {practiceStarted ? '02' : '01'}</span>
         <h1 id="tutorial-title">{practiceStarted ? <>Catch both<br />counterexamples.</> : <>Rules come<br />before signals.</>}</h1>
         <p>{practiceStarted
-          ? 'Practice is untimed. Each signal below breaks one rule—click the offending signals.'
-          : 'Read every rule before opening the live feed. Once signals arrive, compare each one against this monitor.'}</p>
+          ? 'No timer yet. Click both rule-breaking signals.'
+          : 'Read the rules first. Then watch for signals that break them.'}</p>
 
         {!practiceStarted ? (
           <div className="tutorial-rule-preview">
@@ -319,7 +319,7 @@ function FinalCheckPanel({ level, prefix, answered, onComplete }: { level: Level
       <section className="modal final-check-modal" role="dialog" aria-modal="true" aria-labelledby="final-check-title">
         <span className="eyebrow">END OF SEQUENCE · LIVENESS AUDIT</span>
         <h1 id="final-check-title">Check every promise.</h1>
-        <p>The stream is over. Properties like “eventually,” “until,” and pending responses can now be decided.</p>
+        <p>The stream is over. Did every promise come true?</p>
         <div className="final-check-rules">
           {livenessRules.map((rule) => {
             const resolved = answered[rule.id] || rule.evaluate.atEnd(prefix) === 'satisfied';
@@ -375,7 +375,7 @@ function App() {
   const [muted, setMuted] = useState(false);
   const [speedIndex, setSpeedIndex] = useState(1);
   const [paused, setPaused] = useState(false);
-  const [message, setMessage] = useState('Signal received — click the signal that breaks a rule');
+  const [message, setMessage] = useState('Spot a rule-breaker? Click the signal!');
   const level = levels[levelIndex];
   const playSound = useSound(!muted);
   const { engage: engageMusic, reset: resetMusic } = useProceduralMusic(!muted, !muted, levelIndex, SPEEDS[speedIndex]);
@@ -396,7 +396,7 @@ function App() {
     setLives(3);
     setStreak(0);
     setPaused(false);
-    setMessage('Signal received — click the signal that breaks a rule');
+    setMessage('Spot a rule-breaker? Click the signal!');
     setPhase('running');
     if (resetScore) setScore(0);
   }, []);
@@ -408,7 +408,7 @@ function App() {
     setLives(3);
     setStreak(0);
     setPaused(false);
-    setMessage('Signal received — click the signal that breaks a rule');
+    setMessage('Spot a rule-breaker? Click the signal!');
     setPhase('running');
     setLevelReady(true);
   }, [level]);
@@ -437,7 +437,7 @@ function App() {
     if (current.nextIndex < level.sequence.length) {
       setPrefix((old) => [...old, level.sequence[current.nextIndex]]);
       setNextIndex((old) => old + 1);
-      if (!missed.length) setMessage('Signal received');
+      if (!missed.length) setMessage('New signal!');
       playSound('tick');
     } else {
       const sequenceHasMiss = missed.length > 0 || Object.values(current.answered).includes('missed');
@@ -618,7 +618,7 @@ function App() {
               <RuleCard key={rule.id} rule={rule} prefix={prefix} answered={answered[rule.id]} showLtl={showLtl} index={index} />
             ))}
           </div>
-          <div className="monitor-tip"><span>!</span><p><b>See a counterexample?</b> Click it to remove it; the remaining rules evaluate the repaired sequence.</p></div>
+          <div className="monitor-tip"><span>↖</span><p>See a rule-breaker? <b>Click the signal!</b></p></div>
         </aside>
       </section>
 
