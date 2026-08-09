@@ -41,6 +41,91 @@ declare global {
   }
 }
 
+function useProceduralMusic(enabled: boolean, active: boolean, levelIndex: number) {
+  const context = useRef<AudioContext | null>(null);
+  const engine = useRef<{ timer?: number; master?: GainNode; step: number }>({ step: 0 });
+
+  const ensureContext = useCallback(() => {
+    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContextClass) return null;
+    context.current ||= new AudioContextClass();
+    if (context.current.state === 'suspended') void context.current.resume();
+    return context.current;
+  }, []);
+
+  const stop = useCallback(() => {
+    if (engine.current.timer !== undefined) window.clearInterval(engine.current.timer);
+    engine.current.timer = undefined;
+    const master = engine.current.master;
+    const ctx = context.current;
+    if (master && ctx) {
+      master.gain.cancelScheduledValues(ctx.currentTime);
+      master.gain.setTargetAtTime(0.0001, ctx.currentTime, 0.08);
+    }
+    engine.current.master = undefined;
+  }, []);
+
+  const start = useCallback(() => {
+    if (engine.current.timer !== undefined) return;
+    const ctx = ensureContext();
+    if (!ctx) return;
+    const master = ctx.createGain();
+    master.gain.setValueAtTime(0.0001, ctx.currentTime);
+    master.gain.exponentialRampToValueAtTime(0.075, ctx.currentTime + 0.35);
+    master.connect(ctx.destination);
+    engine.current.master = master;
+    engine.current.step = 0;
+
+    const scales = [
+      [110, 130.81, 146.83, 164.81, 196],
+      [98, 116.54, 130.81, 146.83, 174.61],
+      [123.47, 146.83, 164.81, 185, 220],
+      [103.83, 123.47, 138.59, 155.56, 185],
+    ];
+    const scale = scales[levelIndex % scales.length];
+    const beatMs = Math.max(250, 390 - levelIndex * 32);
+
+    const tone = (frequency: number, when: number, duration: number, type: OscillatorType, volume: number) => {
+      const oscillator = ctx.createOscillator();
+      const gain = ctx.createGain();
+      oscillator.type = type;
+      oscillator.frequency.setValueAtTime(frequency, when);
+      gain.gain.setValueAtTime(0.0001, when);
+      gain.gain.exponentialRampToValueAtTime(volume, when + 0.025);
+      gain.gain.exponentialRampToValueAtTime(0.0001, when + duration);
+      oscillator.connect(gain).connect(master);
+      oscillator.start(when);
+      oscillator.stop(when + duration + 0.02);
+    };
+
+    const pulse = () => {
+      if (ctx.state === 'suspended') return;
+      const step = engine.current.step;
+      const now = ctx.currentTime + 0.025;
+      const noteIndex = (step * 3 + Math.floor(step / 4) + levelIndex) % scale.length;
+      tone(scale[noteIndex] * 2, now, beatMs / 1000 * 0.62, 'triangle', 0.09);
+      if (step % 2 === 0) tone(scale[(noteIndex + 2) % scale.length] / 2, now, beatMs / 1000 * 1.4, 'sine', 0.14);
+      if (step % 8 === 0) {
+        tone(scale[0], now, beatMs / 1000 * 7.2, 'sine', 0.035);
+        tone(scale[2], now, beatMs / 1000 * 7.2, 'sine', 0.028);
+        tone(scale[4], now, beatMs / 1000 * 7.2, 'sine', 0.024);
+      }
+      engine.current.step += 1;
+    };
+
+    pulse();
+    engine.current.timer = window.setInterval(pulse, beatMs);
+  }, [ensureContext, levelIndex]);
+
+  useEffect(() => {
+    if (enabled && active) start();
+    else stop();
+    return stop;
+  }, [active, enabled, start, stop]);
+
+  return ensureContext;
+}
+
 function useSound(enabled: boolean) {
   const context = useRef<AudioContext | null>(null);
 
@@ -284,6 +369,7 @@ function App() {
   const [message, setMessage] = useState('Signal received — click the signal that breaks a rule');
   const level = levels[levelIndex];
   const playSound = useSound(!muted);
+  const unlockMusic = useProceduralMusic(!muted, started && levelReady && phase === 'running' && !paused, levelIndex);
   const live = useRef({ prefix, answered, lives, nextIndex });
   live.current = { prefix, answered, lives, nextIndex };
 
@@ -528,14 +614,14 @@ function App() {
       <footer className="controlbar">
         <div className="legend"><span><i className="possible" />Unresolved</span><span><i className="satisfied" />Guaranteed</span><span><i className="broken" />Caught / missed</span></div>
         <div className="controls">
-          <button onClick={() => setMuted((old) => !old)}>{muted ? 'SOUND OFF' : 'SOUND ON'}</button>
+          <button onClick={() => { unlockMusic(); setMuted((old) => !old); }}>{muted ? 'MUSIC OFF' : 'MUSIC ON'}</button>
           <button onClick={() => setSpeedIndex((old) => (old + 1) % SPEEDS.length)}>{SPEEDS[speedIndex]}× SPEED</button>
           <button className="pause-button" onClick={() => phase === 'running' && setPaused((old) => !old)} disabled={!levelReady || phase !== 'running'}>{paused ? '▶ RESUME' : 'Ⅱ PAUSE'}</button>
         </div>
       </footer>
 
-      {!started && <TutorialPanel onStart={() => { setStarted(true); beginLevel(); }} />}
-      {started && !levelReady && <LevelBriefing level={level} onStart={beginLevel} />}
+      {!started && <TutorialPanel onStart={() => { unlockMusic(); setStarted(true); beginLevel(); }} />}
+      {started && !levelReady && <LevelBriefing level={level} onStart={() => { unlockMusic(); beginLevel(); }} />}
       {phase === 'finalCheck' && <FinalCheckPanel level={level} prefix={prefix} answered={answered} onComplete={completeFinalCheck} />}
       {['levelComplete', 'gameover', 'complete'].includes(phase) && <ResultPanel phase={phase} level={level} score={score} lives={lives} onAction={handleResult} />}
     </main>
