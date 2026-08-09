@@ -118,6 +118,10 @@ body::before {
 .controls button { padding: 8px 10px; border: 0; background: transparent; color: #6f8981; cursor: pointer; font: 9px 'DM Mono', monospace; letter-spacing: .08em; }
 .controls button:hover { color: var(--ink); }.controls button:disabled { opacity: .3; cursor: default; }
 .controls .pause-button { min-width: 84px; border: 1px solid #2b4940; color: #adc2bc; background: rgba(38,71,61,.18); }
+.global-music-control { position: fixed; z-index: 40; top: 94px; right: 18px; padding: 8px 11px; display: flex; align-items: center; gap: 7px; border: 1px solid #294940; border-radius: 20px; color: #9db5ae; background: rgba(7,20,16,.92); backdrop-filter: blur(10px); cursor: pointer; font: 8px 'DM Mono', monospace; letter-spacing: .08em; text-transform: uppercase; box-shadow: 0 5px 20px rgba(0,0,0,.22); }
+.global-music-control i { width: 7px; height: 7px; border-radius: 50%; background: #425e56; }
+.global-music-control[aria-pressed="true"] i { background: var(--green); box-shadow: 0 0 8px var(--green); animation: blink 1.2s infinite; }
+.global-music-control:hover { color: var(--ink); border-color: #467567; }
 
 .overlay { position: fixed; z-index: 20; inset: 0; display: grid; place-items: center; padding: 24px; background: rgba(3, 10, 8, .76); backdrop-filter: blur(12px); animation: fade-in .25s both; }
 .modal { width: min(540px, 100%); padding: 42px; border: 1px solid rgba(65,230,161,.24); background: linear-gradient(145deg, rgba(16,35,29,.98), rgba(8,20,17,.98)); box-shadow: 0 24px 80px rgba(0,0,0,.45), inset 0 1px rgba(255,255,255,.03); clip-path: polygon(14px 0,100% 0,100% calc(100% - 14px),calc(100% - 14px) 100%,0 100%,0 14px); }
@@ -201,6 +205,7 @@ body::before {
   .topbar { height: auto; min-height: 72px; padding: 12px 16px; }.brand div { display: none; }.scoreboard { gap: 9px; }.scoreboard > div { min-width: 43px; }.scoreboard b { font-size: 12px; }.integrity { display: none; }
   .stream-panel,.rules-panel { padding: 22px 14px; }.timeline { justify-content: flex-start; }.signal-slot { flex-basis: 70px; }.signal-core { width: 58px; height: 58px; font-size: 20px; }.timeline-link { min-width: 10px; }
   .rule-card { grid-template-columns: 24px 1fr; }.status-pill { grid-column: 2; }.controls,.legend { width: 100%; justify-content: center; gap: 8px; }.modal { padding: 30px 24px; }
+  .global-music-control { top: 82px; right: 10px; }
   .preview-rule,.briefing-rule,.final-check-rule { grid-template-columns: 25px 1fr; }.preview-rule > i,.briefing-rule code,.final-check-rule > i { grid-column: 2; width: max-content; }
   .practice-signals { gap: 10px; padding: 14px 8px; }.practice-signals > span { display: none; }.practice-rule-reminder { flex-direction: column; gap: 5px; }
 }
