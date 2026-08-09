@@ -171,6 +171,17 @@ body::before {
 .briefing-rule div { display: flex; flex-direction: column; gap: 3px; }
 .briefing-rule b { font-size: 11px; }.briefing-rule small { color: #708d84; font-size: 9px; }
 .briefing-rule code { padding: 4px 6px; color: #a7c4bb; background: rgba(0,0,0,.25); font: 9px 'DM Mono', monospace; }
+.final-check-overlay { background: rgba(3, 10, 8, .82); }
+.final-check-modal { width: min(650px, 100%); }
+.final-check-rules { margin: 24px 0; border: 1px solid var(--line); }
+.final-check-rule { min-height: 62px; padding: 12px 14px; display: grid; grid-template-columns: 30px 1fr auto; gap: 10px; align-items: center; border-bottom: 1px solid var(--line); background: rgba(65,230,161,.025); }
+.final-check-rule:last-child { border-bottom: 0; }
+.final-check-rule > span { color: #6d8880; font: 8px 'DM Mono', monospace; }
+.final-check-rule div { display: flex; flex-direction: column; gap: 4px; }
+.final-check-rule b { font-size: 11px; }.final-check-rule small { color: #708d84; font: 9px 'DM Mono', monospace; }
+.final-check-rule > i { color: var(--green); font: 8px 'DM Mono', monospace; font-style: normal; letter-spacing: .06em; }
+.final-check-rule.unmet { background: rgba(255,200,87,.05); }.final-check-rule.unmet > i { color: var(--amber); }
+.no-liveness { margin: 0; padding: 18px; color: #708d84; font-size: 10px; }
 .primary-button:disabled { border-color: #29463e; background: #172a25; color: #5e7770; cursor: default; box-shadow: none; }
 
 @keyframes blink { 50% { opacity: .35; } }
@@ -190,7 +201,7 @@ body::before {
   .topbar { height: auto; min-height: 72px; padding: 12px 16px; }.brand div { display: none; }.scoreboard { gap: 9px; }.scoreboard > div { min-width: 43px; }.scoreboard b { font-size: 12px; }.integrity { display: none; }
   .stream-panel,.rules-panel { padding: 22px 14px; }.timeline { justify-content: flex-start; }.signal-slot { flex-basis: 70px; }.signal-core { width: 58px; height: 58px; font-size: 20px; }.timeline-link { min-width: 10px; }
   .rule-card { grid-template-columns: 24px 1fr; }.status-pill { grid-column: 2; }.controls,.legend { width: 100%; justify-content: center; gap: 8px; }.modal { padding: 30px 24px; }
-  .preview-rule,.briefing-rule { grid-template-columns: 25px 1fr; }.preview-rule > i,.briefing-rule code { grid-column: 2; width: max-content; }
+  .preview-rule,.briefing-rule,.final-check-rule { grid-template-columns: 25px 1fr; }.preview-rule > i,.briefing-rule code,.final-check-rule > i { grid-column: 2; width: max-content; }
   .practice-signals { gap: 10px; padding: 14px 8px; }.practice-signals > span { display: none; }.practice-rule-reminder { flex-direction: column; gap: 5px; }
 }
 

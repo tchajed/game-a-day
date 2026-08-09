@@ -3,7 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { levels, type Level, type MonitorStatus, type Rule, type Signal } from './gameData';
 import './styles.css';
 
-type Phase = 'running' | 'levelComplete' | 'gameover' | 'complete';
+type Phase = 'running' | 'finalCheck' | 'levelComplete' | 'gameover' | 'complete';
 type Answer = 'caught' | 'missed';
 type Answers = Record<string, Answer>;
 type Sound = 'tick' | 'correct' | 'error' | 'complete';
@@ -217,6 +217,36 @@ function LevelBriefing({ level, onStart }: { level: Level; onStart: () => void }
   );
 }
 
+function FinalCheckPanel({ level, prefix, answered, onComplete }: { level: Level; prefix: Signal[]; answered: Answers; onComplete: () => void }) {
+  const livenessRules = level.rules.filter((rule) => rule.evaluate.liveness);
+  const unmet = livenessRules.filter((rule) => !answered[rule.id] && rule.evaluate.atEnd(prefix) === 'broken');
+  return (
+    <div className="overlay final-check-overlay">
+      <section className="modal final-check-modal" role="dialog" aria-modal="true" aria-labelledby="final-check-title">
+        <span className="eyebrow">END OF SEQUENCE · LIVENESS AUDIT</span>
+        <h1 id="final-check-title">Check every promise.</h1>
+        <p>The stream is over. Properties like “eventually,” “until,” and pending responses can now be decided.</p>
+        <div className="final-check-rules">
+          {livenessRules.map((rule) => {
+            const resolved = answered[rule.id] || rule.evaluate.atEnd(prefix) === 'satisfied';
+            return (
+              <div className={`final-check-rule ${resolved ? 'resolved' : 'unmet'}`} key={rule.id}>
+                <span>R{String(level.rules.indexOf(rule) + 1).padStart(2, '0')}</span>
+                <div><b>{rule.title}</b><small>{rule.ltl}</small></div>
+                <i>{answered[rule.id] ? 'ALREADY CAUGHT' : resolved ? 'KEPT' : 'UNMET AT END'}</i>
+              </div>
+            );
+          })}
+          {livenessRules.length === 0 && <p className="no-liveness">No liveness properties in this level.</p>}
+        </div>
+        <button className="primary-button" onClick={onComplete} autoFocus>
+          {unmet.length ? `Flag end state · ${unmet.length} unmet` : 'Confirm all promises kept'} <span>→</span>
+        </button>
+      </section>
+    </div>
+  );
+}
+
 function ResultPanel({ phase, level, score, lives, onAction }: { phase: Phase; level: Level; score: number; lives: number; onAction: () => void }) {
   const failed = phase === 'gameover';
   const finished = phase === 'complete';
@@ -319,9 +349,8 @@ function App() {
         setMessage('Sequence failed — counterexample missed');
         if (!missed.length) playSound('error');
       } else {
-        setPhase(levelIndex === levels.length - 1 ? 'complete' : 'levelComplete');
-        setMessage('Sequence clear');
-        playSound('complete');
+        setPhase('finalCheck');
+        setMessage('Sequence ended — audit every liveness property');
       }
     }
   }, [level, levelIndex, playSound]);
@@ -343,7 +372,8 @@ function App() {
 
     if (brokenHere.length) {
       const bonus = brokenHere.reduce((total, _, index) => total + 100 + (streak + index) * 25, 0);
-      setAnswered((old) => ({ ...old, ...Object.fromEntries(brokenHere.map((rule) => [rule.id, 'caught' as const])) }));
+      // Removing the counterexample repairs the prefix, so the same rule remains active
+      // and can be violated again by a later signal.
       setPrefix((old) => old.filter((_, index) => index !== signalIndex));
       setScore((old) => old + bonus);
       setStreak((old) => old + brokenHere.length);
@@ -359,6 +389,22 @@ function App() {
     if (remaining <= 0) setPhase('gameover');
     return false;
   }, [answered, level.rules, levelReady, lives, phase, playSound, prefix, started, streak]);
+
+  const completeFinalCheck = () => {
+    const unmet = level.rules.filter((rule) =>
+      rule.evaluate.liveness
+      && !answered[rule.id]
+      && rule.evaluate.atEnd(prefix) === 'broken');
+    if (unmet.length) {
+      setAnswered((old) => ({ ...old, ...Object.fromEntries(unmet.map((rule) => [rule.id, 'caught' as const])) }));
+      setScore((old) => old + unmet.length * 150);
+      setMessage(`${unmet.length} unmet promise${unmet.length > 1 ? 's' : ''} caught at end`);
+    } else {
+      setMessage('All liveness promises confirmed');
+    }
+    setPhase(levelIndex === levels.length - 1 ? 'complete' : 'levelComplete');
+    playSound('complete');
+  };
 
   const handleResult = () => {
     if (phase === 'gameover') loadLevel(levelIndex);
@@ -490,6 +536,7 @@ function App() {
 
       {!started && <TutorialPanel onStart={() => { setStarted(true); beginLevel(); }} />}
       {started && !levelReady && <LevelBriefing level={level} onStart={beginLevel} />}
+      {phase === 'finalCheck' && <FinalCheckPanel level={level} prefix={prefix} answered={answered} onComplete={completeFinalCheck} />}
       {['levelComplete', 'gameover', 'complete'].includes(phase) && <ResultPanel phase={phase} level={level} score={score} lives={lives} onAction={handleResult} />}
     </main>
   );

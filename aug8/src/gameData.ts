@@ -8,7 +8,11 @@ export const palette = {
 export type SignalColor = keyof typeof palette;
 export type Signal = { color: SignalColor; value: number; hex: string };
 export type MonitorStatus = 'possible' | 'satisfied' | 'broken';
-export type Monitor = (prefix: Signal[]) => MonitorStatus;
+export interface Monitor {
+  (prefix: Signal[]): MonitorStatus;
+  atEnd: (prefix: Signal[]) => 'satisfied' | 'broken';
+  liveness: boolean;
+}
 export type Rule = { id: string; title: string; detail: string; ltl: string; evaluate: Monitor };
 export type Level = {
   number: string;
@@ -23,25 +27,44 @@ export type Level = {
 
 const state = (color: SignalColor, value: number): Signal => ({ color, value, hex: palette[color] });
 const predicate = (test: (signal: Signal) => boolean) => test;
+const monitor = (
+  evaluate: (prefix: Signal[]) => MonitorStatus,
+  atEnd: (prefix: Signal[]) => 'satisfied' | 'broken',
+  liveness: boolean,
+): Monitor => Object.assign(evaluate, { atEnd, liveness });
 
 export const monitors = {
-  always: (test: (signal: Signal) => boolean): Monitor => (prefix) =>
-    prefix.some((signal) => !test(signal)) ? 'broken' : 'possible',
-  eventually: (test: (signal: Signal) => boolean): Monitor => (prefix) =>
-    prefix.some(test) ? 'satisfied' : 'possible',
-  next: (test: (signal: Signal) => boolean): Monitor => (prefix) =>
-    prefix.length < 2 ? 'possible' : test(prefix[1]) ? 'satisfied' : 'broken',
-  until: (hold: (signal: Signal) => boolean, release: (signal: Signal) => boolean): Monitor => (prefix) => {
-    const releaseAt = prefix.findIndex(release);
-    const observed = releaseAt === -1 ? prefix : prefix.slice(0, releaseAt);
-    if (observed.some((signal) => !hold(signal))) return 'broken';
-    return releaseAt >= 0 ? 'satisfied' : 'possible';
+  always: (test: (signal: Signal) => boolean): Monitor => {
+    const evaluate = (prefix: Signal[]): MonitorStatus => prefix.some((signal) => !test(signal)) ? 'broken' : 'possible';
+    return monitor(evaluate, (prefix) => evaluate(prefix) === 'broken' ? 'broken' : 'satisfied', false);
   },
-  responseNext: (trigger: (signal: Signal) => boolean, response: (signal: Signal) => boolean): Monitor => (prefix) => {
-    for (let i = 0; i < prefix.length - 1; i += 1) {
-      if (trigger(prefix[i]) && !response(prefix[i + 1])) return 'broken';
-    }
-    return 'possible';
+  eventually: (test: (signal: Signal) => boolean): Monitor => {
+    const evaluate = (prefix: Signal[]): MonitorStatus => prefix.some(test) ? 'satisfied' : 'possible';
+    return monitor(evaluate, (prefix) => evaluate(prefix) === 'satisfied' ? 'satisfied' : 'broken', true);
+  },
+  next: (test: (signal: Signal) => boolean): Monitor => {
+    const evaluate = (prefix: Signal[]): MonitorStatus => prefix.length < 2 ? 'possible' : test(prefix[1]) ? 'satisfied' : 'broken';
+    return monitor(evaluate, (prefix) => evaluate(prefix) === 'satisfied' ? 'satisfied' : 'broken', true);
+  },
+  until: (hold: (signal: Signal) => boolean, release: (signal: Signal) => boolean): Monitor => {
+    const evaluate = (prefix: Signal[]): MonitorStatus => {
+      const releaseAt = prefix.findIndex(release);
+      const observed = releaseAt === -1 ? prefix : prefix.slice(0, releaseAt);
+      if (observed.some((signal) => !hold(signal))) return 'broken';
+      return releaseAt >= 0 ? 'satisfied' : 'possible';
+    };
+    return monitor(evaluate, (prefix) => evaluate(prefix) === 'satisfied' ? 'satisfied' : 'broken', true);
+  },
+  responseNext: (trigger: (signal: Signal) => boolean, response: (signal: Signal) => boolean): Monitor => {
+    const evaluate = (prefix: Signal[]): MonitorStatus => {
+      for (let i = 0; i < prefix.length - 1; i += 1) {
+        if (trigger(prefix[i]) && !response(prefix[i + 1])) return 'broken';
+      }
+      return 'possible';
+    };
+    const atEnd = (prefix: Signal[]): 'satisfied' | 'broken' =>
+      evaluate(prefix) === 'broken' || (prefix.length > 0 && trigger(prefix[prefix.length - 1])) ? 'broken' : 'satisfied';
+    return monitor(evaluate, atEnd, true);
   },
 };
 
