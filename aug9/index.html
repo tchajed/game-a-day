@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no" />
+  <meta name="theme-color" content="#172226" />
+  <title>CURBSIDE — a parking challenge</title>
+  <style>
+    *{box-sizing:border-box}html,body,#game{margin:0;width:100%;height:100%;overflow:hidden;background:#121c20}
+    body{font-family:Arial,Helvetica,sans-serif;color:#f3efe4;touch-action:none}
+    canvas{display:block;margin:auto}
+    #topbar{position:fixed;left:18px;right:18px;top:14px;z-index:3;display:flex;justify-content:space-between;pointer-events:none}
+    .brand{font-size:13px;font-weight:800;letter-spacing:.24em;text-shadow:0 2px 8px #0008}.brand i{color:#f2b84b;font-style:normal}
+    .top-actions{display:flex;gap:8px;pointer-events:auto}.round{border:1px solid #ffffff35;background:#172226cc;color:#eee;border-radius:50%;width:36px;height:36px;cursor:pointer;font:700 14px Arial;backdrop-filter:blur(8px)}.round:hover{background:#28383e}
+    #help-panel{position:fixed;z-index:5;inset:0;display:none;place-items:center;background:#091114aa;backdrop-filter:blur(5px)}#help-panel.open{display:grid}
+    .help-card{width:min(380px,calc(100vw - 36px));padding:26px;border:1px solid #ffffff26;border-radius:18px;background:#172226;color:#f3efe4;box-shadow:0 24px 70px #0009}.help-card h2{margin:0 0 14px;font-size:13px;letter-spacing:.2em;color:#f2b84b}.mode-switch{display:grid;grid-template-columns:1fr 1fr;gap:4px;padding:4px;margin-bottom:14px;border-radius:10px;background:#0d171a}.mode{padding:9px;border:0;border-radius:7px;background:transparent;color:#94a5a5;font-weight:800;cursor:pointer}.mode.active{background:#f2b84b;color:#172226}.control{display:flex;justify-content:space-between;padding:11px 0;border-bottom:1px solid #ffffff17;font:14px 'Courier New',monospace}.key{color:#94a5a5}.close{width:100%;margin-top:20px;padding:11px;border:0;border-radius:9px;background:#f2b84b;color:#172226;font-weight:800;cursor:pointer}
+    #touch{display:none;position:fixed;z-index:3;left:0;right:0;bottom:16px;justify-content:space-between;padding:0 22px;pointer-events:none}
+    .cluster{display:grid;grid-template-columns:58px 58px;gap:9px;pointer-events:auto}.cluster.gear{grid-template-columns:62px}.touchbtn{height:58px;border:1px solid #fff5;background:#172226bb;color:white;border-radius:14px;font:700 16px 'Courier New',monospace;backdrop-filter:blur(7px);user-select:none;-webkit-user-select:none}.touchbtn.active{background:#f2b84bcc;color:#172226;transform:scale(.96)}
+    @media(pointer:coarse),(max-width:700px){#touch{display:flex}}
+  </style>
+</head>
+<body>
+  <div id="game"></div>
+  <div id="topbar"><div class="brand"><i>///</i> CURBSIDE</div><div class="top-actions"><button id="help" class="round" aria-label="View controls">?</button><button id="music" class="round" aria-label="Toggle music">♫</button></div></div>
+  <div id="help-panel" role="dialog" aria-modal="true" aria-label="Controls"><div class="help-card"><h2>CONTROL STYLE</h2><div class="mode-switch"><button class="mode active" data-mode="drive">DRIVER</button><button class="mode" data-mode="tank">ARCADE</button></div><div id="drive-controls"><div class="control"><span>Throttle</span><span class="key">W / ↑</span></div><div class="control"><span>Brake</span><span class="key">S / ↓ / SPACE</span></div><div class="control"><span>Steer</span><span class="key">A D / ← →</span></div><div class="control"><span>Drive / reverse</span><span class="key">R</span></div></div><div id="tank-controls" hidden><div class="control"><span>Forward / reverse</span><span class="key">↑ / ↓</span></div><div class="control"><span>Turn</span><span class="key">← / →</span></div></div><div class="control"><span>Skip challenge</span><span class="key">N</span></div><button class="close">GOT IT</button></div></div>
+  <div id="touch">
+    <div class="cluster"><button class="touchbtn" data-key="left">↶</button><button class="touchbtn" data-key="right">↷</button></div>
+    <div class="cluster gear"><button class="touchbtn" data-key="gas">GAS</button><button class="touchbtn" data-key="brake">BRAKE</button><button class="touchbtn" data-key="gear">D / R</button></div>
+  </div>
+  <script type="module" src="/src/game.ts"></script>
+</body>
+</html>
