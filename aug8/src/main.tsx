@@ -71,7 +71,7 @@ function useProceduralMusic(enabled: boolean, active: boolean, levelIndex: numbe
     if (!ctx) return;
     const master = ctx.createGain();
     master.gain.setValueAtTime(0.0001, ctx.currentTime);
-    master.gain.exponentialRampToValueAtTime(0.075, ctx.currentTime + 0.35);
+    master.gain.exponentialRampToValueAtTime(0.16, ctx.currentTime + 0.25);
     master.connect(ctx.destination);
     engine.current.master = master;
     engine.current.step = 0;
@@ -103,8 +103,9 @@ function useProceduralMusic(enabled: boolean, active: boolean, levelIndex: numbe
       const step = engine.current.step;
       const now = ctx.currentTime + 0.025;
       const noteIndex = (step * 3 + Math.floor(step / 4) + levelIndex) % scale.length;
-      tone(scale[noteIndex] * 2, now, beatMs / 1000 * 0.62, 'triangle', 0.09);
-      if (step % 2 === 0) tone(scale[(noteIndex + 2) % scale.length] / 2, now, beatMs / 1000 * 1.4, 'sine', 0.14);
+      tone(scale[noteIndex] * 2, now, beatMs / 1000 * 0.72, 'triangle', 0.13);
+      tone(scale[(noteIndex + 1) % scale.length] * 4, now, 0.045, 'square', 0.025);
+      if (step % 2 === 0) tone(scale[(noteIndex + 2) % scale.length] / 2, now, beatMs / 1000 * 1.4, 'sine', 0.18);
       if (step % 8 === 0) {
         tone(scale[0], now, beatMs / 1000 * 7.2, 'sine', 0.035);
         tone(scale[2], now, beatMs / 1000 * 7.2, 'sine', 0.028);
@@ -123,7 +124,10 @@ function useProceduralMusic(enabled: boolean, active: boolean, levelIndex: numbe
     return stop;
   }, [active, enabled, start, stop]);
 
-  return ensureContext;
+  // Calling this directly from a click starts the graph inside the browser's
+  // user-activation window; relying on the subsequent React effect is blocked
+  // by autoplay policies in some browsers.
+  return start;
 }
 
 function useSound(enabled: boolean) {
@@ -369,7 +373,7 @@ function App() {
   const [message, setMessage] = useState('Signal received — click the signal that breaks a rule');
   const level = levels[levelIndex];
   const playSound = useSound(!muted);
-  const unlockMusic = useProceduralMusic(!muted, started && levelReady && phase === 'running' && !paused, levelIndex);
+  const engageMusic = useProceduralMusic(!muted, started && levelReady && phase === 'running' && !paused, levelIndex);
   const live = useRef({ prefix, answered, lives, nextIndex });
   live.current = { prefix, answered, lives, nextIndex };
 
@@ -614,14 +618,14 @@ function App() {
       <footer className="controlbar">
         <div className="legend"><span><i className="possible" />Unresolved</span><span><i className="satisfied" />Guaranteed</span><span><i className="broken" />Caught / missed</span></div>
         <div className="controls">
-          <button onClick={() => { unlockMusic(); setMuted((old) => !old); }}>{muted ? 'MUSIC OFF' : 'MUSIC ON'}</button>
+          <button onClick={() => { engageMusic(); setMuted((old) => !old); }}>{muted ? 'MUSIC OFF' : 'MUSIC ON'}</button>
           <button onClick={() => setSpeedIndex((old) => (old + 1) % SPEEDS.length)}>{SPEEDS[speedIndex]}× SPEED</button>
           <button className="pause-button" onClick={() => phase === 'running' && setPaused((old) => !old)} disabled={!levelReady || phase !== 'running'}>{paused ? '▶ RESUME' : 'Ⅱ PAUSE'}</button>
         </div>
       </footer>
 
-      {!started && <TutorialPanel onStart={() => { unlockMusic(); setStarted(true); beginLevel(); }} />}
-      {started && !levelReady && <LevelBriefing level={level} onStart={() => { unlockMusic(); beginLevel(); }} />}
+      {!started && <TutorialPanel onStart={() => { engageMusic(); setStarted(true); beginLevel(); }} />}
+      {started && !levelReady && <LevelBriefing level={level} onStart={() => { engageMusic(); beginLevel(); }} />}
       {phase === 'finalCheck' && <FinalCheckPanel level={level} prefix={prefix} answered={answered} onComplete={completeFinalCheck} />}
       {['levelComplete', 'gameover', 'complete'].includes(phase) && <ResultPanel phase={phase} level={level} score={score} lives={lives} onAction={handleResult} />}
     </main>
