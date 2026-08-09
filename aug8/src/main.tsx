@@ -6,12 +6,14 @@ import './styles.css';
 type Phase = 'running' | 'finalCheck' | 'levelComplete' | 'gameover' | 'complete';
 type Answer = 'caught' | 'missed';
 type Answers = Record<string, Answer>;
+type TerminalChoice = 'satisfied' | 'broken';
 type Sound = 'tick' | 'correct' | 'error' | 'complete';
 type CSSVars = React.CSSProperties & Record<`--${string}`, string>;
 
 const SPEEDS = [0.75, 1, 1.35] as const;
 const MUSIC_BEAT_MS = [350, 325, 300, 300] as const;
 const SIGNAL_BEATS = [8, 8, 8, 6] as const;
+const FINAL_CHECK_SECONDS = 15;
 
 interface PlaytestState {
   level: number;
@@ -311,30 +313,64 @@ function LevelBriefing({ level, onStart }: { level: Level; onStart: () => void }
   );
 }
 
-function FinalCheckPanel({ level, prefix, answered, onComplete }: { level: Level; prefix: Signal[]; answered: Answers; onComplete: () => void }) {
-  const livenessRules = level.rules.filter((rule) => rule.evaluate.liveness);
-  const unmet = livenessRules.filter((rule) => !answered[rule.id] && rule.evaluate.atEnd(prefix) === 'broken');
+function FinalCheckPanel({ level, prefix, answered, onComplete, onTimeout }: {
+  level: Level;
+  prefix: Signal[];
+  answered: Answers;
+  onComplete: (choices: Record<string, TerminalChoice>) => void;
+  onTimeout: () => void;
+}) {
+  const livenessRules = level.rules.filter((rule) => rule.evaluate.liveness && !answered[rule.id]);
+  const [choices, setChoices] = useState<Record<string, TerminalChoice>>({});
+  const [remaining, setRemaining] = useState(FINAL_CHECK_SECONDS);
+  const timeoutRef = useRef(onTimeout);
+  timeoutRef.current = onTimeout;
+
+  useEffect(() => {
+    const deadline = performance.now() + FINAL_CHECK_SECONDS * 1000;
+    const timer = window.setInterval(() => {
+      const next = Math.max(0, (deadline - performance.now()) / 1000);
+      setRemaining(next);
+      if (next <= 0) {
+        window.clearInterval(timer);
+        timeoutRef.current();
+      }
+    }, 100);
+    return () => window.clearInterval(timer);
+  }, []);
+
+  const ready = livenessRules.every((rule) => choices[rule.id]);
   return (
     <div className="overlay final-check-overlay">
       <section className="modal final-check-modal" role="dialog" aria-modal="true" aria-labelledby="final-check-title">
-        <span className="eyebrow">END OF SEQUENCE · LIVENESS AUDIT</span>
+        <div className="audit-heading"><span className="eyebrow">END OF SEQUENCE · LIVENESS AUDIT</span><b>{Math.ceil(remaining)}s</b></div>
         <h1 id="final-check-title">Check every promise.</h1>
-        <p>The stream is over. Did every promise come true?</p>
-        <div className="final-check-rules">
-          {livenessRules.map((rule) => {
-            const resolved = answered[rule.id] || rule.evaluate.atEnd(prefix) === 'satisfied';
-            return (
-              <div className={`final-check-rule ${resolved ? 'resolved' : 'unmet'}`} key={rule.id}>
-                <span>R{String(level.rules.indexOf(rule) + 1).padStart(2, '0')}</span>
-                <div><b>{rule.title}</b><small>{rule.ltl}</small></div>
-                <i>{answered[rule.id] ? 'ALREADY CAUGHT' : resolved ? 'KEPT' : 'UNMET AT END'}</i>
-              </div>
-            );
-          })}
-          {livenessRules.length === 0 && <p className="no-liveness">No liveness properties in this level.</p>}
+        <p>Use the final sequence. Did each promise come true?</p>
+
+        <div className="audit-sequence" aria-label="Final repaired sequence">
+          {prefix.map((signal, index) => (
+            <div className="audit-state" key={`${index}-${signal.color}-${signal.value}`} style={{ '--signal': signal.hex } as CSSVars}>
+              <b>{signal.value}</b><small>{signal.color}</small>
+            </div>
+          ))}
         </div>
-        <button className="primary-button" onClick={onComplete} autoFocus>
-          {unmet.length ? `Flag end state · ${unmet.length} unmet` : 'Confirm all promises kept'} <span>→</span>
+
+        <div className="final-check-rules">
+          {livenessRules.map((rule) => (
+            <div className="final-check-rule" key={rule.id}>
+              <span>R{String(level.rules.indexOf(rule) + 1).padStart(2, '0')}</span>
+              <div><b>{rule.title}</b><small>{rule.ltl}</small></div>
+              <div className="audit-choices">
+                <button className={choices[rule.id] === 'satisfied' ? 'selected kept' : ''} onClick={() => setChoices((old) => ({ ...old, [rule.id]: 'satisfied' }))}>Kept</button>
+                <button className={choices[rule.id] === 'broken' ? 'selected unmet' : ''} onClick={() => setChoices((old) => ({ ...old, [rule.id]: 'broken' }))}>Unmet</button>
+              </div>
+            </div>
+          ))}
+          {livenessRules.length === 0 && <p className="no-liveness">No promises to check—confirm the sequence.</p>}
+        </div>
+        <div className="audit-timer"><i style={{ width: `${remaining / FINAL_CHECK_SECONDS * 100}%` }} /></div>
+        <button className="primary-button" onClick={() => onComplete(choices)} disabled={!ready} autoFocus={livenessRules.length === 0}>
+          {ready ? 'Confirm answers' : `Check ${livenessRules.length - Object.keys(choices).length} more`} <span>→</span>
         </button>
       </section>
     </div>
@@ -487,20 +523,30 @@ function App() {
     return false;
   }, [answered, level.rules, levelReady, lives, phase, playSound, prefix, started, streak]);
 
-  const completeFinalCheck = () => {
-    const unmet = level.rules.filter((rule) =>
-      rule.evaluate.liveness
-      && !answered[rule.id]
-      && rule.evaluate.atEnd(prefix) === 'broken');
+  const completeFinalCheck = (choices: Record<string, TerminalChoice>) => {
+    const livenessRules = level.rules.filter((rule) => rule.evaluate.liveness && !answered[rule.id]);
+    const incorrect = livenessRules.filter((rule) => choices[rule.id] !== rule.evaluate.atEnd(prefix));
+    if (incorrect.length) {
+      setLives((old) => Math.max(0, old - incorrect.length));
+      setMessage(`${incorrect.length} liveness check${incorrect.length > 1 ? 's' : ''} incorrect`);
+      setPhase('gameover');
+      playSound('error');
+      return;
+    }
+    const unmet = livenessRules.filter((rule) => rule.evaluate.atEnd(prefix) === 'broken');
     if (unmet.length) {
       setAnswered((old) => ({ ...old, ...Object.fromEntries(unmet.map((rule) => [rule.id, 'caught' as const])) }));
       setScore((old) => old + unmet.length * 150);
       setMessage(`${unmet.length} unmet promise${unmet.length > 1 ? 's' : ''} caught at end`);
-    } else {
-      setMessage('All liveness promises confirmed');
-    }
+    } else setMessage('All liveness promises confirmed');
     setPhase(levelIndex === levels.length - 1 ? 'complete' : 'levelComplete');
     playSound('complete');
+  };
+
+  const failFinalCheck = () => {
+    setMessage('Liveness audit timed out');
+    setPhase('gameover');
+    playSound('error');
   };
 
   const handleResult = () => {
@@ -638,7 +684,7 @@ function App() {
 
       {!started && <TutorialPanel onEngageMusic={engageMusic} onStart={() => { resetMusic(); setStarted(true); beginLevel(); }} />}
       {started && !levelReady && <LevelBriefing level={level} onStart={() => { resetMusic(); beginLevel(); }} />}
-      {phase === 'finalCheck' && <FinalCheckPanel level={level} prefix={prefix} answered={answered} onComplete={completeFinalCheck} />}
+      {phase === 'finalCheck' && <FinalCheckPanel level={level} prefix={prefix} answered={answered} onComplete={completeFinalCheck} onTimeout={failFinalCheck} />}
       {['levelComplete', 'gameover', 'complete'].includes(phase) && <ResultPanel phase={phase} level={level} score={score} lives={lives} onAction={handleResult} />}
     </main>
   );

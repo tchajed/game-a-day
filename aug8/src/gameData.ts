@@ -121,7 +121,7 @@ export const levels: Level[] = [
       },
       {
         id: 'no-coral-high',
-        title: 'Keep coral signals low',
+        title: 'Keep coral below six',
         detail: 'Every coral signal must stay below 6.',
         ltl: 'G (coral → value < 6)',
         evaluate: monitors.always((s) => s.color !== 'coral' || s.value < 6),
@@ -149,7 +149,7 @@ export const levels: Level[] = [
       },
       {
         id: 'low-until-violet',
-        title: 'Stay low until violet',
+        title: 'Stay below six until violet',
         detail: 'Values must remain below 6 until violet appears.',
         ltl: '(value < 6) U violet',
         evaluate: monitors.until((s) => s.value < 6, (s) => s.color === 'violet'),
@@ -177,7 +177,7 @@ export const levels: Level[] = [
     rules: [
       {
         id: 'coral-response',
-        title: 'Cool down after coral',
+        title: 'After coral, stay at four or less',
         detail: 'Every coral signal must be followed by a value at most 4.',
         ltl: 'G (coral → X(value ≤ 4))',
         evaluate: monitors.responseNext((s) => s.color === 'coral', (s) => s.value <= 4),
