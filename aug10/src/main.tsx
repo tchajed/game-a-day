@@ -49,6 +49,12 @@ function WindowTitle({title,win}:{title:string;win:WindowProps}){
   </div>
 }
 
+function GovAd(){return <aside className="gov-ad" aria-label="Advertisement"><small>ADVERTISEMENT • A MESSAGE FROM YOUR GOVERNMENT</small><div className="ad-frames"><div><b>IS YOUR NEIGHBOR<br/>TOO WELL RESTED?</b><span>Fatigue is civic participation.</span></div><div><b>REPORT<br/>SUSPICIOUS NAPPING</b><span>Department of Wakefulness</span></div><div><b>STAY ALERT.<br/>STAY PRODUCTIVE.</b><span>Learn more at REST.GOV.NO</span></div></div><i>AD</i></aside>}
+
+function AccessibilityPage({back}:{back:()=>void}){return <div className="policy-page inaccessible"><p className="crumb">HOME &gt; ACCESSIBILITY (BEST VIEWED AT 100%)</p><h1>Accessibility Compliance Information</h1><div className="marquee"><span>Accessibility is everybody's responsibility. Thank you for doing your part.</span></div><h2>Supported assistive technologies</h2><table><tbody><tr><th>Technology</th><th>Support level</th></tr><tr><td>JAWS 6.0 / Windows XP</td><td>Certified*</td></tr><tr><td>Keyboard</td><td>Press TAB until the desired item is selected</td></tr><tr><td>Screen magnification</td><td>Not recommended; page elements may move</td></tr><tr><td>Other</td><td>Please print this website and ask a trusted person for help</td></tr></tbody></table><small>* Certification performed internally at 800 × 600 resolution. Results are no longer available.</small><h2>Alternative access request</h2><p>To request this page in an accessible format, download Form A-11, print it, and fax it to the number printed on Form A-11. Allow 90 business days.</p><label className="contrast"><input type="checkbox" disabled/> Enable high contrast (temporarily unavailable)</label><div className="actions"><button onClick={back}>&lt;&lt; Return to application</button></div></div>}
+
+function PrivacyPage({back,marketing,setMarketing}:{back:()=>void;marketing:boolean;setMarketing:(v:boolean)=>void}){return <div className="policy-page privacy-page"><p className="crumb">HOME &gt; PRIVACY, COOKIES &amp; OTHER SMALL FILES</p><h1>Your privacy options</h1><div className="warning"><b>Your privacy matters.</b> This statement is 14,892 words long. Continued use may constitute enthusiastic consent in some jurisdictions.</div><h2>Cookie preference centre centre</h2><label className="privacy-choice"><span><b>Strictly necessary surveillance</b><small>Required to remember that you rejected being remembered.</small></span><input type="checkbox" checked disabled/></label><label className="privacy-choice"><span><b>Performance and administrative analytics</b><small>Helps us measure how slowly pages load.</small></span><input type="checkbox" checked disabled/></label><label className="privacy-choice"><span><b>Government marketing and partner messages</b><small>Personalized public-service advertising and mandatory opportunities.</small></span><input type="checkbox" checked={marketing} onChange={e=>setMarketing(e.target.checked)}/></label><h2>Information we may collect</h2><p className="legalese">Device identifiers, approximate location, exact location, emotional posture, cursor hesitation, printer ownership, household flagpole status, and any information that is technically visible from a sufficiently tall government building. We retain this data for the longer of: operational necessity; archival interest; or forever.</p><div className="actions"><button onClick={back}>&lt;&lt; Return to application</button></div></div>}
+
 function App(){
   const debug=new URLSearchParams(location.search).get('debug')==='true';
   const saved=useMemo(()=>{
@@ -70,6 +76,7 @@ function App(){
   const [openWindows,setOpenWindows]=useState<Record<AppName,boolean>>({browser:true,passwords:false,mail:false,photos:false});
   const [otp,setOtp]=useState('');
   const [mailDelivered,setMailDelivered]=useState(false);
+  const [marketingAds,setMarketingAds]=useState(()=>localStorage.getItem('ds404-marketing')!=='false');
   const deliveryTimer=useRef<number|undefined>(undefined);
 
   useEffect(()=>{ const t=setInterval(()=>setSeconds(s=>Math.max(0,s-1)),1000); return()=>clearInterval(t)},[]);
@@ -92,7 +99,7 @@ function App(){
   const proceed=(target:number, ids:string[])=>{
     const bad:Record<string,string>={}; ids.forEach(id=>{if(!data[id])bad[id]='This question is mandatory'});
     setErrors(bad); if(Object.keys(bad).length)return;
-    setBusy(true); setTimeout(()=>{setBusy(false);setPage(target)}, target>2?1800:900);
+    setBusy(true); setTimeout(()=>{setBusy(false);setPage(target)}, (target>2?1800:900)+(marketingAds?1400:0));
   };
   const sendVerificationCode=()=>{
     if(!data.email){setErrors({email:'This question is mandatory'});return}
@@ -100,7 +107,7 @@ function App(){
     setOtp(nextCode); setMailDelivered(false); setErrors({}); setBusy(true);
     window.clearTimeout(deliveryTimer.current);
     deliveryTimer.current=window.setTimeout(()=>setMailDelivered(true),3000);
-    window.setTimeout(()=>{setBusy(false);setPage(1)},700);
+    window.setTimeout(()=>{setBusy(false);setPage(1)},700+(marketingAds?1400:0));
   };
   const submitApplication=()=>{
     const ids=['first','last','dob','phone','address','city','postcode','passport','maiden','issued','expires','arrival'];
@@ -119,6 +126,7 @@ function App(){
     if(page===3){setData(current=>({...current,...Object.fromEntries(['passport','maiden','issued','expires','arrival'].map(id=>[id,expected[id]]))}));setSelectedPhoto(true)}
     setErrors({});
   };
+  const updateMarketing=(enabled:boolean)=>{setMarketingAds(enabled);localStorage.setItem('ds404-marketing',String(enabled))};
   const closeWindow=(app:AppName)=>{
     const next={...openWindows,[app]:false};
     setOpenWindows(next);
@@ -153,7 +161,7 @@ function App(){
   return <main className="desktop">
     <div className="wallpaper"><div className="orb o1"/><div className="orb o2"/><div className="orb o3"/></div>
     <header className="menubar"><b>◆</b><strong>{active==='browser'?'Navigator':active==='passwords'?'Vault':active==='mail'?'Post': 'Photos'}</strong><span>File</span><span>Edit</span><span>Window</span><aside>⌁ &nbsp; ▰ &nbsp; Sun 10 Aug&nbsp; 10:24</aside></header>
-    {openWindows.browser&&<Browser page={page} data={data} setData={setData} setErrors={setErrors} time={time} seconds={seconds} account={account} setAccount={setAccount} setPage={setPage} field={field} proceed={proceed} sendVerificationCode={sendVerificationCode} otp={otp} submitApplication={submitApplication} submissionDenied={submissionDenied} selectedPhoto={selectedPhoto} setActive={(app:AppName)=>{setActive(app);setOpenWindows(current=>({...current,[app]:true}))}} win={windowProps('browser')} style={windowStyle('browser')}/>}
+    {openWindows.browser&&<Browser page={page} data={data} setData={setData} setErrors={setErrors} time={time} seconds={seconds} account={account} setAccount={setAccount} setPage={setPage} field={field} proceed={proceed} sendVerificationCode={sendVerificationCode} otp={otp} submitApplication={submitApplication} submissionDenied={submissionDenied} marketingAds={marketingAds} setMarketingAds={updateMarketing} selectedPhoto={selectedPhoto} setActive={(app:AppName)=>{setActive(app);setOpenWindows(current=>({...current,[app]:true}))}} win={windowProps('browser')} style={windowStyle('browser')}/>}
     {openWindows.passwords&&<Passwords copy={copy} win={windowProps('passwords')} style={windowStyle('passwords')}/>}
     {openWindows.mail&&<Mail copy={copy} delivered={mailDelivered} code={otp} recipient={data.email} win={windowProps('mail')} style={windowStyle('mail')}/>}
     {openWindows.photos&&<Photos selected={selectedPhoto} choose={()=>{setSelectedPhoto(true);setNotice('visa-photo.jpg ready to upload');setTimeout(()=>setNotice(''),1600)}} win={windowProps('photos')} style={windowStyle('photos')}/>}
@@ -167,21 +175,33 @@ function App(){
   </main>
 }
 
-function Browser({page,data,setData,setErrors,time,seconds,account,setAccount,setPage,field,proceed,sendVerificationCode,otp,submitApplication,submissionDenied,selectedPhoto,setActive,win,style}:any){
+function Browser({page,data,setData,setErrors,time,seconds,account,setAccount,setPage,field,proceed,sendVerificationCode,otp,submitApplication,submissionDenied,marketingAds,setMarketingAds,selectedPhoto,setActive,win,style}:any){
+ const [siteView,setSiteView]=useState<'form'|'privacy'|'accessibility'>('form');
+ const [cookieWarning,setCookieWarning]=useState(false);
+ const [draftMarketing,setDraftMarketing]=useState(marketingAds);
+ const siteRef=useRef<HTMLDivElement>(null);
+ const openPrivacy=()=>{setDraftMarketing(marketingAds);setSiteView('privacy');setCookieWarning(true)};
+ useEffect(()=>{const target=siteRef.current;if(!target||!marketingAds||siteView!=='form')return;const slow=(event:WheelEvent)=>{event.preventDefault();const delta=event.deltaY;window.setTimeout(()=>target.scrollTop+=delta*.55,180)};target.addEventListener('wheel',slow,{passive:false});return()=>target.removeEventListener('wheel',slow)},[marketingAds,siteView]);
  return <section className={`browser window layout-${win.layout}`} style={style} onPointerDown={()=>setActive('browser')}>
   <WindowTitle title="Travel Authorization — Navigator" win={win}/>
   <div className="toolbar"><button>‹</button><button>›</button><div className="address">🔒 &nbsp; visa-services.gov.example/application/DS-404</div><button>↻</button></div>
-  <div className="site">
+  <div className="site" ref={siteRef}>
    <div className="govbar"><span className="seal">⚭</span><div><b>OFFICIAL PORTAL</b><small>Department of Entry and Administrative Affairs</small></div><em>FORM DS-404 • REV. 03/1998</em></div>
-   {page<4&&<div className={`session ${!account&&seconds<=60?'urgent':''}`}><b>{account?'✓ APPLICATION SAVED':seconds<=60?'⚠ SESSION EXPIRES':'UNSAVED APPLICATION'} </b><span>{account?'Account verified':seconds<=60?time:'Verify your email to enable saving'}</span></div>}
+   {siteView==='form'&&page<4&&<div className={`session ${!account&&seconds<=60?'urgent':''}`}><b>{account?'✓ APPLICATION SAVED':seconds<=60?'⚠ SESSION EXPIRES':'UNSAVED APPLICATION'} </b><span>{account?'Account verified':seconds<=60?time:'Verify your email to enable saving'}</span></div>}
+   {siteView==='form'&&marketingAds&&<GovAd/>}
    <div className="formbody">
+    {siteView==='accessibility'&&<AccessibilityPage back={()=>setSiteView('form')}/>}
+    {siteView==='privacy'&&<PrivacyPage back={()=>setSiteView('form')} marketing={draftMarketing} setMarketing={setDraftMarketing}/>}
+    {siteView==='form'&&<>
     {page===0&&<><p className="crumb">HOME &gt; NON-IMMIGRANT ENTRY &gt; FORM DS-404</p><h1>Electronic Visa Pre-Application</h1><div className="warning"><b>NOTICE:</b> Information is not saved until your email address is verified.</div><h2>Step 1 of 4 — Begin application</h2><p>Enter the email address associated with the applicant.</p>{field('email','E-mail address',{wide:true})}<div className="actions"><button className="continue" onClick={sendVerificationCode}>Send verification code &gt;&gt;</button></div><p className="help">Required information may be found in applications on this computer.</p></>}
     {page===1&&<><p className="crumb">FORM DS-404 &gt; VERIFY APPLICANT</p><h1>Email verification</h1><div className="warning blue">A six-digit access code has been sent. It should arrive in Post shortly.</div><h2>Step 1 of 4 — Verify email</h2>{field('code','Access code',{placeholder:'6 digits'})}<div className="actions"><button onClick={()=>setPage(0)}>Go Back</button><button className="continue" onClick={()=>{if(!otp||data.code!==otp){setErrors({code:'Code not recognized'});return}setAccount(true);proceed(2,['code'])}}>Verify and continue &gt;&gt;</button></div></>}
     {page===2&&<><p className="crumb">FORM DS-404 &gt; APPLICANT DETAILS</p><h1>Applicant information</h1><p className="tiny">Use UPPERCASE English letters. Dates must use format DD MMM YYYY. Do not use punctuation except where required.</p><h2>Step 2 of 4 — Personal details</h2><div className="grid">{field('first','Given name(s)')}{field('last','Family name')}{field('dob','Date of birth *',{placeholder:'DD MMM YYYY',noPaste:true})}{field('phone','Telephone number')}{field('address','Street address',{wide:true})}{field('city','City')}{field('postcode','ZIP / postal code')}</div><div className="actions"><button onClick={()=>setPage(1)}>Go Back</button><button className="continue" onClick={()=>proceed(3,['first','last','dob','phone','address','city','postcode'])}>Save and continue &gt;&gt;</button></div></>}
     {page===3&&<><p className="crumb">FORM DS-404 &gt; DOCUMENT INFORMATION</p><h1>Travel document</h1><div className="warning"><b>Important:</b> Copy and paste is disabled for secure document fields.</div><h2>Step 3 of 4 — Passport and travel</h2><div className="grid">{field('passport','Passport number',{noPaste:true})}{field('maiden',"Mother's maiden name",{noPaste:true})}{field('issued','Date issued',{placeholder:'DD MMM YYYY'})}{field('expires','Date of expiry',{placeholder:'DD MMM YYYY'})}{field('arrival','Intended arrival',{placeholder:'DD MMM YYYY'})}<label className="wide"><span>Applicant photograph</span><div className={selectedPhoto?'upload chosen':'upload'}>{selectedPhoto?'✓ visa-photo.jpg':'No file selected'}<button onClick={()=>setActive('photos')}>Choose from Photos…</button></div></label></div><div className="actions"><button onClick={()=>setPage(2)}>Go Back</button><button className="continue" onClick={submitApplication}>SUBMIT APPLICATION &gt;&gt;</button></div></>}
     {page===4&&<div className={`success ${submissionDenied?'denied':''}`}><div className="stamp">{submissionDenied?'DENIED':'RECEIVED'}</div><h1>{submissionDenied?'Application denied':'Application transmitted'}</h1>{submissionDenied?<><p>Your application contains information that could not be verified against the supporting records.</p><div className="warning"><b>Decision:</b> This decision is effective immediately and cannot be appealed online.</div></>:<><p>Reference number</p><strong>DS404-8391-XQ</strong><div className="warning blue">Your application will be processed in approximately 8–14 months. This receipt does not constitute a visa.</div></>}<button onClick={()=>{localStorage.removeItem('ds404-saved-application');location.reload()}}>New application</button></div>}
+    </>}
    </div>
-   <footer>Accessibility &nbsp;|&nbsp; Privacy &nbsp;|&nbsp; Browser requirements: Internet Explorer 8+</footer>
+   <footer><button onClick={()=>setSiteView('accessibility')}>Accessibility</button><span>|</span><button onClick={openPrivacy}>Privacy</button><span>|</span> Browser requirements: Internet Explorer 8+</footer>
+   {cookieWarning&&<div className="cookie-wall"><div className="cookie-box"><div className="cookie-icon">◉◉◉</div><h2>We value your choices!</h2><p>We and our 647 government partners use cookies to improve services, personalize mandatory content, and understand why you hesitate.</p><label className="cookie-marketing"><input type="checkbox" checked={draftMarketing} onChange={e=>setDraftMarketing(e.target.checked)}/><span><b>Government marketing</b><small>Show personalized public-service advertisements</small></span></label><div className="cookie-buttons"><button onClick={()=>{setDraftMarketing(true);setMarketingAds(true);setCookieWarning(false)}}>ALLOW ALL</button><button onClick={()=>{setMarketingAds(draftMarketing);setCookieWarning(false)}}>CONFIRM MY CHOICES</button></div><small>Closing this notice is not a choice.</small></div></div>}
   </div>
  </section>
 }
