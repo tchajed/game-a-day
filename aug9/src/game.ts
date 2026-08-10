@@ -4,6 +4,7 @@ type Held = { left:boolean; right:boolean; gas:boolean; brake:boolean };
 type Level = { name:string; subtitle:string; player:{x:number;y:number;a:number}; bay:Phaser.Geom.Rectangle; parked:{x:number;y:number;color:number}[]; cones?:{x:number;y:number}[] };
 
 const W=960,H=600, ROAD_TOP=0, ROAD_BOTTOM=600;
+const PIXELS_PER_MPH=6, MAX_DRIVE_SPEED=12*PIXELS_PER_MPH, MAX_REVERSE_SPEED=5*PIXELS_PER_MPH;
 const NORTH=-Math.PI/2;
 const levels:Level[]=[
   {name:'THE CLASSIC',subtitle:'',player:{x:510,y:520,a:NORTH},bay:new Phaser.Geom.Rectangle(168,198,84,206),parked:[{x:210,y:108,color:0x3a6f7d},{x:210,y:496,color:0xd96745}]},
@@ -49,7 +50,7 @@ class ParkingScene extends Phaser.Scene {
     const panel=this.add.graphics().setDepth(19);panel.fillStyle(0x172226,.88).fillRoundedRect(764,30,164,70,12);panel.lineStyle(1,0xffffff,.12).strokeRoundedRect(764,30,164,70,12);
     this.gearText=this.add.text(784,45,'D',{...mono,fontSize:'32px',fontStyle:'bold',color:'#f2b84b'}).setDepth(20);
     this.speedText=this.add.text(840,49,'00',{...mono,fontSize:'24px'}).setDepth(20);
-    this.add.text(840,76,'KM/H',{...mono,fontSize:'9px',color:'#aeb8b5'}).setDepth(20);
+    this.add.text(840,76,'MPH',{...mono,fontSize:'9px',color:'#aeb8b5'}).setDepth(20);
   }
   bindTouch(){
     document.querySelectorAll<HTMLButtonElement>('.touchbtn').forEach(btn=>{
@@ -85,7 +86,11 @@ class ParkingScene extends Phaser.Scene {
     wheelPositions.forEach(([wx,wy])=>{const w=this.add.rectangle(wx,wy,24,8,0x0c1011).setAngle(0);ws.push(w);c.add(w)});
     c.addAt(shadow,0);c.add(g); if(player)this.wheels=ws; return c;
   }
-  toggleGear(){if(Math.abs(this.speed)<3)this.gear=this.gear===1?-1:1}
+  toggleGear(){
+    if(this.controlMode!=='drive')return;
+    this.gear=this.gear===1?-1:1;
+    if(Math.abs(this.speed)<8)this.speed=0;
+  }
   update(_:number,dtMs:number){
     if(!this.car)return;const dt=Math.min(dtMs/1000,.035);
     if(Phaser.Input.Keyboard.JustDown(this.keys.R))this.toggleGear();
@@ -97,15 +102,15 @@ class ParkingScene extends Phaser.Scene {
     if(this.controlMode==='tank'){
       const direction=(gas?1:0)-(brake?1:0);
       if(direction){
-        if(this.speed&&Math.sign(this.speed)!==direction)this.speed*=Math.pow(.84,dt*60);
-        else this.speed+=direction*82*dt;
+        // Brake through zero when changing direction, rather than approaching zero forever.
+        this.speed+=direction*(this.speed&&Math.sign(this.speed)!==direction?60:36)*dt;
         this.gear=direction<0?-1:1;
       }else this.speed*=Math.pow(.975,dt*60);
     }else{
-      if(gas)this.speed+=this.gear*82*dt; else this.speed*=Math.pow(.985,dt*60);
-      if(brake){const decel=150*dt;if(Math.abs(this.speed)<=decel)this.speed=0;else this.speed-=Math.sign(this.speed)*decel}
+      if(gas)this.speed+=this.gear*36*dt; else this.speed*=Math.pow(.985,dt*60);
+      if(brake){const decel=60*dt;if(Math.abs(this.speed)<=decel)this.speed=0;else this.speed-=Math.sign(this.speed)*decel}
     }
-    this.speed=Phaser.Math.Clamp(this.speed,-38,72);
+    this.speed=Phaser.Math.Clamp(this.speed,-MAX_REVERSE_SPEED,MAX_DRIVE_SPEED);
     const steer=(right?1:0)-(left?1:0);const steerPower=Phaser.Math.Clamp(Math.abs(this.speed)/15,0,1)*1.28;
     if(steer&&Math.abs(this.speed)>.25)this.a+=steer*steerPower*Math.sign(this.speed)*dt;
     this.wheels.forEach(w=>w.setAngle(steer*22));
@@ -113,7 +118,7 @@ class ParkingScene extends Phaser.Scene {
     this.x=Phaser.Math.Clamp(this.x,190,790);this.y=Phaser.Math.Clamp(this.y,60,H-60);
     if(this.collides()){this.x=oldX;this.y=oldY;this.speed*=-.18;this.bumps++;playCrash();this.cameras.main.shake(100,.004);this.statusText.setText('BUMP').setColor('#f39a76');this.time.delayedCall(500,()=>!this.completed&&this.statusText.setText(''))}
     this.car.setPosition(this.x,this.y).setRotation(this.a);
-    const km=Math.round(Math.abs(this.speed)*.52);this.speedText.setText(String(km).padStart(2,'0'));this.gearText.setText(this.gear===1?'D':'R');
+    const mph=Math.round(Math.abs(this.speed)/PIXELS_PER_MPH);this.speedText.setText(String(mph).padStart(2,'0'));this.gearText.setText(this.gear===1?'D':'R');
     this.checkParking(dt);
   }
   collides(){
@@ -135,20 +140,27 @@ const game=new Phaser.Game({type:Phaser.AUTO,parent:'game',width:W,height:H,back
 
 // Procedural audio: an anxious pulse plus a speed-reactive engine and reverse alarm.
 let audio:AudioContext|null=null,musicTimer=0,engineTimer=0,musicOn=!new URLSearchParams(location.search).has('mute');
-let engineOsc:OscillatorNode|null=null,engineOsc2:OscillatorNode|null=null,engineGain:GainNode|null=null,engineFilter:BiquadFilterNode|null=null,step=0,lastBeep=0;
+let engineOsc:OscillatorNode|null=null,engineOsc2:OscillatorNode|null=null,engineGain:GainNode|null=null,engineFilter:BiquadFilterNode|null=null,step=0,accentBeats=0,lastBeep=0;
 const musicBtn=document.querySelector<HTMLButtonElement>('#music')!;
-function blip(freq:number,duration:number,gain:number,type:OscillatorType='square'){
-  if(!audio)return;const now=audio.currentTime,o=audio.createOscillator(),g=audio.createGain();o.type=type;o.frequency.setValueAtTime(freq,now);g.gain.setValueAtTime(gain,now);g.gain.exponentialRampToValueAtTime(.0001,now+duration);o.connect(g).connect(audio.destination);o.start(now);o.stop(now+duration);
+function blip(freq:number,duration:number,gain:number,type:OscillatorType='square',delay=0){
+  if(!audio)return;const now=audio.currentTime+delay,o=audio.createOscillator(),g=audio.createGain();o.type=type;o.frequency.setValueAtTime(freq,now);g.gain.setValueAtTime(gain,now);g.gain.exponentialRampToValueAtTime(.0001,now+duration);o.connect(g).connect(audio.destination);o.start(now);o.stop(now+duration);
+}
+function reverseHonk(){
+  if(!audio)return;const now=audio.currentTime,filter=audio.createBiquadFilter(),g=audio.createGain();filter.type='bandpass';filter.frequency.value=1160;filter.Q.value=3.8;g.gain.setValueAtTime(.0001,now);g.gain.linearRampToValueAtTime(.055,now+.018);g.gain.setValueAtTime(.055,now+.095);g.gain.exponentialRampToValueAtTime(.0001,now+.16);filter.connect(g).connect(audio.destination);
+  [1080,1240].forEach((frequency,i)=>{const o=audio!.createOscillator();o.type=i?'triangle':'sawtooth';o.frequency.value=frequency;o.connect(filter);o.start(now);o.stop(now+.17)});
 }
 function musicStep(){
   if(!audio||!musicOn)return;const notes=[110,130.81,155.56,130.81,116.54,155.56,174.61,146.83];blip(notes[step++%notes.length],.19,.018,'triangle');
   if(step%2===0){blip(55,.16,.045,'sine');blip(880,.035,.006,'square')}
+  // Reuse the old reverse tone for four beats, locked to the music clock.
+  if(step%12===7)accentBeats=4;
+  if(accentBeats>0){blip(740,.09,.024,'sine');accentBeats--}
 }
 function initAudio(){
   if(audio){audio.resume();return}audio=new AudioContext();engineOsc=audio.createOscillator();engineOsc2=audio.createOscillator();engineGain=audio.createGain();engineFilter=audio.createBiquadFilter();
   engineOsc.type='triangle';engineOsc2.type='sine';engineOsc.frequency.value=32;engineOsc2.frequency.value=48;engineOsc2.detune.value=-9;engineFilter.type='lowpass';engineFilter.frequency.value=150;engineFilter.Q.value=1.4;engineGain.gain.value=.018;
   engineOsc.connect(engineFilter);engineOsc2.connect(engineFilter);engineFilter.connect(engineGain).connect(audio.destination);engineOsc.start();engineOsc2.start();
-  engineTimer=window.setInterval(()=>{const s=(window as any).parkingGame?.getState?.();if(!s||!audio||!engineOsc||!engineOsc2||!engineGain||!engineFilter)return;const v=Math.abs(s.speed),now=audio.currentTime;engineOsc.frequency.setTargetAtTime(31+v*.8,now,.08);engineOsc2.frequency.setTargetAtTime(46+v*1.15,now,.08);engineFilter.frequency.setTargetAtTime(135+v*2.1,now,.1);engineGain.gain.setTargetAtTime((.016+Math.min(v/4000,.018))*(.86+Math.random()*.18),now,.04);if(s.gear===-1&&v>1&&now-lastBeep>.7){lastBeep=now;blip(740,.12,.035,'sine')}},80);
+  engineTimer=window.setInterval(()=>{const s=(window as any).parkingGame?.getState?.();if(!s||!audio||!engineOsc||!engineOsc2||!engineGain||!engineFilter)return;const v=Math.abs(s.speed),now=audio.currentTime;engineOsc.frequency.setTargetAtTime(31+v*.8,now,.08);engineOsc2.frequency.setTargetAtTime(46+v*1.15,now,.08);engineFilter.frequency.setTargetAtTime(135+v*2.1,now,.1);engineGain.gain.setTargetAtTime((.016+Math.min(v/4000,.018))*(.86+Math.random()*.18),now,.04);if(s.gear===-1&&v>1&&now-lastBeep>.68){lastBeep=now;reverseHonk()}},80);
   updateMusic();
 }
 function updateMusic(){musicBtn.textContent=musicOn?'♫':'♩';musicBtn.style.opacity=musicOn?'1':'.55';clearInterval(musicTimer);if(musicOn&&audio){musicStep();musicTimer=window.setInterval(musicStep,240)}}
