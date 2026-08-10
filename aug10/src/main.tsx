@@ -69,7 +69,7 @@ function App(){
   const time=`${Math.floor(seconds/60)}:${String(seconds%60).padStart(2,'0')}`;
   const copy=async(value:string)=>{ await navigator.clipboard?.writeText(value); setNotice('Copied to clipboard'); setTimeout(()=>setNotice(''),1300)};
   const field=(id:string,label:string,opts:{placeholder?:string,noPaste?:boolean,wide?:boolean}={})=><label className={opts.wide?'wide':''}>
-    <span>{label}</span><input value={data[id]||''} placeholder={opts.placeholder||''} onChange={e=>setData({...data,[id]:e.target.value})}
+    <span>{label}</span><input value={data[id]||''} placeholder={opts.placeholder||''} autoComplete="off" spellCheck={false} data-1p-ignore="true" data-lpignore="true" data-protonpass-ignore="true" onChange={e=>setData({...data,[id]:e.target.value})}
       onPaste={e=>{if(opts.noPaste){e.preventDefault();setNotice('Pasting is not permitted in this field.');setTimeout(()=>setNotice(''),1800)}}}
       onBlur={()=>{if(data[id] && expected[id] && data[id]!==expected[id])setErrors({...errors,[id]:'Invalid format or value'}); else {const n={...errors};delete n[id];setErrors(n)}}}/>
     {errors[id]&&<small className="error">⚠ {errors[id]}</small>}
