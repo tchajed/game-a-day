@@ -18,7 +18,9 @@ await run(["bunx", "vite", "build"], siteRoot);
 
 for (const game of games) {
   const gameRoot = join(repoRoot, game.directory);
-  console.log(`\nBuilding ${game.slug}…`);
+  console.log(`\nInstalling dependencies for ${game.slug}…`);
+  await run(["bun", "install", "--frozen-lockfile"], gameRoot);
+  console.log(`Building ${game.slug}…`);
   await run(["bunx", "tsc", "--noEmit"], gameRoot);
   await run(
     [
