@@ -18,7 +18,7 @@ Some technical constraints:
 - mobile support is optional but encouraged
 - always evaluate the game and assets visually
 
-In addition to the game, there should always be a pitch: a "back of the box" one paragraph hook that sells the core fun, and a screenshot or two.
+In addition to the game, there should be a short pitch in PITCH.md: a "back of the box" one paragraph hook that sells the core fun, and a screenshot or two. This would show up in a landing page before clicking into the game.
 
 ## Infrastructure
 
