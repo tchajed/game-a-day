@@ -22,6 +22,12 @@ In addition to the game, there should always be a pitch: a "back of the box" one
 
 ## Infrastructure
 
+Start a new game directory with:
+
+```bash
+./new-game <directory>
+```
+
 Use React if it makes sense, otherwise Phaser or Excalibur.js; ask the user if it's unclear.
 
 Create procedural SVG and Canvas art usually. If needed, use GPT Images and then post-process with Sharp to integrate into the game engine.

@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+if [[ $# -ne 1 ]]; then
+  echo "Usage: $0 <game-directory>" >&2
+  exit 1
+fi
+
+repo_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+game_dir="$1"
+
+if [[ -e "$game_dir" ]]; then
+  echo "Error: '$game_dir' already exists" >&2
+  exit 1
+fi
+
+mkdir -p "$game_dir"
+cp "$repo_dir/game-agents.md" "$game_dir/AGENTS.md"
+cat > "$game_dir/README.md" <<'EOF'
+# Game title
+
+> **Back-of-the-box pitch:** TODO
+
+TODO: Describe the game.
+
+## Play
+
+TODO: Add setup and play instructions.
+
+## Screenshots
+
+TODO: Add screenshots.
+EOF
+
+echo "Created game directory: $game_dir"
