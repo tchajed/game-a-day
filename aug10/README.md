@@ -14,6 +14,6 @@ I want the experience to get progressively worse, so that the first interaction 
 
 Run with `bun install && bun run dev`, then open the local URL. Use the dock to open or switch between the visa form, Vault, Post, and Photos. Drag any floating window by its title bar; the three controls at the upper-right tile it left, return it to a large floating window, or tile it right. The red control closes it. Click any Vault value or the email code to copy it. The applicant photograph is `visa-photo.jpg`.
 
-For playtesting, add `?debug=1` to the URL to extend the timer and reveal a **DEV: next** button that fills and advances the current stage.
+Verifying the emailed one-time code creates a saved account; the application then autosaves to this browser and resumes after a reload. For playtesting, add `?debug=true` to the URL to reveal a **DEBUG: fill current screen** button. It enters the correct values for the visible stage without advancing it.
 
 ![Visa form prototype](artifacts/visa-start.png)
