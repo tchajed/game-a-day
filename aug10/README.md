@@ -7,3 +7,13 @@ The basic look should be a simulated computer, with the form open in a browser w
 The form should be really bad. It should be slow, have input validation that triggers in weird ways. I especially want to have paste issues (like validation not running after paste, random fields not supporting pasting). It should definitely look old.
 
 I want the experience to get progressively worse, so that the first interaction is okay and the task seems easy and then there are bugs, slowdowns, etc. The site should definitely have a 5-minute timeout, after which it loses your info (unless you've created an account - I guess this will require an email app to get a one-time code; don't have the player create a password).
+
+## Prototype
+
+**Back of the box:** You have five minutes, one passport, and the full might of an obsolete government website standing between you and a visa. Dig through a beautifully functional desktop for your personal records, verification mail, and passport photo—then race to retype them into a form that disables paste, rejects correct-looking dates, and gets slower with every click. The information is easy to find. Getting the website to accept it is the game.
+
+Run with `bun install && bun run dev`, then open the local URL. Use the dock to switch between the visa form, Vault, Post, and Photos. Click any Vault value or the email code to copy it. The applicant photograph is `visa-photo.jpg`.
+
+For playtesting, add `?debug=1` to the URL to extend the timer and reveal a **DEV: next** button that fills and advances the current stage.
+
+![Visa form prototype](artifacts/visa-start.png)
