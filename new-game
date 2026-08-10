@@ -17,20 +17,9 @@ fi
 
 mkdir -p "$game_dir"
 cp "$repo_dir/game-agents.md" "$game_dir/AGENTS.md"
-cat > "$game_dir/README.md" <<'EOF'
+cat >"$game_dir/README.md" <<'EOF'
 # Game title
 
-> **Back-of-the-box pitch:** TODO
-
-TODO: Describe the game.
-
-## Play
-
-TODO: Add setup and play instructions.
-
-## Screenshots
-
-TODO: Add screenshots.
 EOF
 
 echo "Created game directory: $game_dir"
