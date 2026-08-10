@@ -30,6 +30,7 @@ const expected: Record<string,string> = {
   phone:'+1 415 555 0142', address:'84 JUNIPER STREET', city:'SAN FRANCISCO', postcode:'94107',
   passport:'572091384', issued:'04 NOV 2021', expires:'03 NOV 2031', maiden:'QUINTERO', arrival:'22 OCT 2026'
 };
+const moralAnswers:Record<string,string>={purpose:'YES',communist:'NO',partiful:'NO',jar:'NO',overthrow:'NO',truthful:'YES'};
 
 function Icon({name}:{name:AppName}) {
   if (name === 'browser') return <span className="safari">◉</span>;
@@ -55,10 +56,27 @@ function AccessibilityPage({back}:{back:()=>void}){return <div className="policy
 
 function PrivacyPage({back,marketing,setMarketing}:{back:()=>void;marketing:boolean;setMarketing:(v:boolean)=>void}){return <div className="policy-page privacy-page"><p className="crumb">HOME &gt; PRIVACY, COOKIES &amp; OTHER SMALL FILES</p><h1>Your privacy options</h1><div className="warning"><b>Your privacy matters.</b> This statement is 14,892 words long. Continued use may constitute enthusiastic consent in some jurisdictions.</div><h2>Cookie preference centre centre</h2><label className="privacy-choice"><span><b>Strictly necessary surveillance</b><small>Required to remember that you rejected being remembered.</small></span><input type="checkbox" checked disabled/></label><label className="privacy-choice"><span><b>Performance and administrative analytics</b><small>Helps us measure how slowly pages load.</small></span><input type="checkbox" checked disabled/></label><label className="privacy-choice"><span><b>Government marketing and partner messages</b><small>Personalized public-service advertising and mandatory opportunities.</small></span><input type="checkbox" checked={marketing} onChange={e=>setMarketing(e.target.checked)}/></label><h2>Information we may collect</h2><p className="legalese">Device identifiers, approximate location, exact location, emotional posture, cursor hesitation, printer ownership, household flagpole status, and any information that is technically visible from a sufficiently tall government building. We retain this data for the longer of: operational necessity; archival interest; or forever.</p><div className="actions"><button onClick={back}>&lt;&lt; Return to application</button></div></div>}
 
+function CharacterQuestions({data,errors,answer,finish,back}:{data:FormData;errors:Record<string,string>;answer:(id:string,value:string)=>void;finish:()=>void;back:()=>void}){
+ const questions=[
+  ['purpose','Is the sole purpose of this application to request lawful entry for the trip described above?'],
+  ['communist','Are you, or have you ever been, a member of the Communist Party?'],
+  ['partiful','Have you ever responded “Maybe” to a Partiful invitation solely to view the guest list?'],
+  ['jar',"Have you ever broken a jar in someone’s house to steal a few rupees from them?"],
+  ['overthrow','Do you intend to overthrow any government through force, sabotage, or an unusually persuasive group chat?'],
+  ['truthful','Are all statements in this application true, even the parts the website changed to uppercase?']
+ ];
+ return <><p className="crumb">FORM DS-404 &gt; ELIGIBILITY &amp; MORAL CHARACTER</p><h1>Security and background</h1><div className="warning"><b>WARNING:</b> An inadmissible response will result in an immediate and final decision.</div><h2>Step 4 of 5 — Purpose and eligibility</h2><div className="questions">{questions.map(([id,text],index)=><fieldset key={id}><legend>{index+1}. {text}</legend><label><input type="radio" name={id} checked={data[id]==='YES'} onChange={()=>answer(id,'YES')}/> Yes</label><label><input type="radio" name={id} checked={data[id]==='NO'} onChange={()=>answer(id,'NO')}/> No</label>{errors[id]&&<small className="error">⚠ {errors[id]}</small>}</fieldset>)}</div><div className="actions"><button onClick={back}>Go Back</button><button className="continue" onClick={finish}>Review application &gt;&gt;</button></div></>
+}
+
+function ApplicationPreview({data,selectedPhoto,edit,submit}:{data:FormData;selectedPhoto:boolean;edit:(page:number)=>void;submit:()=>void}){
+ const Row=({label,value}:{label:string;value:string})=><div className="pdf-row"><span>{label}</span><b>{value||'—'}</b></div>;
+ return <><p className="crumb">FORM DS-404 &gt; REVIEW &gt; GENERATED DOCUMENT</p><h1>Review application</h1><div className="warning blue"><b>Review carefully.</b> Submission is final. Use “Correct this section” to return; information entered on every later page will be discarded.</div><div className="pdf-preview"><header><span className="seal">⚭</span><div><b>FORM DS-404</b><small>ELECTRONIC VISA PRE-APPLICATION</small></div><em>DRAFT • NOT FOR TRAVEL</em></header><section><h3>1. APPLICANT INFORMATION</h3><button onClick={()=>edit(2)}>Correct this section</button><div className="pdf-grid"><Row label="Family name" value={data.last}/><Row label="Given name(s)" value={data.first}/><Row label="Email address" value={data.email}/><Row label="Date of birth" value={data.dob}/><Row label="Telephone" value={data.phone}/><Row label="Address" value={`${data.address}, ${data.city} ${data.postcode}`}/></div></section><section><h3>2. TRAVEL DOCUMENT</h3><button onClick={()=>edit(3)}>Correct this section</button><div className="pdf-grid"><Row label="Passport number" value={data.passport}/><Row label="Mother's maiden name" value={data.maiden}/><Row label="Date issued" value={data.issued}/><Row label="Date of expiry" value={data.expires}/><Row label="Intended arrival" value={data.arrival}/><Row label="Photograph" value={selectedPhoto?'visa-photo.jpg attached':'NOT ATTACHED'}/></div></section><section><h3>3. ELIGIBILITY DECLARATION</h3><button onClick={()=>edit(4)}>Correct this section</button><div className="pdf-grid"><Row label="Purpose is lawful entry" value={data.purpose}/><Row label="Communist Party member" value={data.communist}/><Row label="Partiful guest-list misuse" value={data.partiful}/><Row label="Jar broken for rupees" value={data.jar}/><Row label="Intent to overthrow government" value={data.overthrow}/><Row label="Declaration is truthful" value={data.truthful}/></div></section><footer>Generated electronically • Ref. pending • Page 1 of 1</footer></div><div className="actions"><button onClick={()=>edit(4)}>Go Back</button><button className="continue submit-final" onClick={submit}>I HAVE REVIEWED — SUBMIT FINAL APPLICATION</button></div></>
+}
+
 function App(){
   const debug=new URLSearchParams(location.search).get('debug')==='true';
   const saved=useMemo(()=>{
-    try{return JSON.parse(localStorage.getItem('ds404-saved-application')||'null') as {data:FormData;page:number;selectedPhoto:boolean;submissionDenied?:boolean}|null}catch{return null}
+    try{return JSON.parse(localStorage.getItem('ds404-saved-application')||'null') as {data:FormData;page:number;selectedPhoto:boolean;submissionDenied?:boolean;denialReason?:string}|null}catch{return null}
   },[]);
   const [active,setActive]=useState<AppName>('browser');
   const [page,setPage]=useState(saved?.page??0);
@@ -71,6 +89,7 @@ function App(){
   const [errors,setErrors]=useState<Record<string,string>>({});
   const [lost,setLost]=useState(false);
   const [submissionDenied,setSubmissionDenied]=useState(saved?.submissionDenied??false);
+  const [denialReason,setDenialReason]=useState(saved?.denialReason??'records');
   const [layouts,setLayouts]=useState<Record<AppName,Layout>>({browser:'float',passwords:'float',mail:'float',photos:'float'});
   const [placements,setPlacements]=useState<Partial<Record<AppName,Placement>>>({});
   const [openWindows,setOpenWindows]=useState<Record<AppName,boolean>>({browser:true,passwords:false,mail:false,photos:false});
@@ -82,9 +101,9 @@ function App(){
   useEffect(()=>{ const t=setInterval(()=>setSeconds(s=>Math.max(0,s-1)),1000); return()=>clearInterval(t)},[]);
   useEffect(()=>()=>window.clearTimeout(deliveryTimer.current),[]);
   useEffect(()=>{
-    if(account)localStorage.setItem('ds404-saved-application',JSON.stringify({data,page,selectedPhoto,submissionDenied}));
-  },[account,data,page,selectedPhoto,submissionDenied]);
-  useEffect(()=>{ if(seconds===0 && !account && page<4) setLost(true)},[seconds,account,page]);
+    if(account)localStorage.setItem('ds404-saved-application',JSON.stringify({data,page,selectedPhoto,submissionDenied,denialReason}));
+  },[account,data,page,selectedPhoto,submissionDenied,denialReason]);
+  useEffect(()=>{ if(seconds===0 && !account && page<6) setLost(true)},[seconds,account,page]);
   const time=`${Math.floor(seconds/60)}:${String(seconds%60).padStart(2,'0')}`;
   const copy=async(value:string)=>{ await navigator.clipboard?.writeText(value); setNotice('Copied to clipboard'); setTimeout(()=>setNotice(''),1300)};
   const field=(id:string,label:string,opts:{placeholder?:string,noPaste?:boolean,wide?:boolean}={})=><label className={opts.wide?'wide':''}>
@@ -115,8 +134,24 @@ function App(){
     ids.forEach(id=>{if(!data[id])bad[id]='This question is mandatory';else if(data[id]!==expected[id])bad[id]='Does not match supporting records'});
     if(!selectedPhoto)bad.photo='Applicant photograph is mandatory';
     setErrors(bad);
-    if(Object.keys(bad).length){setSubmissionDenied(true);setPage(4);return}
-    setSubmissionDenied(false); proceed(4,ids);
+    if(Object.keys(bad).length){setDenialReason('records');setSubmissionDenied(true);setPage(6);return}
+    setSubmissionDenied(false); proceed(6,ids);
+  };
+  const answerQuestion=(id:string,value:string)=>{
+    setData(current=>({...current,[id]:value}));
+    if(value!==moralAnswers[id]){setDenialReason('character');setSubmissionDenied(true);setPage(6)}
+  };
+  const finishQuestions=()=>{
+    const missing=Object.keys(moralAnswers).filter(id=>!data[id]);
+    if(missing.length){setErrors(Object.fromEntries(missing.map(id=>[id,'You must answer this question'])));return}
+    if(Object.entries(moralAnswers).some(([id,value])=>data[id]!==value)){setDenialReason('character');setSubmissionDenied(true);setPage(6);return}
+    setErrors({});proceed(5,Object.keys(moralAnswers));
+  };
+  const editFromPreview=(target:number)=>{
+    const next={...data};
+    if(target===2){['passport','maiden','issued','expires','arrival',...Object.keys(moralAnswers)].forEach(id=>delete next[id]);setSelectedPhoto(false)}
+    if(target===3)Object.keys(moralAnswers).forEach(id=>delete next[id]);
+    setData(next);setErrors({});setPage(target);
   };
   const reset=()=>{setLost(false);setSeconds(300);setPage(0);setData({});setErrors({})};
   const fillCurrentScreen=()=>{
@@ -124,6 +159,7 @@ function App(){
     if(page===1)setData(current=>({...current,code:otp}));
     if(page===2)setData(current=>({...current,...Object.fromEntries(['first','last','dob','phone','address','city','postcode'].map(id=>[id,expected[id]]))}));
     if(page===3){setData(current=>({...current,...Object.fromEntries(['passport','maiden','issued','expires','arrival'].map(id=>[id,expected[id]]))}));setSelectedPhoto(true)}
+    if(page===4)setData(current=>({...current,...moralAnswers}));
     setErrors({});
   };
   const updateMarketing=(enabled:boolean)=>{setMarketingAds(enabled);localStorage.setItem('ds404-marketing',String(enabled))};
@@ -161,7 +197,7 @@ function App(){
   return <main className="desktop">
     <div className="wallpaper"><div className="orb o1"/><div className="orb o2"/><div className="orb o3"/></div>
     <header className="menubar"><b>◆</b><strong>{active==='browser'?'Navigator':active==='passwords'?'Vault':active==='mail'?'Post': 'Photos'}</strong><span>File</span><span>Edit</span><span>Window</span><aside>⌁ &nbsp; ▰ &nbsp; Sun 10 Aug&nbsp; 10:24</aside></header>
-    {openWindows.browser&&<Browser page={page} data={data} setData={setData} setErrors={setErrors} time={time} seconds={seconds} account={account} setAccount={setAccount} setPage={setPage} field={field} proceed={proceed} sendVerificationCode={sendVerificationCode} otp={otp} submitApplication={submitApplication} submissionDenied={submissionDenied} marketingAds={marketingAds} setMarketingAds={updateMarketing} selectedPhoto={selectedPhoto} setActive={(app:AppName)=>{setActive(app);setOpenWindows(current=>({...current,[app]:true}))}} win={windowProps('browser')} style={windowStyle('browser')}/>}
+    {openWindows.browser&&<Browser page={page} data={data} setData={setData} errors={errors} setErrors={setErrors} time={time} seconds={seconds} account={account} setAccount={setAccount} setPage={setPage} field={field} proceed={proceed} sendVerificationCode={sendVerificationCode} otp={otp} submitApplication={submitApplication} submissionDenied={submissionDenied} denialReason={denialReason} answerQuestion={answerQuestion} finishQuestions={finishQuestions} editFromPreview={editFromPreview} marketingAds={marketingAds} setMarketingAds={updateMarketing} selectedPhoto={selectedPhoto} setActive={(app:AppName)=>{setActive(app);setOpenWindows(current=>({...current,[app]:true}))}} win={windowProps('browser')} style={windowStyle('browser')}/>}
     {openWindows.passwords&&<Passwords copy={copy} win={windowProps('passwords')} style={windowStyle('passwords')}/>}
     {openWindows.mail&&<Mail copy={copy} delivered={mailDelivered} code={otp} recipient={data.email} win={windowProps('mail')} style={windowStyle('mail')}/>}
     {openWindows.photos&&<Photos selected={selectedPhoto} choose={()=>{setSelectedPhoto(true);setNotice('visa-photo.jpg ready to upload');setTimeout(()=>setNotice(''),1600)}} win={windowProps('photos')} style={windowStyle('photos')}/>}
@@ -175,7 +211,7 @@ function App(){
   </main>
 }
 
-function Browser({page,data,setData,setErrors,time,seconds,account,setAccount,setPage,field,proceed,sendVerificationCode,otp,submitApplication,submissionDenied,marketingAds,setMarketingAds,selectedPhoto,setActive,win,style}:any){
+function Browser({page,data,setData,errors,setErrors,time,seconds,account,setAccount,setPage,field,proceed,sendVerificationCode,otp,submitApplication,submissionDenied,denialReason,answerQuestion,finishQuestions,editFromPreview,marketingAds,setMarketingAds,selectedPhoto,setActive,win,style}:any){
  const [siteView,setSiteView]=useState<'form'|'privacy'|'accessibility'>('form');
  const [cookieWarning,setCookieWarning]=useState(false);
  const [draftMarketing,setDraftMarketing]=useState(marketingAds);
@@ -187,16 +223,19 @@ function Browser({page,data,setData,setErrors,time,seconds,account,setAccount,se
   <div className="toolbar"><button>‹</button><button>›</button><div className="address">🔒 &nbsp; visa-services.gov.example/application/DS-404</div><button>↻</button></div>
   <div className="site" ref={siteRef}>
    <div className="govbar"><span className="seal">⚭</span><div><b>OFFICIAL PORTAL</b><small>Department of Entry and Administrative Affairs</small></div><em>FORM DS-404 • REV. 03/1998</em></div>
-   {siteView==='form'&&page<4&&<div className={`session ${!account&&seconds<=60?'urgent':''}`}><b>{account?'✓ APPLICATION SAVED':seconds<=60?'⚠ SESSION EXPIRES':'UNSAVED APPLICATION'} </b><span>{account?'Account verified':seconds<=60?time:'Verify your email to enable saving'}</span></div>}
+   {siteView==='form'&&page<6&&<div className={`session ${!account&&seconds<=60?'urgent':''}`}><b>{account?'✓ APPLICATION SAVED':seconds<=60?'⚠ SESSION EXPIRES':'UNSAVED APPLICATION'} </b><span>{account?'Account verified':seconds<=60?time:'Verify your email to enable saving'}</span></div>}
    {siteView==='form'&&marketingAds&&<GovAd/>}
    <div className="formbody">
     {siteView==='accessibility'&&<AccessibilityPage back={()=>setSiteView('form')}/>}
     {siteView==='privacy'&&<PrivacyPage back={()=>setSiteView('form')} marketing={draftMarketing} setMarketing={setDraftMarketing}/>}
     {siteView==='form'&&<>
-    {page===0&&<><p className="crumb">HOME &gt; NON-IMMIGRANT ENTRY &gt; FORM DS-404</p><h1>Electronic Visa Pre-Application</h1><div className="warning"><b>NOTICE:</b> Information is not saved until your email address is verified.</div><h2>Step 1 of 4 — Begin application</h2><p>Enter the email address associated with the applicant.</p>{field('email','E-mail address',{wide:true})}<div className="actions"><button className="continue" onClick={sendVerificationCode}>Send verification code &gt;&gt;</button></div><p className="help">Required information may be found in applications on this computer.</p></>}
-    {page===1&&<><p className="crumb">FORM DS-404 &gt; VERIFY APPLICANT</p><h1>Email verification</h1><div className="warning blue">A six-digit access code has been sent. It should arrive in Post shortly.</div><h2>Step 1 of 4 — Verify email</h2>{field('code','Access code',{placeholder:'6 digits'})}<div className="actions"><button onClick={()=>setPage(0)}>Go Back</button><button className="continue" onClick={()=>{if(!otp||data.code!==otp){setErrors({code:'Code not recognized'});return}setAccount(true);proceed(2,['code'])}}>Verify and continue &gt;&gt;</button></div></>}
-    {page===2&&<><p className="crumb">FORM DS-404 &gt; APPLICANT DETAILS</p><h1>Applicant information</h1><p className="tiny">Use UPPERCASE English letters. Dates must use format DD MMM YYYY. Do not use punctuation except where required.</p><h2>Step 2 of 4 — Personal details</h2><div className="grid">{field('first','Given name(s)')}{field('last','Family name')}{field('dob','Date of birth *',{placeholder:'DD MMM YYYY',noPaste:true})}{field('phone','Telephone number')}{field('address','Street address',{wide:true})}{field('city','City')}{field('postcode','ZIP / postal code')}</div><div className="actions"><button onClick={()=>setPage(1)}>Go Back</button><button className="continue" onClick={()=>proceed(3,['first','last','dob','phone','address','city','postcode'])}>Save and continue &gt;&gt;</button></div></>}
-    {page===3&&<><p className="crumb">FORM DS-404 &gt; DOCUMENT INFORMATION</p><h1>Travel document</h1><div className="warning"><b>Important:</b> Copy and paste is disabled for secure document fields.</div><h2>Step 3 of 4 — Passport and travel</h2><div className="grid">{field('passport','Passport number',{noPaste:true})}{field('maiden',"Mother's maiden name",{noPaste:true})}{field('issued','Date issued',{placeholder:'DD MMM YYYY'})}{field('expires','Date of expiry',{placeholder:'DD MMM YYYY'})}{field('arrival','Intended arrival',{placeholder:'DD MMM YYYY'})}<label className="wide"><span>Applicant photograph</span><div className={selectedPhoto?'upload chosen':'upload'}>{selectedPhoto?'✓ visa-photo.jpg':'No file selected'}<button onClick={()=>setActive('photos')}>Choose from Photos…</button></div></label></div><div className="actions"><button onClick={()=>setPage(2)}>Go Back</button><button className="continue" onClick={submitApplication}>SUBMIT APPLICATION &gt;&gt;</button></div></>}
+    {page===0&&<><p className="crumb">HOME &gt; NON-IMMIGRANT ENTRY &gt; FORM DS-404</p><h1>Electronic Visa Pre-Application</h1><div className="warning"><b>NOTICE:</b> Information is not saved until your email address is verified.</div><h2>Step 1 of 5 — Begin application</h2><p>Enter the email address associated with the applicant.</p>{field('email','E-mail address',{wide:true})}<div className="actions"><button className="continue" onClick={sendVerificationCode}>Send verification code &gt;&gt;</button></div><p className="help">Required information may be found in applications on this computer.</p></>}
+    {page===1&&<><p className="crumb">FORM DS-404 &gt; VERIFY APPLICANT</p><h1>Email verification</h1><div className="warning blue">A six-digit access code has been sent. It should arrive in Post shortly.</div><h2>Step 1 of 5 — Verify email</h2>{field('code','Access code',{placeholder:'6 digits'})}<div className="actions"><button onClick={()=>setPage(0)}>Go Back</button><button className="continue" onClick={()=>{if(!otp||data.code!==otp){setErrors({code:'Code not recognized'});return}setAccount(true);proceed(2,['code'])}}>Verify and continue &gt;&gt;</button></div></>}
+    {page===2&&<><p className="crumb">FORM DS-404 &gt; APPLICANT DETAILS</p><h1>Applicant information</h1><p className="tiny">Use UPPERCASE English letters. Dates must use format DD MMM YYYY. Do not use punctuation except where required.</p><h2>Step 2 of 5 — Personal details</h2><div className="grid">{field('first','Given name(s)')}{field('last','Family name')}{field('dob','Date of birth *',{placeholder:'DD MMM YYYY',noPaste:true})}{field('phone','Telephone number')}{field('address','Street address',{wide:true})}{field('city','City')}{field('postcode','ZIP / postal code')}</div><div className="actions"><button onClick={()=>setPage(1)}>Go Back</button><button className="continue" onClick={()=>proceed(3,['first','last','dob','phone','address','city','postcode'])}>Save and continue &gt;&gt;</button></div></>}
+    {page===3&&<><p className="crumb">FORM DS-404 &gt; DOCUMENT INFORMATION</p><h1>Travel document</h1><div className="warning"><b>Important:</b> Copy and paste is disabled for secure document fields.</div><h2>Step 3 of 5 — Passport and travel</h2><div className="grid">{field('passport','Passport number',{noPaste:true})}{field('maiden',"Mother's maiden name",{noPaste:true})}{field('issued','Date issued',{placeholder:'DD MMM YYYY'})}{field('expires','Date of expiry',{placeholder:'DD MMM YYYY'})}{field('arrival','Intended arrival',{placeholder:'DD MMM YYYY'})}<label className="wide"><span>Applicant photograph</span><div className={selectedPhoto?'upload chosen':'upload'}>{selectedPhoto?'✓ visa-photo.jpg':'No file selected'}<button onClick={()=>setActive('photos')}>Choose from Photos…</button></div>{errors.photo&&<small className="error">⚠ {errors.photo}</small>}</label></div><div className="actions"><button onClick={()=>setPage(2)}>Go Back</button><button className="continue" onClick={()=>{if(!selectedPhoto){setErrors({photo:'Applicant photograph is mandatory'});return}proceed(4,['passport','maiden','issued','expires','arrival'])}}>Save and continue &gt;&gt;</button></div></>}
+    {page===4&&<CharacterQuestions data={data} errors={errors} answer={answerQuestion} finish={finishQuestions} back={()=>editFromPreview(3)}/>}
+    {page===5&&<ApplicationPreview data={data} selectedPhoto={selectedPhoto} edit={editFromPreview} submit={submitApplication}/>}
+    {page===6&&<div className={`success ${submissionDenied?'denied':''}`}><div className="stamp">{submissionDenied?'DENIED':'RECEIVED'}</div><h1>{submissionDenied?'Application denied':'Application transmitted'}</h1>{submissionDenied?<><p>{denialReason==='character'?'Your responses indicate that you are inadmissible on moral-character grounds.':'Your application contains information that could not be verified against the supporting records.'}</p><div className="warning"><b>Decision:</b> This decision is effective immediately and cannot be appealed online.</div></>:<><p>Reference number</p><strong>DS404-8391-XQ</strong><div className="warning blue">Your application will be processed in approximately 8–14 months. This receipt does not constitute a visa.</div></>}<button onClick={()=>{localStorage.removeItem('ds404-saved-application');location.reload()}}>New application</button></div>}
     {page===4&&<div className={`success ${submissionDenied?'denied':''}`}><div className="stamp">{submissionDenied?'DENIED':'RECEIVED'}</div><h1>{submissionDenied?'Application denied':'Application transmitted'}</h1>{submissionDenied?<><p>Your application contains information that could not be verified against the supporting records.</p><div className="warning"><b>Decision:</b> This decision is effective immediately and cannot be appealed online.</div></>:<><p>Reference number</p><strong>DS404-8391-XQ</strong><div className="warning blue">Your application will be processed in approximately 8–14 months. This receipt does not constitute a visa.</div></>}<button onClick={()=>{localStorage.removeItem('ds404-saved-application');location.reload()}}>New application</button></div>}
     </>}
    </div>

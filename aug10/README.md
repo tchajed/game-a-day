@@ -14,9 +14,10 @@ I want the experience to get progressively worse, so that the first interaction 
 
 Run with `bun install && bun run dev`, then open the local URL. Use the dock to open or switch between the visa form, Vault, Post, and Photos. Drag any floating window by its title bar; the three controls at the upper-right tile it left, return it to a large floating window, or tile it right. The red control closes it. Click any Vault value or the email code to copy it. The applicant photograph is `visa-photo.jpg`.
 
-Verifying the emailed one-time code creates a saved account; the application then autosaves to this browser and resumes after a reload. Government marketing is enabled by default: animated public-service ads make navigation and scrolling slower until disabled through the Privacy page. The footer also contains the department's impressively unhelpful Accessibility statement.
+Verifying the emailed one-time code creates a saved account; the application then autosaves to this browser and resumes after a reload. Government marketing is enabled by default: animated public-service ads make navigation and scrolling slower until disabled through the Privacy page. The footer also contains the department's impressively unhelpful Accessibility statement. A final moral-character questionnaire has exactly one defensible answer to each question, followed by a generated PDF-style review where correcting an earlier section discards everything entered after it.
 
 For playtesting, add `?debug=true` to the URL to reveal a **DEBUG: fill current screen** button. It enters the correct values for the visible stage without advancing it.
 
 ![Visa form prototype](artifacts/visa-start.png)
 ![Animated government advertising](artifacts/privacy-ads.png)
+![Generated application preview](artifacts/application-preview.png)
