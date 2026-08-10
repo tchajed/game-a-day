@@ -17,6 +17,7 @@ Some technical constraints:
 - run on the web
 - mobile support is optional but encouraged
 - always evaluate the game and assets visually
+- support `?debug=true` to gate playtesting features (cheats, easy mode, skipping levels, etc)
 
 In addition to the game, there should be a short pitch in PITCH.md: a "back of the box" one paragraph hook that sells the core fun, and a screenshot or two. This would show up in a landing page before clicking into the game.
 
