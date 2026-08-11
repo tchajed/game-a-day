@@ -30,8 +30,6 @@ type Step = 'dose' | 'tamp' | 'place' | 'lock' | 'ready' | 'brewing' | 'result'
 export class EspressoScene extends Phaser.Scene {
   private step: Step = 'dose'
   private dose = 0
-  private tampForce = 0
-  private tampOffset = 0
   private shotSeconds = 0
   private yieldGrams = 0
   private grinding = false
@@ -42,7 +40,6 @@ export class EspressoScene extends Phaser.Scene {
 
   private statusText!: Phaser.GameObjects.Text
   private scaleText!: Phaser.GameObjects.Text
-  private pressureText!: Phaser.GameObjects.Text
   private shotTimeText!: Phaser.GameObjects.Text
   private yieldText!: Phaser.GameObjects.Text
   private grinderButton!: Phaser.GameObjects.Arc
@@ -50,7 +47,6 @@ export class EspressoScene extends Phaser.Scene {
   private grounds!: Phaser.GameObjects.Graphics
   private portafilter!: Phaser.GameObjects.Container
   private tamper!: Phaser.GameObjects.Container
-  private pressureNeedle!: Phaser.GameObjects.Graphics
   private groupGlow!: Phaser.GameObjects.Arc
   private lockGuide!: Phaser.GameObjects.Graphics
   private brewButton!: Phaser.GameObjects.Arc
@@ -126,8 +122,6 @@ export class EspressoScene extends Phaser.Scene {
   private resetValues() {
     this.step = 'dose'
     this.dose = 0
-    this.tampForce = 0
-    this.tampOffset = 0
     this.shotSeconds = 0
     this.yieldGrams = 0
     this.grinding = false
@@ -221,7 +215,7 @@ export class EspressoScene extends Phaser.Scene {
     rule.lineStyle(2, colors.tileLine)
     rule.lineBetween(28, 273, 257, 273)
     card.add(rule)
-    card.add(this.addText(28, 282, 'LEVEL  •  FIRM', 14, colors.deepTeal))
+    card.add(this.addText(28, 282, 'TAMP ONCE', 14, colors.deepTeal))
   }
 
   private recipeRow(card: Phaser.GameObjects.Container, x: number, y: number, label: string, value: string) {
@@ -451,25 +445,6 @@ export class EspressoScene extends Phaser.Scene {
     const mat = this.roundedRect(335, 675, 405, 158, 27, colors.deepTeal, colors.ink, 7)
     mat.setAlpha(0.96)
     this.addText(365, 790, 'TAMP MAT', 13, colors.mint)
-
-    const gauge = this.add.container(778, 678)
-    const gg = this.add.graphics()
-    gg.fillStyle(colors.paper)
-    gg.lineStyle(6, colors.ink)
-    gg.fillCircle(83, 83, 78)
-    gg.strokeCircle(83, 83, 78)
-    gg.lineStyle(4, colors.tileLine)
-    for (let angle = 205; angle <= 335; angle += 26) {
-      const a = Phaser.Math.DegToRad(angle)
-      gg.lineBetween(83 + Math.cos(a) * 55, 83 + Math.sin(a) * 55, 83 + Math.cos(a) * 67, 83 + Math.sin(a) * 67)
-    }
-    gauge.add(gg)
-    gauge.add(this.addText(83, 91, 'TAMP', 12, colors.teal).setOrigin(0.5, 0))
-    this.pressureText = this.addText(83, 112, '0 kg', 18, colors.ink).setOrigin(0.5, 0)
-    gauge.add(this.pressureText)
-    this.pressureNeedle = this.add.graphics()
-    gauge.add(this.pressureNeedle)
-    this.drawPressureNeedle()
   }
 
   private drawPortafilter() {
@@ -581,12 +556,8 @@ export class EspressoScene extends Phaser.Scene {
 
     this.input.on('drag', (pointer: Phaser.Input.Pointer, object: Phaser.GameObjects.GameObject, dragX: number, dragY: number) => {
       if (object === this.tamper && this.step === 'tamp') {
-        const x = Phaser.Math.Clamp(dragX, 410, 570)
         const y = Phaser.Math.Clamp(dragY, 676, 774)
-        this.tamper.setPosition(x, y)
-        this.tampOffset = Math.abs(x - 470)
-        this.tampForce = Phaser.Math.Clamp((y - 688) * 0.19, 0, 17)
-        this.drawPressureNeedle()
+        this.tamper.setPosition(470, y)
         this.updateUi()
       }
 
@@ -661,8 +632,9 @@ export class EspressoScene extends Phaser.Scene {
   }
 
   private completeTamp() {
-    if (this.tampForce < 8) {
+    if (this.tamper.y < 730) {
       this.tamper.setPosition(470, 680)
+      this.updateUi()
       return
     }
     coffeeAudio.playPlonk(1.05)
@@ -727,8 +699,7 @@ export class EspressoScene extends Phaser.Scene {
     const doseError = Math.abs(this.dose - 18)
     const ratioError = Math.abs(this.yieldGrams / Math.max(this.dose, 1) - 2)
     const timeGood = this.shotSeconds >= 25 && this.shotSeconds <= 30
-    const tampGood = this.tampForce >= 10 && this.tampForce <= 17 && this.tampOffset <= 28
-    const success = doseError <= 0.5 && ratioError <= 0.12 && timeGood && tampGood
+    const success = doseError <= 0.5 && ratioError <= 0.12 && timeGood
 
     let title = 'One more adjustment.'
     let note = 'Close. Taste it, then pull another.'
@@ -741,8 +712,6 @@ export class EspressoScene extends Phaser.Scene {
       note = this.shotSeconds < 25 ? 'Bright and sharp — it ran too fast.' : 'Dry and bitter — it ran too long.'
     } else if (ratioError > 0.12) {
       note = this.yieldGrams < this.dose * 2 ? 'Short and intense — a little more yield.' : 'Thin finish — the yield ran long.'
-    } else if (!tampGood) {
-      note = 'Uneven extraction — keep the tamp level.'
     }
 
     this.add.rectangle(720, 450, 1440, 900, colors.ink, 0.42).setDepth(90).setInteractive()
@@ -802,16 +771,6 @@ export class EspressoScene extends Phaser.Scene {
     }
   }
 
-  private drawPressureNeedle() {
-    if (!this.pressureNeedle) return
-    this.pressureNeedle.clear()
-    const angle = Phaser.Math.DegToRad(205 + (this.tampForce / 17) * 130)
-    this.pressureNeedle.lineStyle(6, this.tampForce >= 10 ? colors.green : colors.coral)
-    this.pressureNeedle.lineBetween(83, 83, 83 + Math.cos(angle) * 53, 83 + Math.sin(angle) * 53)
-    this.pressureNeedle.fillStyle(colors.ink)
-    this.pressureNeedle.fillCircle(83, 83, 8)
-  }
-
   private drawLockGuide() {
     this.lockGuide.clear()
     this.lockGuide.lineStyle(8, colors.coral, 0.85)
@@ -837,7 +796,6 @@ export class EspressoScene extends Phaser.Scene {
   private updateUi() {
     if (!this.statusText) return
     this.scaleText.setText(`${this.dose.toFixed(1)} g`)
-    this.pressureText.setText(`${this.tampForce.toFixed(0)} kg`)
     this.shotTimeText.setText(this.shotSeconds.toFixed(1))
     this.yieldText.setText(this.yieldGrams.toFixed(1))
 
@@ -855,7 +813,7 @@ export class EspressoScene extends Phaser.Scene {
       else this.statusText.setText('ADJUST OR DRAG TO MAT')
       this.scaleText.setColor(css(Math.abs(this.dose - 18) <= 0.5 ? colors.mustard : colors.mint))
     } else if (this.step === 'tamp') {
-      this.statusText.setText(this.tampForce < 8 ? 'DRAG TAMP DOWN' : `${this.tampForce.toFixed(0)} kg  •  RELEASE`)
+      this.statusText.setText(this.tamper.y < 730 ? 'DRAG TAMP DOWN' : 'RELEASE TO TAMP')
     } else if (this.step === 'place') {
       this.statusText.setText('DRAG TO GROUP')
     } else if (this.step === 'lock') {
@@ -895,8 +853,6 @@ export class EspressoScene extends Phaser.Scene {
     this.grinding = false
     this.tamping = false
     this.dose = perfect ? 18 : 15.8
-    this.tampForce = perfect ? 15 : 6
-    this.tampOffset = perfect ? 0 : 46
     this.shotSeconds = perfect ? 27 : 18
     this.yieldGrams = perfect ? 36 : 47
     this.drawGrounds()
