@@ -129,7 +129,6 @@ h1 { margin: 0; font-size: clamp(21px, 2.2vw, 30px); line-height: 1; letter-spac
   transform-box: view-box;
   transform-origin: center;
   will-change: transform;
-  transition: transform .16s cubic-bezier(.2, .7, .2, 1);
 }
 
 .layer-back { transform: translate(calc(var(--look-x) * -5px), calc(var(--look-y) * -3px)); }

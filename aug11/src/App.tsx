@@ -216,23 +216,46 @@ function ShopScene() {
 export default function App() {
   const [loaded, setLoaded] = useState(false)
   const sceneRef = useRef<HTMLElement>(null)
+  const parallaxTarget = useRef({ x: 0, y: 0 })
+  const parallaxCurrent = useRef({ x: 0, y: 0 })
 
   useEffect(() => {
-    const frame = requestAnimationFrame(() => setLoaded(true))
+    let frame = 0
+    let previousTime = 0
+
+    const animateParallax = (time: number) => {
+      const delta = previousTime ? Math.min(time - previousTime, 40) : 16
+      previousTime = time
+      const ease = 1 - Math.exp(-delta / 110)
+      const current = parallaxCurrent.current
+      const target = parallaxTarget.current
+
+      current.x += (target.x - current.x) * ease
+      current.y += (target.y - current.y) * ease
+
+      if (Math.abs(target.x - current.x) < 0.0005) current.x = target.x
+      if (Math.abs(target.y - current.y) < 0.0005) current.y = target.y
+
+      sceneRef.current?.style.setProperty('--look-x', current.x.toFixed(4))
+      sceneRef.current?.style.setProperty('--look-y', current.y.toFixed(4))
+      frame = requestAnimationFrame(animateParallax)
+    }
+
+    setLoaded(true)
+    frame = requestAnimationFrame(animateParallax)
     return () => cancelAnimationFrame(frame)
   }, [])
 
   const updateParallax = (event: ReactPointerEvent<HTMLElement>) => {
     const bounds = event.currentTarget.getBoundingClientRect()
-    const x = Math.max(-1, Math.min(1, ((event.clientX - bounds.left) / bounds.width - 0.5) * 2))
-    const y = Math.max(-1, Math.min(1, ((event.clientY - bounds.top) / bounds.height - 0.5) * 2))
-    event.currentTarget.style.setProperty('--look-x', x.toFixed(3))
-    event.currentTarget.style.setProperty('--look-y', y.toFixed(3))
+    parallaxTarget.current = {
+      x: Math.max(-1, Math.min(1, ((event.clientX - bounds.left) / bounds.width - 0.5) * 2)),
+      y: Math.max(-1, Math.min(1, ((event.clientY - bounds.top) / bounds.height - 0.5) * 2)),
+    }
   }
 
   const resetParallax = () => {
-    sceneRef.current?.style.setProperty('--look-x', '0')
-    sceneRef.current?.style.setProperty('--look-y', '0')
+    parallaxTarget.current = { x: 0, y: 0 }
   }
 
   return (
