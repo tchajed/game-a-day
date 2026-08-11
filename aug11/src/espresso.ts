@@ -57,6 +57,8 @@ export class EspressoScene extends Phaser.Scene {
   private crema!: Phaser.GameObjects.Ellipse
   private resultCard?: Phaser.GameObjects.Container
   private stepPills: Phaser.GameObjects.Container[] = []
+  private scoopButton!: Phaser.GameObjects.Graphics
+  private scoopNotice = ''
   private restartPending = false
 
   constructor() {
@@ -73,6 +75,7 @@ export class EspressoScene extends Phaser.Scene {
     this.resultCard = undefined
     this.restartPending = false
     this.resetValues()
+    this.input.enabled = true
     this.input.resetPointers()
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, this.handleShutdown, this)
     this.cameras.main.setBackgroundColor('#f4d9aa')
@@ -103,11 +106,10 @@ export class EspressoScene extends Phaser.Scene {
     const seconds = Math.min(delta, 50) / 1000
 
     if (this.step === 'dose' && this.grinding) {
-      this.dose = Math.min(22, this.dose + seconds * 5.2)
+      this.dose += seconds * 5.2
       this.drawGrounds()
       this.drawGrinding()
       this.updateUi()
-      if (this.dose >= 22) this.grinding = false
     }
 
     if (this.step === 'brewing') {
@@ -130,6 +132,7 @@ export class EspressoScene extends Phaser.Scene {
     this.grinding = false
     this.tamping = false
     this.lockDragging = false
+    this.scoopNotice = ''
     this.timeScale = this.debug ? 5 : 1
   }
 
@@ -141,7 +144,6 @@ export class EspressoScene extends Phaser.Scene {
     this.lockDragging = false
     this.grindStream.clear()
     this.input.resetPointers()
-    this.input.enabled = false
     this.scene.restart()
   }
 
@@ -341,6 +343,7 @@ export class EspressoScene extends Phaser.Scene {
 
     this.grinderButton.on('pointerdown', () => {
       if (this.step !== 'dose') return
+      this.scoopNotice = ''
       this.grinding = true
       this.grinderButton.setFillStyle(colors.mustard)
     })
@@ -435,6 +438,12 @@ export class EspressoScene extends Phaser.Scene {
     this.scaleText = this.addText(349, 61, '0.0 g', 28, colors.mint).setOrigin(0.5, 0)
     doseScale.add(this.scaleText)
 
+    this.scoopButton = this.roundedRect(72, 672, 220, 48, 16, colors.paper, colors.ink, 4)
+    this.scoopButton.setDepth(4).setInteractive(new Phaser.Geom.Rectangle(72, 672, 220, 48), Phaser.Geom.Rectangle.Contains)
+    this.scoopButton.input!.cursor = 'pointer'
+    this.scoopButton.on('pointerdown', () => this.removeTeaspoon())
+    this.addText(182, 684, 'SCOOP OUT 1 TSP', 14, colors.coralDark).setOrigin(0.5, 0).setDepth(5)
+
     const mat = this.roundedRect(335, 675, 405, 158, 27, colors.deepTeal, colors.ink, 7)
     mat.setAlpha(0.96)
     this.addText(365, 790, 'TAMP MAT', 13, colors.mint)
@@ -506,7 +515,7 @@ export class EspressoScene extends Phaser.Scene {
         this.grinding = false
         this.grindStream.clear()
         this.grinderButton.setFillStyle(colors.coral)
-        if (this.dose >= 16.5) this.completeDose()
+        this.updateUi()
       }
       if (this.tamping) this.completeTamp()
       this.tamping = false
@@ -517,6 +526,10 @@ export class EspressoScene extends Phaser.Scene {
       if (object === this.tamper && this.step === 'tamp') {
         this.tweens.killTweensOf(this.tamper)
         this.tamping = true
+      }
+      if (object === this.portafilter && this.step === 'dose') {
+        this.scoopNotice = ''
+        this.tweens.killTweensOf(this.portafilter)
       }
     })
 
@@ -531,10 +544,27 @@ export class EspressoScene extends Phaser.Scene {
         this.updateUi()
       }
 
+      if (object === this.portafilter && this.step === 'dose') {
+        this.portafilter.setPosition(dragX, dragY)
+      }
+
       if (object === this.portafilter && this.step === 'place') {
         this.portafilter.setPosition(dragX, dragY)
         if (Phaser.Math.Distance.Between(dragX, dragY, 812, 351) < 95) this.snapToGroup()
       }
+    })
+
+    this.input.on('dragend', (_pointer: Phaser.Input.Pointer, object: Phaser.GameObjects.GameObject) => {
+      if (object !== this.portafilter || this.step !== 'dose') return
+      const overMat = Phaser.Math.Distance.Between(this.portafilter.x, this.portafilter.y, 470, 735) < 120
+      if (overMat && this.dose >= 16.5) {
+        this.completeDose()
+        return
+      }
+
+      this.scoopNotice = overMat ? 'NEED AT LEAST 16.5 g' : ''
+      this.tweens.add({ targets: this.portafilter, x: 208, y: 565, duration: 280, ease: 'Cubic.Out' })
+      this.updateUi()
     })
 
     this.input.on('pointermove', (pointer: Phaser.Input.Pointer) => {
@@ -556,21 +586,29 @@ export class EspressoScene extends Phaser.Scene {
     })
   }
 
+  private removeTeaspoon() {
+    if (this.step !== 'dose' || this.grinding) return
+    if (this.dose <= 0) {
+      this.scoopNotice = 'NOTHING TO SCOOP'
+      this.updateUi()
+      return
+    }
+
+    const amount = Math.min(this.dose, Phaser.Math.FloatBetween(3.5, 5.5))
+    this.dose = Math.max(0, this.dose - amount)
+    this.scoopNotice = `SCOOPED ${amount.toFixed(1)} g`
+    this.drawGrounds()
+    this.updateUi()
+    this.tweens.add({ targets: this.scoopButton, alpha: 0.55, duration: 90, yoyo: true })
+  }
+
   private completeDose() {
     this.step = 'tamp'
-    this.portafilter.disableInteractive()
-    this.tamper.setPosition(470, 680).setVisible(false)
-    this.tweens.add({
-      targets: this.portafilter,
-      x: 470,
-      y: 735,
-      duration: 520,
-      ease: 'Cubic.Out',
-      onComplete: () => {
-        this.tamper.setVisible(true)
-        this.tweens.add({ targets: this.tamper, y: 690, duration: 430, yoyo: true, repeat: -1, ease: 'Sine.InOut' })
-      },
-    })
+    this.scoopNotice = ''
+    this.scoopButton.disableInteractive().setAlpha(0.42)
+    this.portafilter.setPosition(470, 735).disableInteractive()
+    this.tamper.setPosition(470, 680).setVisible(true)
+    this.tweens.add({ targets: this.tamper, y: 690, duration: 430, yoyo: true, repeat: -1, ease: 'Sine.InOut' })
     this.updateUi()
   }
 
@@ -755,7 +793,11 @@ export class EspressoScene extends Phaser.Scene {
     })
 
     if (this.step === 'dose') {
-      this.statusText.setText(this.dose < 16.5 ? 'HOLD GRIND TO 18.0' : `${this.dose.toFixed(1)} g  •  RELEASE`)
+      if (this.scoopNotice) this.statusText.setText(this.scoopNotice)
+      else if (this.grinding) this.statusText.setText(`${this.dose.toFixed(1)} g  •  RELEASE AT 18.0`)
+      else if (this.dose < 16.5) this.statusText.setText('HOLD GRIND TO 18.0')
+      else if (Math.abs(this.dose - 18) <= 0.5) this.statusText.setText('DRAG TO TAMP MAT')
+      else this.statusText.setText('ADJUST OR DRAG TO MAT')
       this.scaleText.setColor(css(Math.abs(this.dose - 18) <= 0.5 ? colors.mustard : colors.mint))
     } else if (this.step === 'tamp') {
       this.statusText.setText(this.tampForce < 8 ? 'DRAG TAMP DOWN' : `${this.tampForce.toFixed(0)} kg  •  RELEASE`)
