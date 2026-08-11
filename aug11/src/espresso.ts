@@ -470,24 +470,72 @@ export class EspressoScene extends Phaser.Scene {
 
   private drawPortafilter() {
     this.portafilter = this.add.container(208, 565).setDepth(8)
-    const shadow = this.add.ellipse(45, 14, 270, 48, colors.ink, 0.18)
+    const shadow = this.add.ellipse(52, 31, 302, 56, colors.ink, 0.2)
     const g = this.add.graphics()
+
+    // The bottomless basket hangs below its rolled rim instead of ending in spouts.
+    g.fillStyle(0x667d78)
+    g.lineStyle(6, colors.ink)
+    g.fillEllipse(0, 22, 150, 72)
+    g.strokeEllipse(0, 22, 150, 72)
+    g.fillStyle(colors.steelDark)
+    g.fillPoints([
+      new Phaser.Math.Vector2(-74, -7),
+      new Phaser.Math.Vector2(74, -7),
+      new Phaser.Math.Vector2(67, 25),
+      new Phaser.Math.Vector2(-67, 25),
+    ], true)
+    g.fillStyle(0xb9c8c3, 0.72)
+    g.fillRoundedRect(-58, 28, 92, 7, 3)
+
+    // One locking lug and a stepped metal collar give the head a mechanical silhouette.
+    g.fillStyle(colors.steel)
+    g.lineStyle(5, colors.ink)
+    g.fillRoundedRect(-91, -20, 32, 29, 8)
+    g.strokeRoundedRect(-91, -20, 32, 29, 8)
+    g.fillStyle(colors.steelDark)
+    g.fillRoundedRect(54, -25, 66, 39, 12)
+    g.strokeRoundedRect(54, -25, 66, 39, 12)
+    g.fillStyle(colors.steel)
+    g.fillRoundedRect(62, -18, 49, 18, 7)
+
+    // A lower shadow edge and top highlight make the handle feel solid in the hand.
+    g.fillStyle(0x122f2f, 0.5)
+    g.fillRoundedRect(103, -12, 171, 43, 20)
+    g.fillStyle(colors.deepTeal)
+    g.lineStyle(6, colors.ink)
+    g.fillRoundedRect(101, -23, 169, 43, 20)
+    g.strokeRoundedRect(101, -23, 169, 43, 20)
+    g.fillStyle(0x397a75)
+    g.fillRoundedRect(114, -15, 134, 9, 4)
+    g.fillStyle(colors.coral)
+    g.fillRoundedRect(244, -25, 43, 47, 20)
+    g.strokeRoundedRect(244, -25, 43, 47, 20)
+    g.fillStyle(0xff9b83)
+    g.fillRoundedRect(253, -16, 17, 8, 4)
+
+    // The top rim and basket sit above the darker cylindrical body.
     g.fillStyle(colors.steel)
     g.lineStyle(7, colors.ink)
-    g.fillEllipse(0, 0, 150, 83)
-    g.strokeEllipse(0, 0, 150, 83)
-    g.fillStyle(0x6f8580)
-    g.fillEllipse(0, 0, 121, 59)
-    g.fillStyle(0x283c39)
-    g.fillRoundedRect(66, -14, 186, 28, 13)
-    g.lineStyle(6, colors.ink)
-    g.strokeRoundedRect(66, -14, 186, 28, 13)
-    g.fillStyle(colors.coral)
-    g.fillRoundedRect(207, -22, 78, 44, 19)
-    g.strokeRoundedRect(207, -22, 78, 44, 19)
+    g.fillEllipse(0, -8, 160, 70)
+    g.strokeEllipse(0, -8, 160, 70)
+    g.fillStyle(0x829792)
+    g.fillEllipse(0, -8, 136, 54)
+    g.fillStyle(0xc6d2ce)
+    g.lineStyle(4, colors.ink)
+    g.fillEllipse(0, -9, 114, 44)
+    g.strokeEllipse(0, -9, 114, 44)
+
+    g.fillStyle(0x718681, 0.72)
+    for (const [x, y] of [[-35, -15], [-17, -17], [0, -18], [17, -17], [35, -15], [-42, -8], [-23, -8], [-6, -8], [11, -8], [28, -8], [43, -8], [-31, 1], [-12, 2], [7, 2], [26, 1]] as const) {
+      g.fillCircle(x, y, 2)
+    }
+    g.lineStyle(4, 0xf6fbf8, 0.88)
+    g.lineBetween(-49, -26, 37, -26)
+
     this.grounds = this.add.graphics()
     this.portafilter.add([shadow, g, this.grounds])
-    this.portafilter.setInteractive(new Phaser.Geom.Rectangle(-80, -50, 365, 100), Phaser.Geom.Rectangle.Contains)
+    this.portafilter.setInteractive(new Phaser.Geom.Rectangle(-95, -55, 390, 115), Phaser.Geom.Rectangle.Contains)
     this.portafilter.input!.draggable = true
     this.portafilter.input!.cursor = 'pointer'
     this.input.setDraggable(this.portafilter)
@@ -737,13 +785,13 @@ export class EspressoScene extends Phaser.Scene {
     if (this.dose <= 0) return
     const fullness = Phaser.Math.Clamp(this.dose / 18, 0.08, 1.15)
     this.grounds.fillStyle(colors.coffee)
-    this.grounds.fillEllipse(0, -1, 111 * Math.min(fullness * 1.7, 1), 53 * Math.min(fullness * 1.7, 1))
+    this.grounds.fillEllipse(0, -9, 108 * Math.min(fullness * 1.7, 1), 42 * Math.min(fullness * 1.7, 1))
     this.grounds.fillStyle(0x9a5c35, 0.9)
     const dots = Math.floor(this.dose * 1.6)
     for (let i = 0; i < dots; i++) {
       const angle = i * 2.399
-      const radius = Math.sqrt(i / Math.max(dots, 1)) * 48
-      this.grounds.fillCircle(Math.cos(angle) * radius, Math.sin(angle) * radius * 0.42 - 2, 1.8)
+      const radius = Math.sqrt(i / Math.max(dots, 1)) * 47
+      this.grounds.fillCircle(Math.cos(angle) * radius, Math.sin(angle) * radius * 0.34 - 9, 1.8)
     }
   }
 
