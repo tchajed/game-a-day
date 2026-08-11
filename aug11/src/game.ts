@@ -42,9 +42,10 @@ export class StorefrontScene extends Phaser.Scene {
   }
 
   preload() {
-    this.load.image('mouse-barista', '/assets/mouse-barista.png')
-    this.load.image('rabbit-customer', '/assets/rabbit-customer.png')
-    this.load.image('cat-customer', '/assets/cat-customer.png')
+    const assets = `${import.meta.env.BASE_URL}assets/`
+    this.load.image('mouse-barista', `${assets}mouse-barista.png`)
+    this.load.image('rabbit-customer', `${assets}rabbit-customer.png`)
+    this.load.image('cat-customer', `${assets}cat-customer.png`)
   }
 
   create(data: { shotPulled?: boolean } = {}) {

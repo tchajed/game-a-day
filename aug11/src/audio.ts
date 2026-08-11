@@ -151,7 +151,7 @@ class CoffeeAudio {
 
   private getMusic() {
     if (this.music) return this.music
-    this.music = new Audio('/assets/coffee-shop-loop.webm')
+    this.music = new Audio(`${import.meta.env.BASE_URL}assets/coffee-shop-loop.webm`)
     this.music.id = 'background-music'
     this.music.loop = true
     this.music.preload = 'auto'

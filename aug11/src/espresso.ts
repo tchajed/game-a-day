@@ -67,7 +67,7 @@ export class EspressoScene extends Phaser.Scene {
   }
 
   preload() {
-    this.load.image('espresso-machine-detail', '/assets/espresso-machine-v2.png')
+    this.load.image('espresso-machine-detail', `${import.meta.env.BASE_URL}assets/espresso-machine-v2.png`)
   }
 
   create() {
