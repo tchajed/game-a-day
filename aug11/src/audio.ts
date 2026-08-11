@@ -113,7 +113,7 @@ class CoffeeAudio {
 
     this.musicBus = context.createGain()
     this.musicBus.gain.setValueAtTime(0.0001, context.currentTime)
-    this.musicBus.gain.exponentialRampToValueAtTime(0.055, context.currentTime + 1.2)
+    this.musicBus.gain.exponentialRampToValueAtTime(0.13, context.currentTime + 0.8)
     this.musicBus.connect(context.destination)
     this.musicBar = 0
     this.scheduleMusicBar()
@@ -144,22 +144,35 @@ class CoffeeAudio {
       [87.31, 130.81, 164.81, 196],
       [98, 146.83, 174.61, 220],
     ]
-    const chord = chords[this.musicBar % chords.length]
+    const melodies = [
+      [329.63, 392, 493.88, 392],
+      [329.63, 277.18, 329.63, 440],
+      [261.63, 329.63, 392, 329.63],
+      [293.66, 349.23, 440, 392],
+    ]
+    const chordIndex = this.musicBar % chords.length
+    const chord = chords[chordIndex]
     const start = context.currentTime + 0.06
-    chord.forEach((frequency, index) => this.scheduleNote(frequency, start + index * 0.04, 3.7, index === 0 ? 0.5 : 0.26))
-    this.scheduleNote(chord[2] * 2, start + 0.55, 0.85, 0.15)
-    this.scheduleNote(chord[3] * 2, start + 1.65, 0.9, 0.12)
-    this.scheduleNote(chord[1] * 2, start + 2.75, 0.8, 0.1)
+    chord.forEach((frequency, index) => this.scheduleNote(frequency, start + index * 0.04, 3.7, index === 0 ? 0.52 : 0.3))
+    melodies[chordIndex].forEach((frequency, index) => {
+      this.scheduleNote(frequency, start + 0.38 + index * 0.9, 0.68, 0.3, 'triangle')
+    })
     this.musicBar += 1
   }
 
-  private scheduleNote(frequency: number, start: number, duration: number, volume: number) {
+  private scheduleNote(
+    frequency: number,
+    start: number,
+    duration: number,
+    volume: number,
+    timbre: OscillatorType = 'sine',
+  ) {
     const context = this.context
     const bus = this.musicBus
     if (!context || !bus) return
     const oscillator = context.createOscillator()
     const gain = context.createGain()
-    oscillator.type = 'sine'
+    oscillator.type = timbre
     oscillator.frequency.setValueAtTime(frequency, start)
     gain.gain.setValueAtTime(0.0001, start)
     gain.gain.exponentialRampToValueAtTime(volume, start + Math.min(0.35, duration * 0.25))
