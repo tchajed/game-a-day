@@ -29,16 +29,19 @@ function createAudioControls() {
   machinesButton.id = 'machines-toggle'
 
   const updateLabels = () => {
-    musicButton.textContent = coffeeAudio.musicEnabled ? '♫  MUSIC ON' : '♫  MUSIC OFF'
+    musicButton.textContent = coffeeAudio.musicEnabled ? 'MUSIC ON' : 'MUSIC OFF'
     musicButton.setAttribute('aria-pressed', String(coffeeAudio.musicEnabled))
+    musicButton.setAttribute('aria-label', coffeeAudio.musicEnabled ? 'Music on' : 'Music off')
     musicButton.title = coffeeAudio.musicEnabled ? 'Turn relaxing music off' : 'Turn relaxing music on'
 
-    effectsButton.textContent = coffeeAudio.effectsEnabled ? '♬  SFX ON' : '♬  SFX OFF'
+    effectsButton.textContent = coffeeAudio.effectsEnabled ? 'SFX ON' : 'SFX OFF'
     effectsButton.setAttribute('aria-pressed', String(coffeeAudio.effectsEnabled))
+    effectsButton.setAttribute('aria-label', coffeeAudio.effectsEnabled ? 'Sound effects on' : 'Sound effects off')
     effectsButton.title = coffeeAudio.effectsEnabled ? 'Turn sound effects off' : 'Turn sound effects on'
 
-    machinesButton.textContent = `⚙  LOUD MACHINES ${coffeeAudio.loudMachinesEnabled ? 'ON' : 'OFF'}`
+    machinesButton.textContent = `LOUD MACHINES ${coffeeAudio.loudMachinesEnabled ? 'ON' : 'OFF'}`
     machinesButton.setAttribute('aria-pressed', String(coffeeAudio.loudMachinesEnabled))
+    machinesButton.setAttribute('aria-label', `Loud machines ${coffeeAudio.loudMachinesEnabled ? 'on' : 'off'}`)
     machinesButton.disabled = !coffeeAudio.effectsEnabled
     machinesButton.title = coffeeAudio.loudMachinesEnabled
       ? 'Return the grinder and espresso machine to normal volume'

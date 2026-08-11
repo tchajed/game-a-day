@@ -54,20 +54,38 @@ body {
 }
 
 .audio-toggle {
-  min-width: 120px;
-  padding: 10px 14px;
+  position: relative;
+  width: 48px;
+  height: 48px;
+  padding: 0;
+  overflow: hidden;
   border: 3px solid #203b3a;
-  border-radius: 999px;
+  border-radius: 50%;
   background: #fff9e9;
   box-shadow: 0 6px 0 #203b3a40;
   color: #245b59;
-  font: 600 13px 'Fredoka', ui-rounded, sans-serif;
-  letter-spacing: 0.03em;
+  font-size: 0;
   cursor: pointer;
 }
 
-#machines-toggle {
-  min-width: 192px;
+.audio-toggle::before {
+  font: 600 19px 'Fredoka', ui-rounded, sans-serif;
+}
+
+#music-toggle::before {
+  content: '♫';
+}
+
+#effects-toggle::before {
+  content: '♬';
+}
+
+#machines-toggle::before {
+  content: '⚙';
+}
+
+.audio-toggle[aria-pressed='true'] {
+  background: #f7cf68;
 }
 
 .audio-toggle:hover:not(:disabled) {
@@ -101,11 +119,9 @@ body {
     bottom: 10px;
   }
 
-  .audio-toggle,
-  #machines-toggle {
-    min-width: 0;
-    padding: 7px 11px;
-    font-size: 11px;
+  .audio-toggle {
+    width: 42px;
+    height: 42px;
   }
 }
 
