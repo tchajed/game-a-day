@@ -470,68 +470,61 @@ export class EspressoScene extends Phaser.Scene {
 
   private drawPortafilter() {
     this.portafilter = this.add.container(208, 565).setDepth(8)
-    const shadow = this.add.ellipse(52, 31, 302, 56, colors.ink, 0.2)
+    const shadow = this.add.ellipse(49, 22, 292, 46, colors.ink, 0.19)
     const g = this.add.graphics()
 
-    // The bottomless basket hangs below its rolled rim instead of ending in spouts.
-    g.fillStyle(0x667d78)
-    g.lineStyle(6, colors.ink)
-    g.fillEllipse(0, 22, 150, 72)
-    g.strokeEllipse(0, 22, 150, 72)
+    // The grip sits behind the head, with a steel yoke rather than a pan-like join.
+    g.fillStyle(0x122f2f, 0.38)
+    g.fillRoundedRect(88, -8, 194, 39, 18)
     g.fillStyle(colors.steelDark)
-    g.fillPoints([
-      new Phaser.Math.Vector2(-74, -7),
-      new Phaser.Math.Vector2(74, -7),
-      new Phaser.Math.Vector2(67, 25),
-      new Phaser.Math.Vector2(-67, 25),
-    ], true)
-    g.fillStyle(0xb9c8c3, 0.72)
-    g.fillRoundedRect(-58, 28, 92, 7, 3)
-
-    // One locking lug and a stepped metal collar give the head a mechanical silhouette.
-    g.fillStyle(colors.steel)
     g.lineStyle(5, colors.ink)
-    g.fillRoundedRect(-91, -20, 32, 29, 8)
-    g.strokeRoundedRect(-91, -20, 32, 29, 8)
-    g.fillStyle(colors.steelDark)
-    g.fillRoundedRect(54, -25, 66, 39, 12)
-    g.strokeRoundedRect(54, -25, 66, 39, 12)
+    g.fillRoundedRect(52, -21, 75, 36, 11)
+    g.strokeRoundedRect(52, -21, 75, 36, 11)
     g.fillStyle(colors.steel)
-    g.fillRoundedRect(62, -18, 49, 18, 7)
-
-    // A lower shadow edge and top highlight make the handle feel solid in the hand.
-    g.fillStyle(0x122f2f, 0.5)
-    g.fillRoundedRect(103, -12, 171, 43, 20)
+    g.fillRoundedRect(60, -14, 55, 15, 6)
     g.fillStyle(colors.deepTeal)
     g.lineStyle(6, colors.ink)
-    g.fillRoundedRect(101, -23, 169, 43, 20)
-    g.strokeRoundedRect(101, -23, 169, 43, 20)
+    g.fillRoundedRect(105, -20, 177, 38, 18)
+    g.strokeRoundedRect(105, -20, 177, 38, 18)
     g.fillStyle(0x397a75)
-    g.fillRoundedRect(114, -15, 134, 9, 4)
+    g.fillRoundedRect(118, -13, 139, 7, 3)
     g.fillStyle(colors.coral)
-    g.fillRoundedRect(244, -25, 43, 47, 20)
-    g.strokeRoundedRect(244, -25, 43, 47, 20)
-    g.fillStyle(0xff9b83)
-    g.fillRoundedRect(253, -16, 17, 8, 4)
+    g.fillCircle(267, -1, 12)
+    g.lineStyle(4, colors.ink)
+    g.strokeCircle(267, -1, 12)
 
-    // The top rim and basket sit above the darker cylindrical body.
+    // A shallow lower ring makes this a bottomless portafilter, not a deep basket or spouted model.
+    g.fillStyle(0x5f7470)
+    g.lineStyle(7, colors.ink)
+    g.fillEllipse(0, 9, 154, 66)
+    g.strokeEllipse(0, 9, 154, 66)
+    g.fillStyle(0x183534)
+    g.fillEllipse(0, 18, 116, 35)
+    g.fillStyle(0x96aaa4)
+    g.fillRoundedRect(-45, 33, 90, 5, 2)
+
+    // A single locking lug and rolled upper rim provide the recognizable group-head profile.
+    g.fillStyle(colors.steel)
+    g.lineStyle(5, colors.ink)
+    g.fillRoundedRect(-89, -18, 31, 27, 8)
+    g.strokeRoundedRect(-89, -18, 31, 27, 8)
     g.fillStyle(colors.steel)
     g.lineStyle(7, colors.ink)
-    g.fillEllipse(0, -8, 160, 70)
-    g.strokeEllipse(0, -8, 160, 70)
-    g.fillStyle(0x829792)
-    g.fillEllipse(0, -8, 136, 54)
-    g.fillStyle(0xc6d2ce)
+    g.fillEllipse(0, -7, 158, 64)
+    g.strokeEllipse(0, -7, 158, 64)
+    g.fillStyle(0x7e938e)
+    g.fillEllipse(0, -7, 134, 50)
+    g.fillStyle(0xc8d4d0)
     g.lineStyle(4, colors.ink)
-    g.fillEllipse(0, -9, 114, 44)
-    g.strokeEllipse(0, -9, 114, 44)
+    g.fillEllipse(0, -8, 114, 42)
+    g.strokeEllipse(0, -8, 114, 42)
 
-    g.fillStyle(0x718681, 0.72)
-    for (const [x, y] of [[-35, -15], [-17, -17], [0, -18], [17, -17], [35, -15], [-42, -8], [-23, -8], [-6, -8], [11, -8], [28, -8], [43, -8], [-31, 1], [-12, 2], [7, 2], [26, 1]] as const) {
+    g.fillStyle(0x718681, 0.7)
+    for (const [x, y] of [[-34, -14], [-17, -16], [0, -17], [17, -16], [34, -14], [-41, -7], [-22, -7], [-5, -7], [12, -7], [31, -7], [-30, 1], [-10, 2], [10, 2], [30, 1]] as const) {
       g.fillCircle(x, y, 2)
     }
-    g.lineStyle(4, 0xf6fbf8, 0.88)
-    g.lineBetween(-49, -26, 37, -26)
+    g.lineStyle(4, 0xf6fbf8, 0.9)
+    g.lineBetween(-47, -24, 35, -24)
 
     this.grounds = this.add.graphics()
     this.portafilter.add([shadow, g, this.grounds])
