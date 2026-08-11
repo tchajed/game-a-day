@@ -1,36 +1,44 @@
-# Game a day
+# Game a Day
 
-I'm trying to create a game in a day. The goal is to create a maximum 5-minute interaction that captures the core of the game, not to write a full end-to-end experience. It's important that the process moves fast so I can iterate on the game design and not on infrastructure, assets, or coding.
+A collection of tiny games built as rapid, one-day experiments. Each game focuses on one strong mechanic and aims to deliver a complete interaction in five minutes or less.
 
-Games should:
+## Games
 
-- have one strong mechanic
-- start immediately, without much or any explanation
-- use minimal code and assets
-- be easy to (human) playtest: provide a way to skip levels for development
-- support programmatic (AI) playtesting
+| Game | Directory | Description |
+| --- | --- | --- |
+| [Signal / Sequence](aug8/) | `aug8` | Monitor a stream of signals and catch violations of temporal rules. |
+| [Parking Simulator](aug9/) | `aug9` | Wrestle with the controls of a top-down parallel-parking challenge. |
+| [Visa Form](aug10/) | `aug10` | Race against a hostile government website to complete a visa application. |
 
-Some technical constraints:
+Each game is a standalone Bun project. To run one locally:
 
-- use bun and typescript
-- prefer procedural assets over binary ones
-- run on the web
-- mobile support is optional but encouraged
-- always evaluate the game and assets visually
-- support `?debug=true` to gate playtesting features (cheats, easy mode, skipping levels, etc)
+```bash
+cd aug10
+bun install
+bun run dev
+```
 
-In addition to the game, there should be a short pitch in PITCH.md: a "back of the box" one paragraph hook that sells the core fun, and a screenshot or two. This would show up in a landing page before clicking into the game.
+## Portfolio site
 
-## Infrastructure
+The [`site`](site/) project generates the collection's landing page and builds every published game into one static output directory.
 
-Start a new game directory with:
+```bash
+cd site
+bun install
+bun run dev       # develop the landing page
+bun run build     # build the landing page and all games
+```
+
+The complete static build is written to `site/dist`.
+
+## Adding a game
+
+Create a new game directory from the repository root:
 
 ```bash
 ./new-game <directory>
 ```
 
-Use React if it makes sense, otherwise Phaser or Excalibur.js; ask the user if it's unclear.
+Then add its metadata to [`site/games.ts`](site/games.ts) when it is ready to appear on the portfolio site.
 
-Create procedural SVG and Canvas art usually. If needed, use GPT Images and then post-process with Sharp to integrate into the game engine.
-
-For audio use Web Audio and Tone.js. Always provide a music on/off button for background music. Disable music during your own programmatic testing using a URL parameter - otherwise it plays in the background.
+See [`GAME_GUIDELINES.md`](GAME_GUIDELINES.md) for the shared game-design goals, development constraints, and prototype workflow. New game directories receive an `AGENTS.md` copied from [`AGENTS.template.md`](AGENTS.template.md).

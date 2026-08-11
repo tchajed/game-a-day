@@ -16,7 +16,7 @@ if [[ -e "$game_dir" ]]; then
 fi
 
 mkdir -p "$game_dir"
-cp "$repo_dir/game-agents.md" "$game_dir/AGENTS.md"
+cp "$repo_dir/AGENTS.template.md" "$game_dir/AGENTS.md"
 cat >"$game_dir/README.md" <<'EOF'
 # Game title
 
