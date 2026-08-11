@@ -1,8 +1,12 @@
 const MUSIC_STORAGE_KEY = 'little-peak-music'
+const EFFECTS_STORAGE_KEY = 'little-peak-effects'
+const LOUD_MACHINES_STORAGE_KEY = 'little-peak-loud-machines'
+const LOUD_MACHINE_MULTIPLIER = 4
 
 type LoopingSound = {
   source: AudioBufferSourceNode
   gain: GainNode
+  baseVolume: number
 }
 
 class CoffeeAudio {
@@ -12,32 +16,57 @@ class CoffeeAudio {
   private brew?: LoopingSound
   private grinderRequested = false
   private brewRequested = false
-  private enabled = localStorage.getItem(MUSIC_STORAGE_KEY) !== 'off'
+  private musicOn = localStorage.getItem(MUSIC_STORAGE_KEY) !== 'off'
+  private effectsOn = localStorage.getItem(EFFECTS_STORAGE_KEY) !== 'off'
+  private machinesLoud = localStorage.getItem(LOUD_MACHINES_STORAGE_KEY) === 'on'
 
   get musicEnabled() {
-    return this.enabled
+    return this.musicOn
+  }
+
+  get effectsEnabled() {
+    return this.effectsOn
+  }
+
+  get loudMachinesEnabled() {
+    return this.machinesLoud
   }
 
   async unlock() {
     const context = this.getContext()
     if (context?.state === 'suspended') await context.resume()
-    if (this.enabled) await this.startMusic()
+    if (this.musicOn) await this.startMusic()
   }
 
   async toggleMusic() {
-    this.enabled = !this.enabled
-    localStorage.setItem(MUSIC_STORAGE_KEY, this.enabled ? 'on' : 'off')
-    if (this.enabled) {
+    this.musicOn = !this.musicOn
+    localStorage.setItem(MUSIC_STORAGE_KEY, this.musicOn ? 'on' : 'off')
+    if (this.musicOn) {
       await this.unlock()
     } else {
       this.stopMusic()
     }
   }
 
+  toggleEffects() {
+    this.effectsOn = !this.effectsOn
+    localStorage.setItem(EFFECTS_STORAGE_KEY, this.effectsOn ? 'on' : 'off')
+    if (this.effectsOn) this.playPlonk(1.25)
+    else this.stopEffects()
+  }
+
+  toggleLoudMachines() {
+    this.machinesLoud = !this.machinesLoud
+    localStorage.setItem(LOUD_MACHINES_STORAGE_KEY, this.machinesLoud ? 'on' : 'off')
+    this.updateLoopVolume(this.grinder)
+    this.updateLoopVolume(this.brew)
+  }
+
   playPlonk(pitch = 1) {
+    if (!this.effectsOn) return
     void this.unlock().then(() => {
       const context = this.context
-      if (!context || context.state !== 'running') return
+      if (!this.effectsOn || !context || context.state !== 'running') return
       const now = context.currentTime
       const gain = context.createGain()
       gain.gain.setValueAtTime(0.0001, now)
@@ -64,9 +93,10 @@ class CoffeeAudio {
   }
 
   startGrinder() {
+    if (!this.effectsOn) return
     this.grinderRequested = true
     void this.unlock().then(() => {
-      if (!this.grinderRequested || this.grinder) return
+      if (!this.effectsOn || !this.grinderRequested || this.grinder) return
       this.grinder = this.startNoiseLoop(0.1, 520, 1.8)
     })
   }
@@ -78,9 +108,10 @@ class CoffeeAudio {
   }
 
   startBrew() {
+    if (!this.effectsOn) return
     this.brewRequested = true
     void this.unlock().then(() => {
-      if (!this.brewRequested || this.brew) return
+      if (!this.effectsOn || !this.brewRequested || this.brew) return
       this.brew = this.startNoiseLoop(0.045, 1450, 0.8)
     })
   }
@@ -146,12 +177,25 @@ class CoffeeAudio {
     filter.Q.value = q
     const gain = context.createGain()
     gain.gain.setValueAtTime(0.0001, context.currentTime)
-    gain.gain.exponentialRampToValueAtTime(volume, context.currentTime + 0.08)
+    gain.gain.exponentialRampToValueAtTime(this.machineVolume(volume), context.currentTime + 0.08)
     source.connect(filter)
     filter.connect(gain)
     gain.connect(context.destination)
     source.start()
-    return { source, gain }
+    return { source, gain, baseVolume: volume }
+  }
+
+  private machineVolume(baseVolume: number) {
+    return baseVolume * (this.machinesLoud ? LOUD_MACHINE_MULTIPLIER : 1)
+  }
+
+  private updateLoopVolume(loop?: LoopingSound) {
+    const context = this.context
+    if (!context || !loop) return
+    const now = context.currentTime
+    loop.gain.gain.cancelScheduledValues(now)
+    loop.gain.gain.setValueAtTime(Math.max(loop.gain.gain.value, 0.0001), now)
+    loop.gain.gain.exponentialRampToValueAtTime(this.machineVolume(loop.baseVolume), now + 0.12)
   }
 
   private stopLoop(loop?: LoopingSound) {
