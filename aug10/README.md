@@ -12,7 +12,11 @@ I want the experience to get progressively worse, so that the first interaction 
 
 **Back of the box:** You have five minutes, one passport, and the full might of an obsolete government website standing between you and a visa. Dig through a beautifully functional desktop for your personal records, verification mail, and passport photo—then race to retype them into a form that disables paste, rejects correct-looking dates, and gets slower with every click. The information is easy to find. Getting the website to accept it is the game.
 
-Run with `bun install && bun run dev`, then open the local URL. Use the dock to open or switch between the visa form, Vault, Post, and Photos. Drag any floating window by its title bar; the three controls at the upper-right tile it left, return it to a large floating window, or tile it right. The red control closes it. Click any Vault value or the email code to copy it. The applicant photograph is `visa-photo.jpg`.
+Run with `bun install && bun run dev`, then open the local URL. On desktop, use the dock to open or switch between the visa form, Vault, Post, and Photos. Drag any floating window by its title bar; the three controls at the upper-right tile it left, return it to a large floating window, or tile it right. The red control closes it. Click any Vault value or the email code to copy it. The applicant photograph is `visa-photo.jpg`.
+
+On screens up to 700px wide, the game becomes a phone instead: SecureApply, ID Wallet, Messages, and Camera Roll are full-screen mobile apps. Only one app runs on screen at once. Tap the home bar to return to the launcher and switch apps. The mobile build opens with a reassuring notice that it has been “totally optimized.”
+
+![Mobile app launcher](artifacts/mobile-apps.png)
 
 Verifying the emailed one-time code creates a saved account; the application then autosaves to this browser and resumes after a reload. Government marketing is enabled by default: animated public-service ads make navigation and scrolling slower until disabled through the Privacy page. The footer also contains the department's impressively unhelpful Accessibility statement. A final moral-character questionnaire has exactly one defensible answer to each question, followed by a generated PDF-style review where correcting an earlier section discards everything entered after it.
 

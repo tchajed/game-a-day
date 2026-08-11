@@ -39,6 +39,28 @@ function Icon({name}:{name:AppName}) {
   return <span className="flower">✤</span>;
 }
 
+const mobileApps: {name:AppName;label:string;subtitle:string}[] = [
+  {name:'browser',label:'SecureApply',subtitle:'Visa portal'},
+  {name:'passwords',label:'ID Wallet',subtitle:'Personal records'},
+  {name:'mail',label:'Messages',subtitle:'Verification codes'},
+  {name:'photos',label:'Camera Roll',subtitle:'Your photos'}
+];
+
+function MobileAppBar({app,title}:{app:AppName;title:string}){
+  return <header className="mobile-appbar"><Icon name={app}/><div><b>{title}</b><small>{mobileApps.find(item=>item.name===app)?.subtitle}</small></div></header>
+}
+
+function MobileHome({open,mailDelivered}:{open:(app:AppName)=>void;mailDelivered:boolean}){
+  return <section className="mobile-launcher" aria-label="App launcher">
+    <div className="mobile-welcome"><small>Good morning</small><b>Maya</b><span>5 minutes to finish your application.</span></div>
+    <div className="mobile-app-grid">{mobileApps.map(app=><button key={app.name} onClick={()=>open(app.name)} aria-label={`Open ${app.label}`}>
+      <span className="mobile-app-icon"><Icon name={app.name}/>{app.name==='mail'&&mailDelivered&&<i>1</i>}</span>
+      <b>{app.label}</b><small>{app.subtitle}</small>
+    </button>)}</div>
+    <div className="mobile-launcher-hint">Open one app at a time. Use the home bar to switch.</div>
+  </section>
+}
+
 function WindowTitle({title,win}:{title:string;win:WindowProps}){
   return <div className="titlebar" onPointerDown={win.startMove}>
     <div className="lights"><button onPointerDown={e=>e.stopPropagation()} onClick={win.close} title={`Close ${title}`}/><i/><i/></div><span>{title}</span>
@@ -81,6 +103,9 @@ function ApplicationPreview({data,selectedPhoto,edit,submit}:{data:FormData;sele
 
 function App(){
   const debug=new URLSearchParams(location.search).get('debug')==='true';
+  const [isMobile,setIsMobile]=useState(()=>window.matchMedia('(max-width: 700px)').matches);
+  const [mobileHome,setMobileHome]=useState(false);
+  const [mobileIntro,setMobileIntro]=useState(()=>window.matchMedia('(max-width: 700px)').matches);
   const saved=useMemo(()=>{
     try{return JSON.parse(localStorage.getItem('ds404-saved-application')||'null') as {data:FormData;page:number;selectedPhoto:boolean;submissionDenied?:boolean;denialReason?:string}|null}catch{return null}
   },[]);
@@ -105,6 +130,11 @@ function App(){
   const deliveryTimer=useRef<number|undefined>(undefined);
 
   useEffect(()=>{ const t=setInterval(()=>setSeconds(s=>Math.max(0,s-1)),1000); return()=>clearInterval(t)},[]);
+  useEffect(()=>{
+    const query=window.matchMedia('(max-width: 700px)');
+    const update=(event:MediaQueryListEvent)=>{setIsMobile(event.matches);if(event.matches)setMobileIntro(true)};
+    query.addEventListener('change',update);return()=>query.removeEventListener('change',update)
+  },[]);
   useEffect(()=>()=>window.clearTimeout(deliveryTimer.current),[]);
   useEffect(()=>{
     if(account)localStorage.setItem('ds404-saved-application',JSON.stringify({data,page,selectedPhoto,submissionDenied,denialReason}));
@@ -169,6 +199,7 @@ function App(){
     setErrors({});
   };
   const updateMarketing=(enabled:boolean)=>{setMarketingAds(enabled);localStorage.setItem('ds404-marketing',String(enabled))};
+  const openApp=(app:AppName)=>{setActive(app);setMobileHome(false);if(!isMobile)setOpenWindows(current=>({...current,[app]:true}))};
   const closeWindow=(app:AppName)=>{
     const next={...openWindows,[app]:false};
     setOpenWindows(next);
@@ -200,15 +231,33 @@ function App(){
     }:{})
   });
 
+  if(isMobile)return <main className="mobile-os">
+    <div className="mobile-wallpaper"><div className="orb o1"/><div className="orb o2"/></div>
+    <div className="mobile-status"><b>10:24</b><span>▮▮▮ &nbsp; ◒ &nbsp; ▰</span></div>
+    {mobileHome?<MobileHome open={openApp} mailDelivered={mailDelivered}/>:<>
+      {active==='browser'&&<Browser mobile page={page} data={data} setData={setData} errors={errors} setErrors={setErrors} time={time} seconds={seconds} account={account} setAccount={setAccount} setPage={setPage} field={field} proceed={proceed} sendVerificationCode={sendVerificationCode} otp={otp} submitApplication={submitApplication} submissionDenied={submissionDenied} denialReason={denialReason} answerQuestion={answerQuestion} finishQuestions={finishQuestions} editFromPreview={editFromPreview} marketingAds={marketingAds} setMarketingAds={updateMarketing} selectedPhoto={selectedPhoto} setActive={openApp} win={windowProps('browser')} style={{}}/>}
+      {active==='passwords'&&<Passwords mobile copy={copy} win={windowProps('passwords')} style={{}}/>}
+      {active==='mail'&&<Mail mobile copy={copy} delivered={mailDelivered} code={otp} recipient={data.email} win={windowProps('mail')} style={{}}/>}
+      {active==='photos'&&<Photos mobile selected={selectedPhoto} choose={()=>{setSelectedPhoto(true);setNotice('visa-photo.jpg ready to upload');setTimeout(()=>setNotice(''),1600)}} win={windowProps('photos')} style={{}}/>}
+      <button className="mobile-home-button" onClick={()=>setMobileHome(true)} aria-label="Go to app launcher"><i/></button>
+    </>}
+    {mobileHome&&<div className="mobile-gesture"/>}
+    {notice&&<div className="toast">{notice}</div>}
+    {busy&&<div className="blocker mobile-blocker"><div className="oldmodal"><b>Processing request</b><div className="bar"><i/></div><span>Please do not close SecureApply.</span></div></div>}
+    {lost&&<div className="blocker mobile-blocker"><div className="oldmodal expired"><b>Your session has expired</b><p>For your protection, all information entered has been removed.</p><button onClick={reset}>Return to start</button></div></div>}
+    {mobileIntro&&<div className="mobile-intro-backdrop" role="dialog" aria-modal="true" aria-labelledby="mobile-intro-title"><div className="mobile-intro"><div className="optimized-phone">✓</div><h2 id="mobile-intro-title">We noticed you’re on mobile.</h2><p>We totally optimized the site for mobile.</p><button autoFocus onClick={()=>setMobileIntro(false)}>Great, thanks!</button></div></div>}
+    {debug&&<button className="debug" onClick={fillCurrentScreen}>DEBUG: fill screen</button>}
+  </main>;
+
   return <main className="desktop">
     <div className="wallpaper"><div className="orb o1"/><div className="orb o2"/><div className="orb o3"/></div>
     <header className="menubar"><b>◆</b><strong>{active==='browser'?'Navigator':active==='passwords'?'Vault':active==='mail'?'Post': 'Photos'}</strong><span>File</span><span>Edit</span><span>Window</span><aside>⌁ &nbsp; ▰ &nbsp; Sun 10 Aug&nbsp; 10:24</aside></header>
-    {openWindows.browser&&<Browser page={page} data={data} setData={setData} errors={errors} setErrors={setErrors} time={time} seconds={seconds} account={account} setAccount={setAccount} setPage={setPage} field={field} proceed={proceed} sendVerificationCode={sendVerificationCode} otp={otp} submitApplication={submitApplication} submissionDenied={submissionDenied} denialReason={denialReason} answerQuestion={answerQuestion} finishQuestions={finishQuestions} editFromPreview={editFromPreview} marketingAds={marketingAds} setMarketingAds={updateMarketing} selectedPhoto={selectedPhoto} setActive={(app:AppName)=>{setActive(app);setOpenWindows(current=>({...current,[app]:true}))}} win={windowProps('browser')} style={windowStyle('browser')}/>}
+    {openWindows.browser&&<Browser page={page} data={data} setData={setData} errors={errors} setErrors={setErrors} time={time} seconds={seconds} account={account} setAccount={setAccount} setPage={setPage} field={field} proceed={proceed} sendVerificationCode={sendVerificationCode} otp={otp} submitApplication={submitApplication} submissionDenied={submissionDenied} denialReason={denialReason} answerQuestion={answerQuestion} finishQuestions={finishQuestions} editFromPreview={editFromPreview} marketingAds={marketingAds} setMarketingAds={updateMarketing} selectedPhoto={selectedPhoto} setActive={openApp} win={windowProps('browser')} style={windowStyle('browser')}/>}
     {openWindows.passwords&&<Passwords copy={copy} win={windowProps('passwords')} style={windowStyle('passwords')}/>}
     {openWindows.mail&&<Mail copy={copy} delivered={mailDelivered} code={otp} recipient={data.email} win={windowProps('mail')} style={windowStyle('mail')}/>}
     {openWindows.photos&&<Photos selected={selectedPhoto} choose={()=>{setSelectedPhoto(true);setNotice('visa-photo.jpg ready to upload');setTimeout(()=>setNotice(''),1600)}} win={windowProps('photos')} style={windowStyle('photos')}/>}
     <nav className="dock">
-      {(['browser','passwords','mail','photos'] as AppName[]).map(a=><button key={a} className={`${openWindows[a]?'open':''} ${active===a&&openWindows[a]?'active':''}`} onClick={()=>{setActive(a);setOpenWindows(current=>({...current,[a]:true}))}}><Icon name={a}/><i>{a==='passwords'?'Vault':a[0].toUpperCase()+a.slice(1)}</i></button>)}
+      {(['browser','passwords','mail','photos'] as AppName[]).map(a=><button key={a} className={`${openWindows[a]?'open':''} ${active===a&&openWindows[a]?'active':''}`} onClick={()=>openApp(a)}><Icon name={a}/><i>{a==='passwords'?'Vault':a[0].toUpperCase()+a.slice(1)}</i></button>)}
     </nav>
     {notice&&<div className="toast">{notice}</div>}
     {busy&&<div className="blocker"><div className="oldmodal"><b>Processing request</b><div className="bar"><i/></div><span>Please do not refresh your browser.</span></div></div>}
@@ -217,16 +266,16 @@ function App(){
   </main>
 }
 
-function Browser({page,data,setData,errors,setErrors,time,seconds,account,setAccount,setPage,field,proceed,sendVerificationCode,otp,submitApplication,submissionDenied,denialReason,answerQuestion,finishQuestions,editFromPreview,marketingAds,setMarketingAds,selectedPhoto,setActive,win,style}:any){
+function Browser({mobile=false,page,data,setData,errors,setErrors,time,seconds,account,setAccount,setPage,field,proceed,sendVerificationCode,otp,submitApplication,submissionDenied,denialReason,answerQuestion,finishQuestions,editFromPreview,marketingAds,setMarketingAds,selectedPhoto,setActive,win,style}:any){
  const [siteView,setSiteView]=useState<'form'|'privacy'|'accessibility'>('form');
  const [cookieWarning,setCookieWarning]=useState(false);
  const [draftMarketing,setDraftMarketing]=useState(marketingAds);
  const siteRef=useRef<HTMLDivElement>(null);
  const openPrivacy=()=>{setDraftMarketing(marketingAds);setSiteView('privacy');setCookieWarning(true)};
  useEffect(()=>{const target=siteRef.current;if(!target||!marketingAds||siteView!=='form')return;const slow=(event:WheelEvent)=>{event.preventDefault();const delta=event.deltaY;window.setTimeout(()=>target.scrollTop+=delta*.55,180)};target.addEventListener('wheel',slow,{passive:false});return()=>target.removeEventListener('wheel',slow)},[marketingAds,siteView]);
- return <section className={`browser window layout-${win.layout}`} style={style} onPointerDown={()=>setActive('browser')}>
-  <WindowTitle title="Travel Authorization — Navigator" win={win}/>
-  <div className="toolbar"><button>‹</button><button>›</button><div className="address">🔒 &nbsp; visa-services.gov.example/application/DS-404</div><button>↻</button></div>
+ return <section className={`browser ${mobile?'mobile-screen':'window'} layout-${win.layout}`} style={style} onPointerDown={()=>!mobile&&setActive('browser')}>
+  {mobile?<MobileAppBar app="browser" title="SecureApply"/>:<WindowTitle title="Travel Authorization — Navigator" win={win}/>}
+  <div className={mobile?'mobile-browser-toolbar':'toolbar'}>{!mobile&&<><button>‹</button><button>›</button></>}<div className="address">🔒 &nbsp; {mobile?'visa-services.gov.example':'visa-services.gov.example/application/DS-404'}</div><button>↻</button></div>
   <div className="site" ref={siteRef}>
    <div className="govbar"><span className="seal">⚭</span><div><b>OFFICIAL PORTAL</b><small>Department of Entry and Administrative Affairs</small></div><em>FORM DS-404 • REV. 03/1998</em></div>
    {siteView==='form'&&page<6&&<div className={`session ${!account&&seconds<=60?'urgent':''}`}><b>{account?'✓ APPLICATION SAVED':seconds<=60?'⚠ SESSION EXPIRES':'UNSAVED APPLICATION'} </b><span>{account?'Account verified':seconds<=60?time:'Verify your email to enable saving'}</span></div>}
@@ -235,10 +284,10 @@ function Browser({page,data,setData,errors,setErrors,time,seconds,account,setAcc
     {siteView==='accessibility'&&<AccessibilityPage back={()=>setSiteView('form')}/>}
     {siteView==='privacy'&&<PrivacyPage back={()=>setSiteView('form')} marketing={draftMarketing} setMarketing={setDraftMarketing}/>}
     {siteView==='form'&&<>
-    {page===0&&<><p className="crumb">HOME &gt; NON-IMMIGRANT ENTRY &gt; FORM DS-404</p><h1>Electronic Visa Pre-Application</h1><div className="warning"><b>NOTICE:</b> Information is not saved until your email address is verified.</div><h2>Step 1 of 5 — Begin application</h2><p>Enter the email address associated with the applicant.</p>{field('email','E-mail address',{wide:true})}<div className="actions"><button className="continue" onClick={sendVerificationCode}>Send verification code &gt;&gt;</button></div><p className="help">Required information may be found in applications on this computer.</p></>}
-    {page===1&&<><p className="crumb">FORM DS-404 &gt; VERIFY APPLICANT</p><h1>Email verification</h1><div className="warning blue">A six-digit access code has been sent. It should arrive in Post shortly.</div><h2>Step 1 of 5 — Verify email</h2>{field('code','Access code',{placeholder:'6 digits'})}<div className="actions"><button onClick={()=>setPage(0)}>Go Back</button><button className="continue" onClick={()=>{if(!otp||data.code!==otp){setErrors({code:'Code not recognized'});return}setAccount(true);proceed(2,['code'])}}>Verify and continue &gt;&gt;</button></div></>}
+    {page===0&&<><p className="crumb">HOME &gt; NON-IMMIGRANT ENTRY &gt; FORM DS-404</p><h1>Electronic Visa Pre-Application</h1><div className="warning"><b>NOTICE:</b> Information is not saved until your email address is verified.</div><h2>Step 1 of 5 — Begin application</h2><p>Enter the email address associated with the applicant.</p>{field('email','E-mail address',{wide:true})}<div className="actions"><button className="continue" onClick={sendVerificationCode}>Send verification code &gt;&gt;</button></div><p className="help">Required information may be found in {mobile?'other apps on this phone':'applications on this computer'}.</p></>}
+    {page===1&&<><p className="crumb">FORM DS-404 &gt; VERIFY APPLICANT</p><h1>Email verification</h1><div className="warning blue">A six-digit access code has been sent. It should arrive in {mobile?'Messages':'Post'} shortly.</div><h2>Step 1 of 5 — Verify email</h2>{field('code','Access code',{placeholder:'6 digits'})}<div className="actions"><button onClick={()=>setPage(0)}>Go Back</button><button className="continue" onClick={()=>{if(!otp||data.code!==otp){setErrors({code:'Code not recognized'});return}setAccount(true);proceed(2,['code'])}}>Verify and continue &gt;&gt;</button></div></>}
     {page===2&&<><p className="crumb">FORM DS-404 &gt; APPLICANT DETAILS</p><h1>Applicant information</h1><p className="tiny">Use UPPERCASE English letters. Dates must use format DD MMM YYYY. Do not use punctuation except where required.</p><h2>Step 2 of 5 — Personal details</h2><div className="grid">{field('first','Given name(s)')}{field('last','Family name')}{field('dob','Date of birth *',{placeholder:'DD MMM YYYY',noPaste:true})}{field('phone','Telephone number')}{field('address','Street address',{wide:true})}{field('city','City')}{field('postcode','ZIP / postal code')}</div><div className="actions"><button onClick={()=>setPage(1)}>Go Back</button><button className="continue" onClick={()=>proceed(3,['first','last','dob','phone','address','city','postcode'])}>Save and continue &gt;&gt;</button></div></>}
-    {page===3&&<><p className="crumb">FORM DS-404 &gt; DOCUMENT INFORMATION</p><h1>Travel document</h1><div className="warning"><b>Important:</b> Copy and paste is disabled for secure document fields.</div><h2>Step 3 of 5 — Passport and travel</h2><div className="grid">{field('passport','Passport number',{noPaste:true})}{field('maiden',"Mother's maiden name",{noPaste:true})}{field('issued','Date issued',{placeholder:'DD MMM YYYY'})}{field('expires','Date of expiry',{placeholder:'DD MMM YYYY'})}{field('arrival','Intended arrival',{placeholder:'DD MMM YYYY'})}<label className="wide"><span>Applicant photograph</span><div className={selectedPhoto?'upload chosen':'upload'}>{selectedPhoto?'✓ visa-photo.jpg':'No file selected'}<button onClick={()=>setActive('photos')}>Choose from Photos…</button></div>{errors.photo&&<small className="error">⚠ {errors.photo}</small>}</label></div><div className="actions"><button onClick={()=>setPage(2)}>Go Back</button><button className="continue" onClick={()=>{if(!selectedPhoto){setErrors({photo:'Applicant photograph is mandatory'});return}proceed(4,['passport','maiden','issued','expires','arrival'])}}>Save and continue &gt;&gt;</button></div></>}
+    {page===3&&<><p className="crumb">FORM DS-404 &gt; DOCUMENT INFORMATION</p><h1>Travel document</h1><div className="warning"><b>Important:</b> Copy and paste is disabled for secure document fields.</div><h2>Step 3 of 5 — Passport and travel</h2><div className="grid">{field('passport','Passport number',{noPaste:true})}{field('maiden',"Mother's maiden name",{noPaste:true})}{field('issued','Date issued',{placeholder:'DD MMM YYYY'})}{field('expires','Date of expiry',{placeholder:'DD MMM YYYY'})}{field('arrival','Intended arrival',{placeholder:'DD MMM YYYY'})}<label className="wide"><span>Applicant photograph</span><div className={selectedPhoto?'upload chosen':'upload'}>{selectedPhoto?'✓ visa-photo.jpg':'No file selected'}<button onClick={()=>setActive('photos')}>Choose from {mobile?'Camera Roll':'Photos'}…</button></div>{errors.photo&&<small className="error">⚠ {errors.photo}</small>}</label></div><div className="actions"><button onClick={()=>setPage(2)}>Go Back</button><button className="continue" onClick={()=>{if(!selectedPhoto){setErrors({photo:'Applicant photograph is mandatory'});return}proceed(4,['passport','maiden','issued','expires','arrival'])}}>Save and continue &gt;&gt;</button></div></>}
     {page===4&&<CharacterQuestions data={data} errors={errors} answer={answerQuestion} finish={finishQuestions} back={()=>editFromPreview(3)}/>}
     {page===5&&<ApplicationPreview data={data} selectedPhoto={selectedPhoto} edit={editFromPreview} submit={submitApplication}/>}
     {page===6&&<div className={`success ${submissionDenied?'denied':''}`}><div className="stamp">{submissionDenied?'DENIED':'RECEIVED'}</div><h1>{submissionDenied?'Application denied':'Application transmitted'}</h1>{submissionDenied?<><p>{denialReason==='character'?'Your responses indicate that you are inadmissible on moral-character grounds.':'Your application contains information that could not be verified against the supporting records.'}</p><div className="warning"><b>Decision:</b> This decision is effective immediately and cannot be appealed online.</div></>:<><p>Reference number</p><strong>DS404-8391-XQ</strong><div className="warning blue">Your application will be processed in approximately 8–14 months. This receipt does not constitute a visa.</div></>}<button onClick={()=>{localStorage.removeItem('ds404-saved-application');location.reload()}}>New application</button></div>}
@@ -251,8 +300,11 @@ function Browser({page,data,setData,errors,setErrors,time,seconds,account,setAcc
  </section>
 }
 
-function Passwords({copy,win,style}:{copy:(s:string)=>void;win:WindowProps;style:React.CSSProperties}){const [tab,setTab]=useState(0);const rows=tab===0?identity:passport;return <section className={`utility window layout-${win.layout}`} style={style} onPointerDown={win.focus}><WindowTitle title="Vault" win={win}/><div className="vaulttop"><span className="key">●</span><div><b>Maya Bennett</b><small>Personal Identity</small></div></div><div className="tabs"><button className={tab===0?'sel':''} onClick={()=>setTab(0)}>Contact card</button><button className={tab===1?'sel':''} onClick={()=>setTab(1)}>Passport</button></div><div className="records">{rows.map(([k,v])=><button key={k} onClick={()=>copy(v)}><span>{k}</span><b>{v}</b><i>⧉</i></button>)}</div><p className="copyhint">Click any row to copy</p></section>}
-function Mail({copy,delivered,code,recipient,win,style}:{copy:(s:string)=>void;delivered:boolean;code:string;recipient:string;win:WindowProps;style:React.CSSProperties}){return <section className={`utility window mail layout-${win.layout}`} style={style} onPointerDown={win.focus}><WindowTitle title="Post" win={win}/><div className="mailcols"><aside><b>Inbox {delivered?'1':''}</b><span>Sent</span><span>Archive</span><span>Trash</span></aside>{delivered?<div><div className="messageitem"><b>Visa Services</b><span>Your verification code</span><time>Now</time></div><article><small>From: no-reply@visa-services.gov.example<br/>To: {recipient}</small><h3>Your verification code</h3><p>Use the following code to continue your application:</p><button className="code" onClick={()=>copy(code)}>{code.slice(0,3)} {code.slice(3)} <i>copy</i></button><p>This code expires in 5 minutes. Do not reply to this automatically generated message.</p></article></div>:<div className="empty-inbox"><span>✉</span><b>Inbox is empty</b><p>New messages will appear here.</p></div>}</div></section>}
-function Photos({selected,choose,win,style}:{selected:boolean;choose:()=>void;win:WindowProps;style:React.CSSProperties}){const pics=useMemo(()=>['mountains','portrait','cat','beach','receipt','city'],[]);return <section className={`utility window photos layout-${win.layout}`} style={style} onPointerDown={win.focus}><WindowTitle title="Photos" win={win}/><div className="photobody"><aside><b>Library</b><span>Favorites</span><span>Recents</span><span>Documents</span></aside><div><h3>Recent photos</h3><div className="photoGrid">{pics.map((p,i)=><button key={p} className={`${p} ${p==='portrait'&&selected?'picked':''}`} onClick={p==='portrait'?choose:undefined}><div>{p==='portrait'?<><span className="head"/><span className="body"/></>:<span>{['◒','', '●','≈','▤','▥'][i]}</span>}</div><b>{p==='portrait'?'visa-photo.jpg':p+'-'+(401+i)+'.jpg'}</b></button>)}</div><p>Select a passport-style photograph to attach it.</p></div></div></section>}
+function Passwords({mobile=false,copy,win,style}:{mobile?:boolean;copy:(s:string)=>void;win:WindowProps;style:React.CSSProperties}){const [tab,setTab]=useState(0);const rows=tab===0?identity:passport;return <section className={`utility ${mobile?'mobile-screen mobile-wallet':'window'} layout-${win.layout}`} style={style} onPointerDown={()=>!mobile&&win.focus()}>{mobile?<MobileAppBar app="passwords" title="ID Wallet"/>:<WindowTitle title="Vault" win={win}/>}<div className="vaulttop"><span className="key">●</span><div><b>Maya Bennett</b><small>Verified personal identity</small></div></div><div className="tabs"><button className={tab===0?'sel':''} onClick={()=>setTab(0)}>Contact card</button><button className={tab===1?'sel':''} onClick={()=>setTab(1)}>Passport</button></div><div className="records">{rows.map(([k,v])=><button key={k} onClick={()=>copy(v)}><span>{k}</span><b>{v}</b><i>⧉</i></button>)}</div><p className="copyhint">{mobile?'Tap':'Click'} any row to copy</p></section>}
+function Mail({mobile=false,copy,delivered,code,recipient,win,style}:{mobile?:boolean;copy:(s:string)=>void;delivered:boolean;code:string;recipient:string;win:WindowProps;style:React.CSSProperties}){
+ if(mobile)return <section className="utility mail mobile-screen mobile-messages"><MobileAppBar app="mail" title="Messages"/><div className="mobile-thread-title"><span>VS</span><b>Visa Services</b><small>{delivered?'online':'No messages yet'}</small></div>{delivered?<div className="mobile-thread"><time>Today 10:24</time><div className="message-bubble"><p>Your SecureApply verification code is:</p><button className="code" onClick={()=>copy(code)}>{code.slice(0,3)} {code.slice(3)}</button><small>Expires in 5 minutes · Sent to {recipient}</small></div></div>:<div className="empty-inbox"><span>✉</span><b>No messages</b><p>Your verification code will appear here.</p></div>}</section>;
+ return <section className={`utility window mail layout-${win.layout}`} style={style} onPointerDown={win.focus}><WindowTitle title="Post" win={win}/><div className="mailcols"><aside><b>Inbox {delivered?'1':''}</b><span>Sent</span><span>Archive</span><span>Trash</span></aside>{delivered?<div><div className="messageitem"><b>Visa Services</b><span>Your verification code</span><time>Now</time></div><article><small>From: no-reply@visa-services.gov.example<br/>To: {recipient}</small><h3>Your verification code</h3><p>Use the following code to continue your application:</p><button className="code" onClick={()=>copy(code)}>{code.slice(0,3)} {code.slice(3)} <i>copy</i></button><p>This code expires in 5 minutes. Do not reply to this automatically generated message.</p></article></div>:<div className="empty-inbox"><span>✉</span><b>Inbox is empty</b><p>New messages will appear here.</p></div>}</div></section>
+}
+function Photos({mobile=false,selected,choose,win,style}:{mobile?:boolean;selected:boolean;choose:()=>void;win:WindowProps;style:React.CSSProperties}){const pics=useMemo(()=>['mountains','portrait','cat','beach','receipt','city'],[]);return <section className={`utility ${mobile?'mobile-screen mobile-photos':'window photos'} layout-${win.layout}`} style={style} onPointerDown={()=>!mobile&&win.focus()}>{mobile?<MobileAppBar app="photos" title="Camera Roll"/>:<WindowTitle title="Photos" win={win}/>}<div className="photobody">{!mobile&&<aside><b>Library</b><span>Favorites</span><span>Recents</span><span>Documents</span></aside>}<div><h3>Recent photos</h3><div className="photoGrid">{pics.map((p,i)=><button key={p} className={`${p} ${p==='portrait'&&selected?'picked':''}`} onClick={p==='portrait'?choose:undefined}><div>{p==='portrait'?<><span className="head"/><span className="body"/></>:<span>{['◒','', '●','≈','▤','▥'][i]}</span>}</div><b>{p==='portrait'?'visa-photo.jpg':p+'-'+(401+i)+'.jpg'}</b></button>)}</div><p>Select a passport-style photograph to attach it.</p></div></div></section>}
 
 createRoot(document.getElementById('root')!).render(<App/>);
