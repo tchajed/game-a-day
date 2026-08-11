@@ -1,4 +1,5 @@
 import Phaser from 'phaser'
+import { EspressoScene } from './espresso'
 
 const WIDTH = 1440
 const HEIGHT = 900
@@ -30,6 +31,7 @@ type LayerSet = {
 
 export class StorefrontScene extends Phaser.Scene {
   private layers!: LayerSet
+  private dialedIn = false
   private target = new Phaser.Math.Vector2()
   private current = new Phaser.Math.Vector2()
   private readonly frame = new Phaser.Geom.Rectangle(35, 80, 1370, 790)
@@ -44,7 +46,8 @@ export class StorefrontScene extends Phaser.Scene {
     this.load.image('cat-customer', '/assets/cat-customer.png')
   }
 
-  create() {
+  create(data: { dialedIn?: boolean } = {}) {
+    this.dialedIn = Boolean(data.dialedIn)
     this.cameras.main.setBackgroundColor('#f7ddb0')
 
     this.layers = {
@@ -167,7 +170,14 @@ export class StorefrontScene extends Phaser.Scene {
     layer.add(barista)
     this.tweens.add({ targets: barista, y: barista.y + 2, duration: 1700, yoyo: true, repeat: -1, ease: 'Sine.InOut' })
 
-    this.drawEspressoMachine(layer)
+    const machine = this.drawEspressoMachine(layer)
+    machine.setInteractive(new Phaser.Geom.Rectangle(0, 0, 430, 232), Phaser.Geom.Rectangle.Contains)
+    machine.input!.cursor = 'pointer'
+    machine.on('pointerover', () => machine.setScale(1.012))
+    machine.on('pointerout', () => machine.setScale(1))
+    machine.on('pointerdown', () => this.scene.start('espresso'))
+    this.input.keyboard?.on('keydown-ENTER', () => this.scene.start('espresso'))
+    this.input.keyboard?.on('keydown-SPACE', () => this.scene.start('espresso'))
     this.drawGrinder(layer)
   }
 
@@ -231,6 +241,7 @@ export class StorefrontScene extends Phaser.Scene {
     cup.fillEllipse(86, 160, 49, 10)
     machine.add(cup)
     layer.add(machine)
+    return machine
   }
 
   private drawGrinder(layer: Phaser.GameObjects.Container) {
@@ -372,13 +383,19 @@ export class StorefrontScene extends Phaser.Scene {
 
     const card = this.add.container(80, 704).setDepth(70).setRotation(-0.012)
     card.add(this.roundedRect(0, 0, 325, 125, 20, 0xfff7e1, colors.ink, 4))
-    card.add(this.addText(28, 23, "TODAY'S BAR", 13, colors.coralDark))
-    card.add(this.addText(28, 48, 'Good morning.', 28, colors.ink))
-    card.add(this.addText(28, 82, 'The first shot is dialing in.', 16, 0x5d6e68))
+    card.add(this.addText(28, 23, this.dialedIn ? 'SHOT 01' : "TODAY'S BAR", 13, colors.coralDark))
+    card.add(this.addText(28, 48, this.dialedIn ? 'Dialed in.' : 'Good morning.', 28, colors.ink))
+    card.add(this.addText(28, 82, this.dialedIn ? 'Balanced — with room to grow.' : 'The first shot is dialing in.', 16, 0x5d6e68))
 
-    const hintBg = this.roundedRect(1153, 805, 225, 30, 10, colors.ink)
+    const ticket = this.add.container(965, 557).setDepth(70).setRotation(0.025)
+    ticket.add(this.roundedRect(0, 0, 268, 74, 15, 0xfff8e8, colors.ink, 4))
+    ticket.add(this.addText(20, 12, 'ORDER 01', 12, colors.coralDark))
+    ticket.add(this.addText(20, 33, 'ESPRESSO  ·  18 → 36', 17, colors.ink))
+    this.tweens.add({ targets: ticket, y: ticket.y - 5, duration: 900, yoyo: true, repeat: -1, ease: 'Sine.InOut' })
+
+    const hintBg = this.roundedRect(1169, 805, 209, 30, 10, colors.ink)
     hintBg.setAlpha(0.9).setDepth(70)
-    this.addText(1171, 812, 'Move your pointer · parallax', 13, colors.cream).setDepth(71)
+    this.addText(1190, 812, 'MACHINE READY  ›', 13, colors.cream).setDepth(71)
   }
 
   private roundedRect(
@@ -429,5 +446,5 @@ export const gameConfig: Phaser.Types.Core.GameConfig = {
     width: WIDTH,
     height: HEIGHT,
   },
-  scene: [StorefrontScene],
+  scene: [StorefrontScene, EspressoScene],
 }
