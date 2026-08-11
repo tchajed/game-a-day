@@ -45,6 +45,7 @@ export class EspressoScene extends Phaser.Scene {
   private shotTimeText!: Phaser.GameObjects.Text
   private yieldText!: Phaser.GameObjects.Text
   private grinderButton!: Phaser.GameObjects.Arc
+  private grindStream!: Phaser.GameObjects.Graphics
   private grounds!: Phaser.GameObjects.Graphics
   private portafilter!: Phaser.GameObjects.Container
   private tamper!: Phaser.GameObjects.Container
@@ -59,6 +60,10 @@ export class EspressoScene extends Phaser.Scene {
 
   constructor() {
     super('espresso')
+  }
+
+  preload() {
+    this.load.image('espresso-machine-detail', '/assets/espresso-machine-v2.png')
   }
 
   create() {
@@ -96,6 +101,7 @@ export class EspressoScene extends Phaser.Scene {
     if (this.step === 'dose' && this.grinding) {
       this.dose = Math.min(22, this.dose + seconds * 5.2)
       this.drawGrounds()
+      this.drawGrinding()
       this.updateUi()
       if (this.dose >= 22) this.grinding = false
     }
@@ -236,6 +242,8 @@ export class EspressoScene extends Phaser.Scene {
     fork.lineBetween(165, 386, 165, 433)
     fork.lineBetween(111, 430, 165, 430)
     grinder.add(fork)
+    this.grindStream = this.add.graphics().setDepth(7)
+    this.tweens.add({ targets: this.grinderButton, scale: 1.1, duration: 620, yoyo: true, repeat: -1, ease: 'Sine.InOut' })
 
     this.grinderButton.on('pointerdown', () => {
       if (this.step !== 'dose') return
@@ -245,82 +253,76 @@ export class EspressoScene extends Phaser.Scene {
   }
 
   private drawMachine() {
-    const machine = this.add.container(560, 125)
-    const g = this.add.graphics()
-    g.fillStyle(colors.mustard)
-    g.lineStyle(8, colors.ink)
-    g.fillRoundedRect(0, 0, 505, 397, 29)
-    g.strokeRoundedRect(0, 0, 505, 397, 29)
-    g.fillStyle(0xffe7a0)
-    g.fillRoundedRect(17, 17, 471, 80, 17)
-    g.fillStyle(colors.teal)
-    g.fillRoundedRect(17, 102, 471, 245, 9)
-    g.fillStyle(0x1b4c4a)
-    g.fillRoundedRect(48, 34, 107, 44, 12)
-    g.fillStyle(colors.mint)
-    g.fillRoundedRect(63, 45, 76, 22, 6)
-    g.fillStyle(colors.ink)
-    g.fillEllipse(252, 224, 154, 55)
-    g.fillRoundedRect(183, 198, 138, 40, 13)
-    g.fillStyle(colors.steel)
-    g.fillEllipse(252, 226, 118, 34)
-    g.lineStyle(6, colors.ink)
-    g.strokeEllipse(252, 226, 118, 34)
-    g.fillStyle(0xeef2ed)
-    g.fillRect(18, 347, 469, 34)
-    g.strokeRect(18, 347, 469, 34)
-    g.lineStyle(3, colors.steelDark)
-    for (let x = 34; x < 480; x += 24) g.lineBetween(x, 356, x + 10, 372)
-    machine.add(g)
+    this.add.image(812, 400, 'espresso-machine-detail').setDisplaySize(535, 428).setDepth(1)
 
-    machine.add(this.addText(101, 48, '93°', 17, colors.mint).setOrigin(0.5, 0))
-    machine.add(this.addText(252, 116, 'LITTLE PEAK  /  02', 13, colors.cream).setOrigin(0.5, 0))
+    this.brewButton = this.add.circle(898, 278, 25, colors.coral, 0.16)
+      .setStrokeStyle(5, colors.coral, 0.78)
+      .setDepth(9)
+      .setInteractive({ useHandCursor: true })
 
-    for (let x = 205; x <= 413; x += 69) {
-      const button = this.add.circle(x, 57, 19, colors.paper).setStrokeStyle(5, colors.ink)
-      machine.add(button)
-    }
-    this.brewButton = machine.list[machine.list.length - 1] as Phaser.GameObjects.Arc
-    this.brewButton.setFillStyle(colors.coral).setInteractive({ useHandCursor: true })
-
-    this.groupGlow = this.add.circle(812, 351, 75, colors.mustard, 0).setStrokeStyle(8, colors.coral, 0)
+    this.groupGlow = this.add.circle(812, 351, 72, colors.mustard, 0).setStrokeStyle(8, colors.coral, 0)
     this.groupGlow.setDepth(10)
-
     this.lockGuide = this.add.graphics().setDepth(12).setVisible(false)
 
-    const cup = this.add.container(812, 472)
+    const shotScale = this.add.container(812, 548).setDepth(5)
+    const scaleG = this.add.graphics()
+    scaleG.fillStyle(colors.steel)
+    scaleG.lineStyle(6, colors.ink)
+    scaleG.fillRoundedRect(-111, -38, 222, 82, 20)
+    scaleG.strokeRoundedRect(-111, -38, 222, 82, 20)
+    scaleG.fillStyle(0xb8cac5)
+    scaleG.fillRoundedRect(-92, -52, 184, 25, 10)
+    scaleG.lineStyle(4, colors.ink)
+    scaleG.strokeRoundedRect(-92, -52, 184, 25, 10)
+    scaleG.fillStyle(colors.ink)
+    scaleG.fillRoundedRect(-91, -16, 84, 40, 9)
+    scaleG.fillRoundedRect(7, -16, 84, 40, 9)
+    shotScale.add(scaleG)
+    shotScale.add(this.addText(-49, 27, 'TIME', 11, colors.teal).setOrigin(0.5, 0))
+    shotScale.add(this.addText(49, 27, 'YIELD', 11, colors.teal).setOrigin(0.5, 0))
+    this.shotTimeText = this.addText(-49, -9, '0.0', 22, colors.mint).setOrigin(0.5, 0)
+    this.yieldText = this.addText(49, -9, '0.0', 22, colors.mustard).setOrigin(0.5, 0)
+    shotScale.add([this.shotTimeText, this.yieldText])
+
+    const cup = this.add.container(812, 437).setDepth(7)
     const cupG = this.add.graphics()
     cupG.fillStyle(colors.cream)
-    cupG.lineStyle(7, colors.ink)
-    cupG.fillRoundedRect(-61, 0, 122, 100, 19)
-    cupG.strokeRoundedRect(-61, 0, 122, 100, 19)
-    cupG.strokeCircle(72, 43, 31)
+    cupG.lineStyle(6, colors.ink)
+    cupG.fillRoundedRect(-49, 0, 98, 76, 16)
+    cupG.strokeRoundedRect(-49, 0, 98, 76, 16)
+    cupG.strokeCircle(59, 32, 23)
     cupG.fillStyle(0xe1c79b)
-    cupG.fillEllipse(0, 4, 108, 24)
+    cupG.fillEllipse(0, 3, 88, 20)
     cup.add(cupG)
-    this.crema = this.add.ellipse(0, 4, 101, 19, colors.brown).setVisible(false)
+    this.crema = this.add.ellipse(0, 3, 82, 15, colors.brown).setVisible(false)
     cup.add(this.crema)
 
     this.streams = this.add.graphics().setDepth(11)
-
-    const display = this.roundedRect(590, 539, 445, 67, 18, colors.ink)
-    this.shotTimeText = this.addText(619, 551, '0.0 s', 30, colors.mint)
-    this.yieldText = this.addText(1005, 551, '0.0 g', 30, colors.mustard).setOrigin(1, 0)
-    this.addText(812, 568, '•', 18, colors.steelDark).setOrigin(0.5, 0)
   }
 
   private drawWorktop() {
-    const mat = this.roundedRect(335, 665, 405, 168, 27, colors.deepTeal, colors.ink, 7)
+    const doseScale = this.add.container(65, 525).setDepth(2)
+    const scaleG = this.add.graphics()
+    scaleG.fillStyle(colors.steel)
+    scaleG.lineStyle(7, colors.ink)
+    scaleG.fillRoundedRect(0, 0, 445, 126, 24)
+    scaleG.strokeRoundedRect(0, 0, 445, 126, 24)
+    scaleG.fillStyle(0xb8cac5)
+    scaleG.fillRoundedRect(22, 14, 242, 66, 18)
+    scaleG.lineStyle(4, colors.ink)
+    scaleG.strokeRoundedRect(22, 14, 242, 66, 18)
+    scaleG.fillStyle(colors.ink)
+    scaleG.fillRoundedRect(274, 52, 150, 55, 12)
+    doseScale.add(scaleG)
+    doseScale.add(this.addText(32, 94, 'DOSE SCALE', 13, colors.teal))
+    this.scaleText = this.addText(349, 61, '0.0 g', 28, colors.mint).setOrigin(0.5, 0)
+    doseScale.add(this.scaleText)
+
+    const mat = this.roundedRect(335, 675, 405, 158, 27, colors.deepTeal, colors.ink, 7)
     mat.setAlpha(0.96)
-    this.addText(365, 786, 'TAMP MAT', 13, colors.mint)
+    this.addText(365, 790, 'TAMP MAT', 13, colors.mint)
 
-    const scale = this.roundedRect(345, 548, 350, 94, 22, colors.steel, colors.ink, 6)
-    scale.setDepth(2)
-    const screen = this.roundedRect(503, 570, 158, 48, 12, colors.ink)
-    screen.setDepth(3)
-    this.scaleText = this.addText(582, 577, '0.0 g', 26, colors.mint).setOrigin(0.5, 0).setDepth(4)
-
-    const gauge = this.add.container(778, 668)
+    const gauge = this.add.container(778, 678)
     const gg = this.add.graphics()
     gg.fillStyle(colors.paper)
     gg.lineStyle(6, colors.ink)
@@ -341,7 +343,7 @@ export class EspressoScene extends Phaser.Scene {
   }
 
   private drawPortafilter() {
-    this.portafilter = this.add.container(436, 584).setDepth(8)
+    this.portafilter = this.add.container(208, 565).setDepth(8)
     const shadow = this.add.ellipse(45, 14, 270, 48, colors.ink, 0.18)
     const g = this.add.graphics()
     g.fillStyle(colors.steel)
@@ -385,6 +387,7 @@ export class EspressoScene extends Phaser.Scene {
     this.input.on('pointerup', () => {
       if (this.grinding) {
         this.grinding = false
+        this.grindStream.clear()
         this.grinderButton.setFillStyle(colors.coral)
         if (this.dose >= 16.5) this.completeDose()
       }
@@ -394,7 +397,10 @@ export class EspressoScene extends Phaser.Scene {
     })
 
     this.input.on('dragstart', (_pointer: Phaser.Input.Pointer, object: Phaser.GameObjects.GameObject) => {
-      if (object === this.tamper && this.step === 'tamp') this.tamping = true
+      if (object === this.tamper && this.step === 'tamp') {
+        this.tweens.killTweensOf(this.tamper)
+        this.tamping = true
+      }
     })
 
     this.input.on('drag', (pointer: Phaser.Input.Pointer, object: Phaser.GameObjects.GameObject, dragX: number, dragY: number) => {
@@ -435,9 +441,19 @@ export class EspressoScene extends Phaser.Scene {
 
   private completeDose() {
     this.step = 'tamp'
-    this.portafilter.setPosition(470, 735)
     this.portafilter.disableInteractive()
-    this.tamper.setPosition(470, 680).setVisible(true)
+    this.tamper.setPosition(470, 680).setVisible(false)
+    this.tweens.add({
+      targets: this.portafilter,
+      x: 470,
+      y: 735,
+      duration: 520,
+      ease: 'Cubic.Out',
+      onComplete: () => {
+        this.tamper.setVisible(true)
+        this.tweens.add({ targets: this.tamper, y: 690, duration: 430, yoyo: true, repeat: -1, ease: 'Sine.InOut' })
+      },
+    })
     this.updateUi()
   }
 
@@ -549,6 +565,17 @@ export class EspressoScene extends Phaser.Scene {
     card.add(this.addText(x, y + 18, label, 12, good ? 0x4f8457 : colors.coralDark).setOrigin(0.5, 0))
   }
 
+  private drawGrinding() {
+    this.grindStream.clear()
+    this.grindStream.lineStyle(7, colors.brown, 0.82)
+    this.grindStream.lineBetween(201, 501, 206, 548)
+    this.grindStream.fillStyle(0xa76639, 0.95)
+    for (let i = 0; i < 7; i++) {
+      const y = 505 + ((this.dose * 17 + i * 11) % 40)
+      this.grindStream.fillCircle(201 + (i % 3) * 4, y, 2)
+    }
+  }
+
   private drawGrounds() {
     this.grounds.clear()
     if (this.dose <= 0) return
@@ -588,11 +615,11 @@ export class EspressoScene extends Phaser.Scene {
     this.streams.clear()
     if (this.step !== 'brewing') return
     this.streams.lineStyle(7, colors.brown, 0.95)
-    this.streams.lineBetween(790, 378, 792, 475)
-    this.streams.lineBetween(834, 378, 832, 475)
+    this.streams.lineBetween(790, 378, 792, 439)
+    this.streams.lineBetween(834, 378, 832, 439)
     this.streams.lineStyle(2, colors.mustard, 0.8)
-    this.streams.lineBetween(788, 381, 790, 474)
-    this.streams.lineBetween(832, 381, 830, 474)
+    this.streams.lineBetween(788, 381, 790, 438)
+    this.streams.lineBetween(832, 381, 830, 438)
     this.crema.setScale(Phaser.Math.Clamp(this.yieldGrams / 12, 0.1, 1))
   }
 
@@ -600,8 +627,8 @@ export class EspressoScene extends Phaser.Scene {
     if (!this.statusText) return
     this.scaleText.setText(`${this.dose.toFixed(1)} g`)
     this.pressureText.setText(`${this.tampForce.toFixed(0)} kg`)
-    this.shotTimeText.setText(`${this.shotSeconds.toFixed(1)} s`)
-    this.yieldText.setText(`${this.yieldGrams.toFixed(1)} g`)
+    this.shotTimeText.setText(this.shotSeconds.toFixed(1))
+    this.yieldText.setText(this.yieldGrams.toFixed(1))
 
     const current = this.step === 'dose' ? 0 : this.step === 'tamp' ? 1 : ['place', 'lock'].includes(this.step) ? 2 : 3
     this.stepPills.forEach((pill, index) => {
@@ -610,18 +637,18 @@ export class EspressoScene extends Phaser.Scene {
     })
 
     if (this.step === 'dose') {
-      this.statusText.setText(this.dose < 16.5 ? 'HOLD TO GRIND' : `${this.dose.toFixed(1)} g  •  RELEASE`)
+      this.statusText.setText(this.dose < 16.5 ? 'HOLD GRIND TO 18.0' : `${this.dose.toFixed(1)} g  •  RELEASE`)
       this.scaleText.setColor(css(Math.abs(this.dose - 18) <= 0.5 ? colors.mustard : colors.mint))
     } else if (this.step === 'tamp') {
-      this.statusText.setText(this.tampForce < 8 ? 'TAMP LEVEL + FIRM' : `${this.tampForce.toFixed(0)} kg  •  RELEASE`)
+      this.statusText.setText(this.tampForce < 8 ? 'DRAG TAMP DOWN' : `${this.tampForce.toFixed(0)} kg  •  RELEASE`)
     } else if (this.step === 'place') {
-      this.statusText.setText('GROUP HEAD')
+      this.statusText.setText('DRAG TO GROUP')
     } else if (this.step === 'lock') {
       this.statusText.setText('TURN TO LOCK')
     } else if (this.step === 'ready') {
-      this.statusText.setText('READY')
+      this.statusText.setText('PRESS BREW')
     } else if (this.step === 'brewing') {
-      this.statusText.setText('STOP THE SHOT')
+      this.statusText.setText('STOP AT 36.0 g')
     } else {
       this.statusText.setText('TASTING…')
     }
