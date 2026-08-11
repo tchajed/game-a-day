@@ -9,6 +9,7 @@ A collection of games each built in one day, with AI assistance. Each game focus
 | [Signal / Sequence](aug8/) | `aug8` | Monitor a stream of signals and catch violations of temporal rules. |
 | [Parking Simulator](aug9/) | `aug9` | Wrestle with the controls of a top-down parallel-parking challenge. |
 | [Visa Form](aug10/) | `aug10` | Race against a bad government website to complete a visa application. |
+| [Little Peak Coffee](aug11/) | `aug11` | Dial in a balanced espresso shot as a meticulous mouse barista. |
 
 Each game is a standalone Bun project. To run one locally:
 
