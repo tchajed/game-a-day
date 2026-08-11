@@ -31,7 +31,7 @@ type LayerSet = {
 
 export class StorefrontScene extends Phaser.Scene {
   private layers!: LayerSet
-  private dialedIn = false
+  private shotPulled = false
   private target = new Phaser.Math.Vector2()
   private current = new Phaser.Math.Vector2()
   private readonly frame = new Phaser.Geom.Rectangle(35, 80, 1370, 790)
@@ -46,8 +46,8 @@ export class StorefrontScene extends Phaser.Scene {
     this.load.image('cat-customer', '/assets/cat-customer.png')
   }
 
-  create(data: { dialedIn?: boolean } = {}) {
-    this.dialedIn = Boolean(data.dialedIn)
+  create(data: { shotPulled?: boolean } = {}) {
+    this.shotPulled = Boolean(data.shotPulled)
     this.cameras.main.setBackgroundColor('#f7ddb0')
 
     this.layers = {
@@ -470,9 +470,9 @@ export class StorefrontScene extends Phaser.Scene {
     card.add(cardShadow)
     card.add(this.roundedRect(0, 0, 306, 88, 18, 0xfff7e1, colors.ink, 4))
     card.add(this.roundedRect(17, 14, 88, 22, 11, colors.coral))
-    card.add(this.addText(27, 16, this.dialedIn ? 'SHOT 01' : "TODAY'S BAR", 11, colors.cream))
-    card.add(this.addText(119, 10, this.dialedIn ? 'Dialed in.' : 'Good morning.', 23, colors.ink))
-    card.add(this.addText(19, 54, this.dialedIn ? 'Balanced — with room to grow.' : 'The first shot is dialing in.', 14, 0x5d6e68))
+    card.add(this.addText(27, 16, this.shotPulled ? 'SHOT 01' : "TODAY'S BAR", 11, colors.cream))
+    card.add(this.addText(119, 10, this.shotPulled ? 'Great shot.' : 'Good morning.', 23, colors.ink))
+    card.add(this.addText(19, 54, this.shotPulled ? 'Balanced — with room to grow.' : 'The first shot is ready to pull.', 14, 0x5d6e68))
 
     const ticket = this.add.container(965, 557).setDepth(70).setRotation(0.025)
     ticket.add(this.roundedRect(0, 0, 268, 74, 15, 0xfff8e8, colors.ink, 4))

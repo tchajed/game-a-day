@@ -186,7 +186,7 @@ export class EspressoScene extends Phaser.Scene {
     back.on('pointerdown', () => this.scene.start('storefront'))
 
     this.addText(86, 17, 'ON BAR', 13, colors.cream)
-    this.addText(86, 35, 'Dial in the espresso', 29, colors.cream)
+    this.addText(86, 35, 'Pull an espresso shot', 29, colors.cream)
 
     const names = ['DOSE', 'TAMP', 'LOCK', 'BREW']
     names.forEach((name, index) => {
@@ -734,7 +734,7 @@ export class EspressoScene extends Phaser.Scene {
     this.add.rectangle(720, 450, 1440, 900, colors.ink, 0.42).setDepth(90).setInteractive()
     const card = this.add.container(720, 438).setDepth(91)
     card.add(this.roundedRect(-335, -225, 670, 450, 32, colors.paper, colors.ink, 7))
-    card.add(this.addText(0, -182, success ? 'SHOT DIALED IN' : 'TASTE & ADJUST', 14, success ? colors.green : colors.coralDark).setOrigin(0.5, 0))
+    card.add(this.addText(0, -182, success ? 'GREAT SHOT' : 'TASTE & ADJUST', 14, success ? colors.green : colors.coralDark).setOrigin(0.5, 0))
     card.add(this.addText(0, -145, title, 36, colors.ink).setOrigin(0.5, 0))
     card.add(this.addText(0, -92, note, 18, 0x5d6e68).setOrigin(0.5, 0))
 
@@ -749,7 +749,7 @@ export class EspressoScene extends Phaser.Scene {
     card.add(action)
     action.once('pointerup', () => {
       action.disableInteractive()
-      if (success) this.scene.start('storefront', { dialedIn: true })
+      if (success) this.scene.start('storefront', { shotPulled: true })
       else this.restartScene()
     })
     this.resultCard = card
@@ -856,29 +856,44 @@ export class EspressoScene extends Phaser.Scene {
   }
 
   private drawDebugControls() {
-    const bg = this.roundedRect(1134, 459, 261, 116, 18, colors.ink)
+    const bg = this.roundedRect(1134, 459, 261, 168, 18, colors.ink)
     bg.setDepth(80)
     this.addText(1154, 472, 'DEBUG · 5× SHOT CLOCK', 13, colors.mustard).setDepth(81)
-    const perfect = this.roundedRect(1153, 508, 222, 43, 15, colors.coral)
-    perfect.setDepth(81).setInteractive(
-      new Phaser.Geom.Rectangle(1153, 508, 222, 43),
+    this.drawDebugShotButton(508, 'PULL PERFECT SHOT', colors.teal, true)
+    this.drawDebugShotButton(562, 'PULL BAD SHOT', colors.coral, false)
+  }
+
+  private drawDebugShotButton(y: number, label: string, fill: number, perfect: boolean) {
+    const button = this.roundedRect(1153, y, 222, 43, 15, fill)
+    button.setDepth(81).setInteractive(
+      new Phaser.Geom.Rectangle(1153, y, 222, 43),
       Phaser.Geom.Rectangle.Contains,
     )
-    perfect.input!.cursor = 'pointer'
-    this.addText(1264, 519, 'PERFECT SETUP', 14, colors.cream).setOrigin(0.5, 0).setDepth(82)
-    perfect.on('pointerdown', () => {
-      if (this.step === 'result') return
-      this.dose = 18
-      this.tampForce = 15
-      this.tampOffset = 0
-      this.drawGrounds()
-      this.tamper?.setVisible(false)
-      this.portafilter.setPosition(812, 351).setRotation(0).disableInteractive().setDepth(13)
-      this.groupGlow.setVisible(false)
-      this.lockGuide.setVisible(false)
-      this.step = 'ready'
-      this.updateUi()
-    })
+    button.input!.cursor = 'pointer'
+    this.addText(1264, y + 11, label, 14, colors.cream).setOrigin(0.5, 0).setDepth(82)
+    button.on('pointerdown', () => this.pullDebugShot(perfect))
+  }
+
+  private pullDebugShot(perfect: boolean) {
+    if (this.step === 'result') return
+    this.grinding = false
+    this.tamping = false
+    this.dose = perfect ? 18 : 15.8
+    this.tampForce = perfect ? 15 : 6
+    this.tampOffset = perfect ? 0 : 46
+    this.shotSeconds = perfect ? 27 : 18
+    this.yieldGrams = perfect ? 36 : 47
+    this.drawGrounds()
+    this.grindStream.clear()
+    this.streams.clear()
+    this.crema.setVisible(true).setScale(1)
+    this.tamper?.setVisible(false)
+    this.portafilter.setPosition(812, 351).setRotation(0).disableInteractive().setDepth(13)
+    this.groupGlow.setVisible(false)
+    this.lockGuide.setVisible(false)
+    this.step = 'result'
+    this.updateUi()
+    this.showResult()
   }
 
   private roundedRect(x: number, y: number, width: number, height: number, radius: number, fill: number, stroke?: number, lineWidth = 0) {
