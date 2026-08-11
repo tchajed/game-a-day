@@ -1,6 +1,7 @@
 node_modules/
 dist/
 artifacts/
+tmp/
 .pi-agent-browser/
 *.tsbuildinfo
 vite.config.js

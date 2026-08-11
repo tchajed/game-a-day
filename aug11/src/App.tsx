@@ -1,4 +1,4 @@
-import { useEffect, useState, type CSSProperties } from 'react'
+import { useEffect, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent } from 'react'
 
 function Grinder() {
   return (
@@ -161,7 +161,7 @@ function ShopScene() {
       <path d="M60 107v40c40 39 80 39 120 0v-40M300 107v40c40 39 80 39 120 0v-40M540 107v40c40 39 80 39 120 0v-40M780 107v40c40 39 80 39 120 0v-40M1020 107v40c40 39 80 39 120 0v-40M1260 107v40c40 39 80 39 120 0v-40" fill="#ffd36b" />
       <rect y="148" width="1440" height="575" fill="url(#tiles)" />
 
-      <g className="back-wall">
+      <g className="back-wall layer layer-back">
         <rect x="55" y="194" width="273" height="327" rx="20" fill="url(#window)" stroke="#233b3b" strokeWidth="9" />
         <path d="M190 198v319M59 374h265" stroke="#fff6dd" strokeWidth="12" />
         <path d="M70 344l94-92 52 57 101-99v154H70z" fill="#80b881" opacity=".8" />
@@ -177,13 +177,15 @@ function ShopScene() {
         <path d="M1010 237q18 23 0 46-18-23 0-46z" fill="#efca63" />
       </g>
 
-      <Plant x={335} y={466} scale={0.88} />
-      <Plant x={1212} y={461} scale={0.92} />
-      <MouseBarista />
-      <EspressoMachine />
-      <Grinder />
+      <g className="layer layer-mid">
+        <Plant x={335} y={466} scale={0.88} />
+        <Plant x={1212} y={461} scale={0.92} />
+        <image href="/assets/mouse-barista.png" x="295" y="288" width="390" height="390" preserveAspectRatio="xMidYMid meet" className="sprite sprite-barista" aria-label="Mouse barista" />
+        <EspressoMachine />
+        <Grinder />
+      </g>
 
-      <g className="counter" filter="url(#softShadow)">
+      <g className="counter layer layer-counter" filter="url(#softShadow)">
         <path d="M42 616h1356q24 0 24 24v87H18v-87q0-24 24-24z" fill="#f8e4bd" stroke="#233b3b" strokeWidth="9" />
         <path d="M18 683h1404v181H18z" fill="#ee805d" stroke="#233b3b" strokeWidth="9" />
         <path d="M78 721h1284v143H78z" fill="#dc6b51" />
@@ -193,7 +195,10 @@ function ShopScene() {
         <path d="M700 762q20-19 40 0" fill="none" stroke="#f8e4bd" strokeWidth="5" strokeLinecap="round" />
       </g>
 
-      <Customers />
+      <g className="customers foreground" aria-label="Café customers">
+        <image href="/assets/rabbit-customer.png" x="-92" y="508" width="330" height="330" preserveAspectRatio="xMidYMid meet" className="sprite sprite-customer sprite-rabbit" aria-label="Rabbit customer" />
+        <image href="/assets/cat-customer.png" x="1172" y="540" width="330" height="330" preserveAspectRatio="xMidYMid meet" className="sprite sprite-customer sprite-cat" aria-label="Cat customer" />
+      </g>
       <g className="foreground-table foreground">
         <ellipse cx="724" cy="881" rx="405" ry="94" fill="#173e3d" />
         <ellipse cx="724" cy="858" rx="405" ry="94" fill="#2f716b" stroke="#233b3b" strokeWidth="9" />
@@ -210,21 +215,25 @@ function ShopScene() {
 
 export default function App() {
   const [loaded, setLoaded] = useState(false)
+  const sceneRef = useRef<HTMLElement>(null)
 
   useEffect(() => {
     const frame = requestAnimationFrame(() => setLoaded(true))
-    const onPointerMove = (event: PointerEvent) => {
-      const x = (event.clientX / window.innerWidth - 0.5) * 2
-      const y = (event.clientY / window.innerHeight - 0.5) * 2
-      document.documentElement.style.setProperty('--look-x', x.toFixed(3))
-      document.documentElement.style.setProperty('--look-y', y.toFixed(3))
-    }
-    window.addEventListener('pointermove', onPointerMove)
-    return () => {
-      cancelAnimationFrame(frame)
-      window.removeEventListener('pointermove', onPointerMove)
-    }
+    return () => cancelAnimationFrame(frame)
   }, [])
+
+  const updateParallax = (event: ReactPointerEvent<HTMLElement>) => {
+    const bounds = event.currentTarget.getBoundingClientRect()
+    const x = Math.max(-1, Math.min(1, ((event.clientX - bounds.left) / bounds.width - 0.5) * 2))
+    const y = Math.max(-1, Math.min(1, ((event.clientY - bounds.top) / bounds.height - 0.5) * 2))
+    event.currentTarget.style.setProperty('--look-x', x.toFixed(3))
+    event.currentTarget.style.setProperty('--look-y', y.toFixed(3))
+  }
+
+  const resetParallax = () => {
+    sceneRef.current?.style.setProperty('--look-x', '0')
+    sceneRef.current?.style.setProperty('--look-y', '0')
+  }
 
   return (
     <main className={`game-shell ${loaded ? 'is-loaded' : ''}`} style={{ '--entrance-delay': '100ms' } as CSSProperties}>
@@ -239,7 +248,13 @@ export default function App() {
         <div className="status-pill"><span /> Open · 8:03 am</div>
       </header>
 
-      <section className="scene-frame" aria-label="Coffee shop storefront visual prototype">
+      <section
+        ref={sceneRef}
+        className="scene-frame"
+        aria-label="Coffee shop storefront visual prototype"
+        onPointerMove={updateParallax}
+        onPointerLeave={resetParallax}
+      >
         <ShopScene />
         <div className="scene-vignette" aria-hidden="true" />
         <div className="welcome-card">
@@ -247,7 +262,7 @@ export default function App() {
           <p className="welcome-title">Good morning.</p>
           <p className="welcome-copy">The first shot is dialing in.</p>
         </div>
-        <div className="visual-only">Visual prototype · no interactions yet</div>
+        <div className="visual-only">Move your pointer · parallax study</div>
       </section>
     </main>
   )

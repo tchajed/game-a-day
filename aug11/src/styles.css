@@ -120,17 +120,33 @@ h1 { margin: 0; font-size: clamp(21px, 2.2vw, 30px); line-height: 1; letter-spac
   width: 100%;
   height: auto;
   display: block;
-  transform: scale(1.012) translate(calc(var(--look-x) * -2px), calc(var(--look-y) * -2px));
+  transform: scale(1.012);
   transform-origin: center;
-  transition: transform .2s ease-out;
 }
 
+.layer,
+.foreground {
+  transform-box: view-box;
+  transform-origin: center;
+  will-change: transform;
+  transition: transform .16s cubic-bezier(.2, .7, .2, 1);
+}
+
+.layer-back { transform: translate(calc(var(--look-x) * -5px), calc(var(--look-y) * -3px)); }
+.layer-mid { transform: translate(calc(var(--look-x) * 7px), calc(var(--look-y) * 5px)); }
+.layer-counter { transform: translate(calc(var(--look-x) * 13px), calc(var(--look-y) * 8px)); }
+.foreground { transform: translate(calc(var(--look-x) * 25px), calc(var(--look-y) * 15px)); }
+
 .prop { transform-box: fill-box; transform-origin: center bottom; }
-.barista { animation: baristaBreathe 3.2s ease-in-out infinite; }
+.sprite {
+  pointer-events: none;
+  filter: drop-shadow(0 7px 4px rgba(26, 54, 53, .16));
+}
+.sprite-barista { animation: baristaBreathe 3.2s ease-in-out infinite; transform-box: fill-box; transform-origin: center bottom; }
+.sprite-customer { filter: drop-shadow(0 10px 7px rgba(26, 54, 53, .2)); }
 .grinder { animation: settleIn .7s .55s both cubic-bezier(.2,.8,.2,1); }
 .machine { animation: settleIn .7s .42s both cubic-bezier(.2,.8,.2,1); }
 .plant { animation: settleIn .7s .65s both cubic-bezier(.2,.8,.2,1); }
-.foreground { transform: translate(calc(var(--look-x) * 5px), calc(var(--look-y) * 3px)); transition: transform .2s ease-out; }
 
 .machine-readout {
   font: 500 14px/1 'DM Mono', monospace;
@@ -253,5 +269,6 @@ h1 { margin: 0; font-size: clamp(21px, 2.2vw, 30px); line-height: 1; letter-spac
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; scroll-behavior: auto !important; transition-duration: .01ms !important; }
-  .shop-scene, .foreground { transform: none; }
+  .shop-scene { transform: none; }
+  .layer, .foreground { transform: none; }
 }
