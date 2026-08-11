@@ -8,4 +8,4 @@ vite.config.js
 vite.config.d.ts
 .DS_Store
 .pi/
-TODO.md
+/TODO.md
