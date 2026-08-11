@@ -867,7 +867,11 @@ export class EspressoScene extends Phaser.Scene {
     bg.setDepth(80)
     this.addText(1154, 472, 'DEBUG · 5× SHOT CLOCK', 13, colors.mustard).setDepth(81)
     const perfect = this.roundedRect(1153, 508, 222, 43, 15, colors.coral)
-    perfect.setDepth(81).setInteractive({ useHandCursor: true })
+    perfect.setDepth(81).setInteractive(
+      new Phaser.Geom.Rectangle(1153, 508, 222, 43),
+      Phaser.Geom.Rectangle.Contains,
+    )
+    perfect.input!.cursor = 'pointer'
     this.addText(1264, 519, 'PERFECT SETUP', 14, colors.cream).setOrigin(0.5, 0).setDepth(82)
     perfect.on('pointerdown', () => {
       if (this.step === 'result') return
