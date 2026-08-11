@@ -57,6 +57,7 @@ export class EspressoScene extends Phaser.Scene {
   private crema!: Phaser.GameObjects.Ellipse
   private resultCard?: Phaser.GameObjects.Container
   private stepPills: Phaser.GameObjects.Container[] = []
+  private restartPending = false
 
   constructor() {
     super('espresso')
@@ -70,7 +71,10 @@ export class EspressoScene extends Phaser.Scene {
     this.debug = new URLSearchParams(window.location.search).get('debug') === 'true'
     this.stepPills = []
     this.resultCard = undefined
+    this.restartPending = false
     this.resetValues()
+    this.input.resetPointers()
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, this.handleShutdown, this)
     this.cameras.main.setBackgroundColor('#f4d9aa')
 
     this.drawRoom()
@@ -127,6 +131,28 @@ export class EspressoScene extends Phaser.Scene {
     this.tamping = false
     this.lockDragging = false
     this.timeScale = this.debug ? 5 : 1
+  }
+
+  private restartScene() {
+    if (this.restartPending) return
+    this.restartPending = true
+    this.grinding = false
+    this.tamping = false
+    this.lockDragging = false
+    this.grindStream.clear()
+    this.input.resetPointers()
+    this.input.enabled = false
+    this.scene.restart()
+  }
+
+  private handleShutdown() {
+    this.grinding = false
+    this.tamping = false
+    this.lockDragging = false
+    this.input.removeAllListeners()
+    this.input.keyboard?.removeAllListeners()
+    this.resultCard = undefined
+    this.stepPills = []
   }
 
   private drawRoom() {
@@ -199,49 +225,117 @@ export class EspressoScene extends Phaser.Scene {
   }
 
   private drawGrinder() {
-    const grinder = this.add.container(70, 135)
+    const grinder = this.add.container(70, 125)
     const g = this.add.graphics()
-    g.fillStyle(0xd8ebe6, 0.95)
+
+    // A faceted glass hopper with a weighted lid and visible coffee beans.
+    g.fillStyle(colors.ink, 0.16)
+    g.fillRoundedRect(49, 7, 181, 18, 9)
+    g.fillStyle(0xd8ebe6, 0.92)
     g.lineStyle(7, colors.ink)
     g.beginPath()
-    g.moveTo(53, 0)
-    g.lineTo(221, 0)
-    g.lineTo(198, 151)
-    g.lineTo(78, 151)
+    g.moveTo(53, 16)
+    g.lineTo(222, 16)
+    g.lineTo(199, 150)
+    g.lineTo(76, 150)
     g.closePath()
     g.fillPath()
     g.strokePath()
+    g.fillStyle(0xffffff, 0.28)
+    g.beginPath()
+    g.moveTo(67, 28)
+    g.lineTo(88, 28)
+    g.lineTo(99, 135)
+    g.lineTo(84, 135)
+    g.closePath()
+    g.fillPath()
+    g.fillStyle(colors.deepTeal)
+    g.fillRoundedRect(47, 0, 181, 22, 10)
+    g.lineStyle(6, colors.ink)
+    g.strokeRoundedRect(47, 0, 181, 22, 10)
+    g.fillStyle(colors.mustard)
+    g.fillRoundedRect(67, 5, 141, 5, 2)
 
     g.fillStyle(colors.brown)
-    for (const [x, y, r] of [[91, 42, 14], [139, 71, 16], [180, 37, 13], [111, 112, 12], [170, 115, 15]] as const) {
-      g.fillEllipse(x, y, r * 1.5, r)
+    for (const [x, y, w, h] of [[88, 50, 26, 15], [125, 79, 30, 17], [178, 45, 27, 15], [103, 118, 25, 14], [165, 119, 29, 16], [143, 38, 21, 12]] as const) {
+      g.fillEllipse(x, y, w, h)
+      g.lineStyle(2, 0x4e2b20, 0.7)
+      g.lineBetween(x - w * 0.24, y + 1, x + w * 0.24, y - 1)
     }
 
+    // Layered casing, collar and subtle side highlight match the machine's finish.
+    g.fillStyle(colors.ink, 0.2)
+    g.fillRoundedRect(72, 153, 151, 324, 27)
     g.fillStyle(colors.deepTeal)
-    g.fillRoundedRect(65, 151, 146, 313, 25)
-    g.strokeRoundedRect(65, 151, 146, 313, 25)
-    g.fillStyle(0x183f3e)
-    g.fillRoundedRect(87, 182, 102, 84, 17)
+    g.lineStyle(7, colors.ink)
+    g.fillRoundedRect(62, 143, 151, 324, 27)
+    g.strokeRoundedRect(62, 143, 151, 324, 27)
+    g.fillStyle(0x347873)
+    g.fillRoundedRect(72, 153, 24, 302, 15)
+    g.fillStyle(0x173f3e)
+    g.fillRoundedRect(74, 134, 127, 32, 12)
+    g.lineStyle(5, colors.ink)
+    g.strokeRoundedRect(74, 134, 127, 32, 12)
+    g.fillStyle(colors.steel)
+    g.fillRoundedRect(84, 142, 107, 9, 4)
+
+    // Recessed control panel with a crisp dose display and tactile grind button.
+    g.fillStyle(0x153e3d)
+    g.lineStyle(4, 0x102f2e)
+    g.fillRoundedRect(82, 177, 111, 104, 18)
+    g.strokeRoundedRect(82, 177, 111, 104, 18)
+    g.fillStyle(0x0e2928)
+    g.fillRoundedRect(96, 192, 83, 48, 10)
     g.fillStyle(colors.mint)
-    g.fillRoundedRect(104, 202, 68, 31, 8)
+    g.fillRoundedRect(103, 199, 69, 34, 7)
+    g.lineStyle(3, colors.steelDark)
+    g.strokeRoundedRect(103, 199, 69, 34, 7)
+    g.fillStyle(colors.mustard)
+    g.fillCircle(96, 260, 4)
+    g.fillCircle(179, 260, 4)
+    g.fillStyle(0x112f2e)
+    g.fillCircle(138, 330, 38)
+    g.lineStyle(4, 0x477e78)
+    g.strokeCircle(138, 330, 38)
+
+    // Metal chute, adjustable fork and broad non-slip base.
     g.fillStyle(colors.ink)
-    g.fillRect(111, 291, 55, 80)
-    g.fillRoundedRect(55, 445, 166, 32, 15)
+    g.fillRoundedRect(107, 369, 62, 30, 10)
+    g.fillStyle(colors.steel)
+    g.fillRoundedRect(116, 375, 44, 20, 7)
+    g.lineStyle(4, colors.ink)
+    g.strokeRoundedRect(116, 375, 44, 20, 7)
+    g.fillStyle(0x173f3e)
+    g.fillRoundedRect(50, 448, 176, 31, 14)
+    g.lineStyle(7, colors.ink)
+    g.strokeRoundedRect(50, 448, 176, 31, 14)
+    g.fillStyle(colors.steelDark)
+    g.fillRoundedRect(70, 451, 136, 8, 4)
+    g.fillStyle(colors.ink)
+    g.fillRoundedRect(65, 476, 38, 10, 4)
+    g.fillRoundedRect(174, 476, 38, 10, 4)
     grinder.add(g)
 
-    grinder.add(this.addText(138, 210, '2.4', 18, colors.deepTeal).setOrigin(0.5, 0))
-    grinder.add(this.addText(138, 276, 'GRIND', 13, colors.cream).setOrigin(0.5, 0))
+    grinder.add(this.addText(138, 205, '2.4', 19, colors.deepTeal).setOrigin(0.5, 0))
+    grinder.add(this.addText(138, 254, 'GRIND', 12, colors.cream).setOrigin(0.5, 0))
+    grinder.add(this.addText(138, 291, 'PULSE', 11, colors.mint).setOrigin(0.5, 0))
 
-    this.grinderButton = this.add.circle(138, 330, 29, colors.coral).setStrokeStyle(6, colors.ink)
+    this.grinderButton = this.add.circle(138, 330, 29, colors.coral).setStrokeStyle(5, colors.cream)
     this.grinderButton.setInteractive({ useHandCursor: true })
     grinder.add(this.grinderButton)
+    grinder.add(this.add.circle(130, 321, 7, 0xffa18d, 0.75))
 
     const fork = this.add.graphics()
     fork.lineStyle(12, colors.ink)
-    fork.lineBetween(111, 386, 111, 433)
-    fork.lineBetween(165, 386, 165, 433)
-    fork.lineBetween(111, 430, 165, 430)
+    fork.lineBetween(105, 397, 105, 439)
+    fork.lineBetween(171, 397, 171, 439)
+    fork.lineBetween(105, 437, 171, 437)
+    fork.lineStyle(5, colors.steel)
+    fork.lineBetween(105, 399, 105, 434)
+    fork.lineBetween(171, 399, 171, 434)
+    fork.lineBetween(109, 437, 167, 437)
     grinder.add(fork)
+
     this.grindStream = this.add.graphics().setDepth(7)
     this.tweens.add({ targets: this.grinderButton, scale: 1.1, duration: 620, yoyo: true, repeat: -1, ease: 'Sine.InOut' })
 
@@ -286,15 +380,38 @@ export class EspressoScene extends Phaser.Scene {
 
     const cup = this.add.container(812, 437).setDepth(7)
     const cupG = this.add.graphics()
+
+    // A low demitasse: shallow bowl, small loop handle and matching saucer.
+    cupG.fillStyle(colors.ink, 0.2)
+    cupG.fillEllipse(1, 62, 103, 15)
+    cupG.fillStyle(colors.cream)
+    cupG.lineStyle(5, colors.ink)
+    cupG.fillEllipse(0, 57, 102, 15)
+    cupG.strokeEllipse(0, 57, 102, 15)
+    cupG.lineStyle(10, colors.ink)
+    cupG.strokeEllipse(37, 29, 48, 37)
+    cupG.lineStyle(5, colors.cream)
+    cupG.strokeEllipse(37, 29, 48, 37)
     cupG.fillStyle(colors.cream)
     cupG.lineStyle(6, colors.ink)
-    cupG.fillRoundedRect(-49, 0, 98, 76, 16)
-    cupG.strokeRoundedRect(-49, 0, 98, 76, 16)
-    cupG.strokeCircle(59, 32, 23)
+    cupG.beginPath()
+    cupG.moveTo(-39, 5)
+    cupG.lineTo(39, 5)
+    cupG.lineTo(31, 49)
+    cupG.arc(0, 47, 31, 0, Math.PI, false)
+    cupG.closePath()
+    cupG.fillPath()
+    cupG.strokePath()
     cupG.fillStyle(0xe1c79b)
-    cupG.fillEllipse(0, 3, 88, 20)
+    cupG.fillEllipse(0, 5, 76, 15)
+    cupG.lineStyle(5, colors.ink)
+    cupG.strokeEllipse(0, 5, 78, 16)
+    cupG.lineStyle(3, 0xffffff, 0.55)
+    cupG.beginPath()
+    cupG.arc(-3, 40, 25, 0.22, 2.42, false)
+    cupG.strokePath()
     cup.add(cupG)
-    this.crema = this.add.ellipse(0, 3, 82, 15, colors.brown).setVisible(false)
+    this.crema = this.add.ellipse(0, 5, 66, 10, colors.brown).setVisible(false)
     cup.add(this.crema)
 
     this.streams = this.add.graphics().setDepth(11)
@@ -535,7 +652,7 @@ export class EspressoScene extends Phaser.Scene {
       note = 'Uneven extraction — keep the tamp level.'
     }
 
-    const veil = this.add.rectangle(720, 450, 1440, 900, colors.ink, 0.42).setDepth(90).setInteractive()
+    this.add.rectangle(720, 450, 1440, 900, colors.ink, 0.42).setDepth(90).setInteractive()
     const card = this.add.container(720, 438).setDepth(91)
     card.add(this.roundedRect(-335, -225, 670, 450, 32, colors.paper, colors.ink, 7))
     card.add(this.addText(0, -182, success ? 'SHOT DIALED IN' : 'TASTE & ADJUST', 14, success ? colors.green : colors.coralDark).setOrigin(0.5, 0))
@@ -547,13 +664,14 @@ export class EspressoScene extends Phaser.Scene {
     this.metric(card, 220, 0, this.shotSeconds.toFixed(1), 'SECONDS', timeGood)
 
     const button = this.roundedRect(-137, 125, 274, 62, 25, success ? colors.teal : colors.coral, colors.ink, 5)
-    button.setInteractive({ useHandCursor: true })
     card.add(button)
     card.add(this.addText(0, 141, success ? 'BACK TO THE BAR' : 'PULL ANOTHER', 17, colors.cream).setOrigin(0.5, 0))
-    button.on('pointerdown', () => {
-      veil.destroy()
+    const action = this.add.zone(0, 156, 274, 62).setInteractive({ useHandCursor: true })
+    card.add(action)
+    action.once('pointerup', () => {
+      action.disableInteractive()
       if (success) this.scene.start('storefront', { dialedIn: true })
-      else this.scene.restart()
+      else this.restartScene()
     })
     this.resultCard = card
   }
