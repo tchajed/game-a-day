@@ -7,9 +7,7 @@ type LoopingSound = {
 
 class CoffeeAudio {
   private context?: AudioContext
-  private musicBus?: GainNode
-  private musicTimer?: number
-  private musicBar = 0
+  private music?: HTMLAudioElement
   private grinder?: LoopingSound
   private brew?: LoopingSound
   private grinderRequested = false
@@ -22,9 +20,8 @@ class CoffeeAudio {
 
   async unlock() {
     const context = this.getContext()
-    if (!context) return
-    if (context.state === 'suspended') await context.resume()
-    if (this.enabled) this.startMusic()
+    if (context?.state === 'suspended') await context.resume()
+    if (this.enabled) await this.startMusic()
   }
 
   async toggleMusic() {
@@ -107,80 +104,30 @@ class CoffeeAudio {
     return this.context
   }
 
-  private startMusic() {
-    const context = this.context
-    if (!context || context.state !== 'running' || this.musicTimer !== undefined) return
-
-    this.musicBus = context.createGain()
-    this.musicBus.gain.setValueAtTime(0.0001, context.currentTime)
-    this.musicBus.gain.exponentialRampToValueAtTime(0.13, context.currentTime + 0.8)
-    this.musicBus.connect(context.destination)
-    this.musicBar = 0
-    this.scheduleMusicBar()
-    this.musicTimer = window.setInterval(() => this.scheduleMusicBar(), 4000)
+  private async startMusic() {
+    const music = this.getMusic()
+    if (!music.paused) return
+    try {
+      await music.play()
+    } catch {
+      // Browsers may reject playback until the next direct user interaction.
+    }
   }
 
   private stopMusic() {
-    if (this.musicTimer !== undefined) window.clearInterval(this.musicTimer)
-    this.musicTimer = undefined
-    const context = this.context
-    const bus = this.musicBus
-    this.musicBus = undefined
-    if (!context || !bus) return
-    bus.gain.cancelScheduledValues(context.currentTime)
-    bus.gain.setValueAtTime(Math.max(bus.gain.value, 0.0001), context.currentTime)
-    bus.gain.exponentialRampToValueAtTime(0.0001, context.currentTime + 0.4)
-    window.setTimeout(() => bus.disconnect(), 500)
+    this.music?.pause()
   }
 
-  private scheduleMusicBar() {
-    const context = this.context
-    const bus = this.musicBus
-    if (!context || !bus) return
-
-    const chords = [
-      [130.81, 164.81, 196, 246.94],
-      [110, 138.59, 164.81, 220],
-      [87.31, 130.81, 164.81, 196],
-      [98, 146.83, 174.61, 220],
-    ]
-    const melodies = [
-      [329.63, 392, 493.88, 392],
-      [329.63, 277.18, 329.63, 440],
-      [261.63, 329.63, 392, 329.63],
-      [293.66, 349.23, 440, 392],
-    ]
-    const chordIndex = this.musicBar % chords.length
-    const chord = chords[chordIndex]
-    const start = context.currentTime + 0.06
-    chord.forEach((frequency, index) => this.scheduleNote(frequency, start + index * 0.04, 3.7, index === 0 ? 0.52 : 0.3))
-    melodies[chordIndex].forEach((frequency, index) => {
-      this.scheduleNote(frequency, start + 0.38 + index * 0.9, 0.68, 0.3, 'triangle')
-    })
-    this.musicBar += 1
-  }
-
-  private scheduleNote(
-    frequency: number,
-    start: number,
-    duration: number,
-    volume: number,
-    timbre: OscillatorType = 'sine',
-  ) {
-    const context = this.context
-    const bus = this.musicBus
-    if (!context || !bus) return
-    const oscillator = context.createOscillator()
-    const gain = context.createGain()
-    oscillator.type = timbre
-    oscillator.frequency.setValueAtTime(frequency, start)
-    gain.gain.setValueAtTime(0.0001, start)
-    gain.gain.exponentialRampToValueAtTime(volume, start + Math.min(0.35, duration * 0.25))
-    gain.gain.exponentialRampToValueAtTime(0.0001, start + duration)
-    oscillator.connect(gain)
-    gain.connect(bus)
-    oscillator.start(start)
-    oscillator.stop(start + duration + 0.05)
+  private getMusic() {
+    if (this.music) return this.music
+    this.music = new Audio('/assets/coffee-shop-loop.webm')
+    this.music.id = 'background-music'
+    this.music.loop = true
+    this.music.preload = 'auto'
+    this.music.volume = 0.68
+    this.music.hidden = true
+    document.body.append(this.music)
+    return this.music
   }
 
   private startNoiseLoop(volume: number, frequency: number, q: number) {
