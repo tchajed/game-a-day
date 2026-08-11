@@ -1,4 +1,5 @@
 import Phaser from 'phaser'
+import { coffeeAudio } from './audio'
 
 const WIDTH = 1440
 const HEIGHT = 900
@@ -142,6 +143,7 @@ export class EspressoScene extends Phaser.Scene {
     this.grinding = false
     this.tamping = false
     this.lockDragging = false
+    coffeeAudio.stopEffects()
     this.grindStream.clear()
     this.input.resetPointers()
     this.scene.restart()
@@ -151,6 +153,7 @@ export class EspressoScene extends Phaser.Scene {
     this.grinding = false
     this.tamping = false
     this.lockDragging = false
+    coffeeAudio.stopEffects()
     this.input.removeAllListeners()
     this.input.keyboard?.removeAllListeners()
     this.resultCard = undefined
@@ -345,6 +348,7 @@ export class EspressoScene extends Phaser.Scene {
       if (this.step !== 'dose') return
       this.scoopNotice = ''
       this.grinding = true
+      coffeeAudio.startGrinder()
       this.grinderButton.setFillStyle(colors.mustard)
     })
   }
@@ -554,6 +558,7 @@ export class EspressoScene extends Phaser.Scene {
     this.input.on('pointerup', () => {
       if (this.grinding) {
         this.grinding = false
+        coffeeAudio.stopGrinder()
         this.grindStream.clear()
         this.grinderButton.setFillStyle(colors.coral)
         this.updateUi()
@@ -637,6 +642,7 @@ export class EspressoScene extends Phaser.Scene {
 
     const amount = Math.min(this.dose, Phaser.Math.FloatBetween(3.5, 5.5))
     this.dose = Math.max(0, this.dose - amount)
+    coffeeAudio.playPlonk(1.2)
     this.scoopNotice = `SCOOPED ${amount.toFixed(1)} g`
     this.drawGrounds()
     this.updateUi()
@@ -644,6 +650,7 @@ export class EspressoScene extends Phaser.Scene {
   }
 
   private completeDose() {
+    coffeeAudio.playPlonk(0.9)
     this.step = 'tamp'
     this.scoopNotice = ''
     this.scoopButton.disableInteractive().setAlpha(0.42)
@@ -658,6 +665,7 @@ export class EspressoScene extends Phaser.Scene {
       this.tamper.setPosition(470, 680)
       return
     }
+    coffeeAudio.playPlonk(1.05)
     this.step = 'place'
     this.tamper.setVisible(false)
     this.portafilter.setInteractive(new Phaser.Geom.Rectangle(-80, -50, 365, 100), Phaser.Geom.Rectangle.Contains)
@@ -670,6 +678,7 @@ export class EspressoScene extends Phaser.Scene {
   }
 
   private snapToGroup() {
+    coffeeAudio.playPlonk(0.82)
     this.step = 'lock'
     this.portafilter.setPosition(812, 351).setRotation(2.35)
     this.portafilter.setDepth(13)
@@ -680,6 +689,7 @@ export class EspressoScene extends Phaser.Scene {
   }
 
   private completeLock() {
+    coffeeAudio.playPlonk(1.12)
     this.step = 'ready'
     this.lockDragging = false
     this.portafilter.setRotation(0).disableInteractive()
@@ -690,6 +700,8 @@ export class EspressoScene extends Phaser.Scene {
   }
 
   private startShot() {
+    coffeeAudio.playPlonk(1.3)
+    coffeeAudio.startBrew()
     this.step = 'brewing'
     this.shotSeconds = 0
     this.yieldGrams = 0
@@ -702,6 +714,8 @@ export class EspressoScene extends Phaser.Scene {
 
   private finishShot() {
     if (this.step !== 'brewing') return
+    coffeeAudio.stopBrew()
+    coffeeAudio.playPlonk(0.75)
     this.step = 'result'
     this.brewButton.setFillStyle(colors.coral)
     this.drawStreams()
@@ -876,6 +890,8 @@ export class EspressoScene extends Phaser.Scene {
 
   private pullDebugShot(perfect: boolean) {
     if (this.step === 'result') return
+    coffeeAudio.stopEffects()
+    coffeeAudio.playPlonk(perfect ? 1.3 : 0.68)
     this.grinding = false
     this.tamping = false
     this.dose = perfect ? 18 : 15.8

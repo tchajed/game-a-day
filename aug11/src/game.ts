@@ -1,4 +1,5 @@
 import Phaser from 'phaser'
+import { coffeeAudio } from './audio'
 import { EspressoScene } from './espresso'
 
 const WIDTH = 1440
@@ -175,9 +176,13 @@ export class StorefrontScene extends Phaser.Scene {
     machine.input!.cursor = 'pointer'
     machine.on('pointerover', () => machine.setScale(1.012))
     machine.on('pointerout', () => machine.setScale(1))
-    machine.on('pointerdown', () => this.scene.start('espresso'))
-    this.input.keyboard?.on('keydown-ENTER', () => this.scene.start('espresso'))
-    this.input.keyboard?.on('keydown-SPACE', () => this.scene.start('espresso'))
+    const openEspressoStation = () => {
+      coffeeAudio.playPlonk(1.15)
+      this.scene.start('espresso')
+    }
+    machine.on('pointerdown', openEspressoStation)
+    this.input.keyboard?.on('keydown-ENTER', openEspressoStation)
+    this.input.keyboard?.on('keydown-SPACE', openEspressoStation)
     this.drawGrinder(layer)
   }
 
