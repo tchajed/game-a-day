@@ -1,11 +1,12 @@
 import * as pc from 'playcanvas';
 import './style.css';
 
-type Work = { title: string; subtitle: string; image: string };
+type Work = { title: string; artist: string; year: number; medium: string; image: string };
 type Gallery = {
   title: string;
   heading: string;
   note: string;
+  sign: string;
   accent: string;
   wall: string;
   works: Work[];
@@ -13,92 +14,98 @@ type Gallery = {
 
 const galleries: Gallery[] = [
   {
-    title: 'The Court of Beasts',
-    heading: 'The Court<br>of <em>Beasts</em>',
-    note: 'In this imagined court, rank is worn in velvet, silk and fur. These portraits borrow the visual language of eighteenth-century power while quietly asking what, exactly, separates a sitter from a subject.',
+    title: 'Portraits and Personages',
+    heading: 'Portraits &<br><em>Personages</em>',
+    note: 'Portraiture records the ordinary negotiations between a sitter and a painter: posture, costume, rank and the occasional private joke. This room brings together public likenesses and family pictures from three centuries.',
+    sign: 'Public likenesses, family pictures and studies of office. Notice how costume does as much biographical work as the face.',
     accent: '#d7ff43', wall: '#827d6f',
     works: [
-      { title: 'Her Grace, the White Marchioness', subtitle: 'Old-master glazing · Fine linen', image: '/art/portraits-1.webp' },
-      { title: 'Admiral Blackhorn at Rest', subtitle: 'Court portrait · Layered impasto', image: '/art/portraits-2.webp' },
-      { title: 'Lady Sighthound in Saffron', subtitle: 'Court portrait · Silk and oil', image: '/art/portraits-3.webp' },
-      { title: 'The Fox Envoy', subtitle: 'Northern manner · Smooth canvas', image: '/art/portraits-4.webp' },
-      { title: 'Prince Capybara at the Harbour', subtitle: 'Sunlit study · Linen weave', image: '/art/portraits-5.webp' },
-      { title: 'The Midnight Justice', subtitle: 'Tonal oil · Dry-brush featherwork', image: '/art/portraits-6.webp' },
-      { title: 'The Pale Heir', subtitle: 'Rococo oil · Prepared gesso', image: '/art/portraits-7.webp' },
-      { title: 'Sisters of the Azure Salon', subtitle: 'Modernist oil · Simple canvas', image: '/art/portraits-8.webp' },
-      { title: 'The Highland Crown', subtitle: 'Romantic oil · Coarse weave', image: '/art/portraits-9.webp' }
+      { title: 'Marchioness in Winter Dress', artist: 'Elian Voss', year: 1768, medium: 'Oil and wax on linen', image: '/art/portraits-1.webp' },
+      { title: 'Blackhorn, on Leave', artist: 'Mara Bell', year: 1804, medium: 'Oil on oak panel', image: '/art/portraits-2.webp' },
+      { title: 'Study in Saffron (Lady Ada)', artist: 'Niko Sayer', year: 1891, medium: 'Oil on silk-faced canvas', image: '/art/portraits-3.webp' },
+      { title: 'The Envoy', artist: 'Hester Vale', year: 1742, medium: 'Oil on prepared linen', image: '/art/portraits-4.webp' },
+      { title: 'Capybara at Le Havre', artist: 'Tomás Venn', year: 1887, medium: 'Oil on canvas', image: '/art/portraits-5.webp' },
+      { title: 'Justice at Midnight', artist: 'Iona Rook', year: 1913, medium: 'Oil and charcoal on canvas', image: '/art/portraits-6.webp' },
+      { title: 'Young Heir with Blue Ribbon', artist: 'Adele North', year: 1785, medium: 'Oil over gesso', image: '/art/portraits-7.webp' },
+      { title: 'Two Sisters, Blue Room', artist: 'Sami Orra', year: 1956, medium: 'Oil on linen', image: '/art/portraits-8.webp' },
+      { title: 'Highland Crown', artist: 'Cora Pike', year: 1849, medium: 'Oil on coarse canvas', image: '/art/portraits-9.webp' }
     ]
   },
   {
-    title: 'Objects, Elsewhere',
-    heading: 'Objects,<br><em>Elsewhere</em>',
-    note: 'A telephone, a teacup, a chair: each has been removed from the room that taught us how to see it. In their new surroundings these familiar things become monuments, witnesses and lonely travellers.',
+    title: 'Domestic Arrangements',
+    heading: 'Domestic<br><em>Arrangements</em>',
+    note: 'A home is a set of agreements between useful things and the rooms that hold them. The paintings here follow seven objects through changes of light, weather and address without questioning their essential practicality.',
+    sign: 'Seven household objects, shown in use or between uses. Their settings have changed; their purposes remain reassuringly specific.',
     accent: '#75d6df', wall: '#667477',
     works: [
-      { title: 'A Call from the Bathypelagic', subtitle: 'Glazed oil · Submerged study', image: '/art/objects-1.webp' },
-      { title: 'The Last Chair Before Spring', subtitle: 'Tonal oil · Scraped ground', image: '/art/objects-3.webp' },
-      { title: 'Forecast: Perpetual Blue', subtitle: 'Naïve oil · Linen texture', image: '/art/objects-4.webp' },
-      { title: 'Breakfast for the Old Gods', subtitle: 'Still-life glazing · Moss impasto', image: '/art/objects-5.webp' },
-      { title: 'The Long Crossing', subtitle: 'Color-field oil · Thin scumble', image: '/art/objects-7.webp' },
-      { title: 'Cold Storage, Water Garden', subtitle: 'Post-Impressionist oil · Open weave', image: '/art/objects-8.webp' },
-      { title: 'Reliquary for a Right Foot', subtitle: 'Surrealist oil · Red ground', image: '/art/objects-9.webp' }
+      { title: 'Telephone, Low Tide', artist: 'June Halberd', year: 1972, medium: 'Oil and enamel on board', image: '/art/objects-1.webp' },
+      { title: 'Chair Waiting', artist: 'M. E. Lorne', year: 1948, medium: 'Oil on scraped canvas', image: '/art/objects-3.webp' },
+      { title: 'Weather House (Blue)', artist: 'Pavel Miro', year: 1986, medium: 'Oil and casein on linen', image: '/art/objects-4.webp' },
+      { title: 'Breakfast Piece with Moss', artist: 'Anouk Field', year: 2001, medium: 'Oil on panel', image: '/art/objects-5.webp' },
+      { title: 'Crossing No. 4', artist: 'Dev Malik', year: 1963, medium: 'Oil and graphite on canvas', image: '/art/objects-7.webp' },
+      { title: 'Refrigerator in the Water Garden', artist: 'Lena Quist', year: 1994, medium: 'Oil on open-weave linen', image: '/art/objects-8.webp' },
+      { title: 'Red Shoe Reliquary', artist: 'O. S. Fen', year: 1937, medium: 'Oil, bole and wax on wood', image: '/art/objects-9.webp' }
     ]
   },
   {
-    title: 'Worlds Without Us',
-    heading: 'Worlds<br>Without <em>Us</em>',
-    note: 'These invented vistas treat the alien not as threat, but as landscape. Crystal, root and machine share the same deep time. Technology appears less like an arrival than another form of weather.',
+    title: 'Views from the Outer Counties',
+    heading: 'The Outer<br><em>Counties</em>',
+    note: 'These landscapes were made beyond the last familiar railway stop, where salt flats, mangroves and civic engineering meet. As in any regional survey, the artists disagree about what deserves the foreground.',
+    sign: 'A regional survey of roads, settlements and cultivated land beyond the metropolitan edge. Routes are approximate.',
     accent: '#ff8b63', wall: '#75695f',
     works: [
-      { title: 'Salt Moon, Periapsis', subtitle: 'Romantic landscape · Luminous oil', image: '/art/worlds-1.webp' },
-      { title: 'Machines in the Mangrove', subtitle: 'Layered oil · Botanical impasto', image: '/art/worlds-2.webp' },
-      { title: 'The City That Climbed', subtitle: 'Large-format oil · Copper ground', image: '/art/worlds-3.webp' },
-      { title: 'White Towers at Black Tide', subtitle: 'Minimal oil · Fine canvas grain', image: '/art/worlds-4.webp' },
-      { title: 'The Solar Permanent Way', subtitle: 'Regionalist oil · Rhythmic stroke', image: '/art/worlds-5.webp' },
-      { title: 'Archive in Cobalt Ice', subtitle: 'Scraped oil · Palette-knife ground', image: '/art/worlds-6.webp' },
-      { title: 'Sails upon the Rosewater', subtitle: 'Fauvist oil · Direct color', image: '/art/worlds-7.webp' },
-      { title: 'Obsidian Weather', subtitle: 'Sublime oil · Dark velatura', image: '/art/worlds-8.webp' },
-      { title: 'The Seed Observatory', subtitle: 'Tonal oil · Rough linen', image: '/art/worlds-9.webp' }
+      { title: 'Salt Moon from the East Road', artist: 'Ruth Kael', year: 1876, medium: 'Oil and pumice on linen', image: '/art/worlds-1.webp' },
+      { title: 'Mangrove Machines', artist: 'Elián Moss', year: 1928, medium: 'Oil on canvas', image: '/art/worlds-2.webp' },
+      { title: 'Ascending City, Late Afternoon', artist: 'Jo Pell', year: 1951, medium: 'Oil over copper ground', image: '/art/worlds-3.webp' },
+      { title: 'Black Tide / White Towers', artist: 'Nara Venn', year: 1979, medium: 'Oil on fine linen', image: '/art/worlds-4.webp' },
+      { title: 'Permanent Way (Solar Study)', artist: 'Arun West', year: 1934, medium: 'Oil and ochre on canvas', image: '/art/worlds-5.webp' },
+      { title: 'Cobalt Archive', artist: 'Mina Søl', year: 2008, medium: 'Oil and cold wax on panel', image: '/art/worlds-6.webp' },
+      { title: 'Rosewater Regatta', artist: 'Cyra Bell', year: 1862, medium: 'Oil on sailcloth', image: '/art/worlds-7.webp' },
+      { title: 'Weather over Obsidian', artist: 'Peter Ash', year: 1819, medium: 'Oil and asphaltum on linen', image: '/art/worlds-8.webp' },
+      { title: 'Seed Station', artist: 'Alma Reed', year: 2020, medium: 'Oil on rough linen', image: '/art/worlds-9.webp' }
     ]
   },
   {
-    title: 'The Department of Impossible Weather',
-    heading: 'Impossible<br><em>Weather</em>',
-    note: 'Here weather has abandoned scale, direction and duty. A storm may become furniture, a guest, or private property. These works invite us to regard the atmosphere not as background, but as an eccentric social presence.',
+    title: 'A Brief History of Weather',
+    heading: 'A Brief History<br>of <em>Weather</em>',
+    note: 'Weather enters daily life as forecast, inconvenience and conversation. These five studies document several well-observed local conditions, including seated thunder, hesitant rain and an unusually sociable bank of fog.',
+    sign: 'Five local weather records. Dates refer to observation, not completion; conditions may have moved on since.',
     accent: '#a9c9ff', wall: '#69737d',
     works: [
-      { title: 'The Storm Takes a Seat', subtitle: 'Tonal oil · Soft-brushed canvas', image: '/art/weather-1.webp' },
-      { title: 'Procession at Barometric Dusk', subtitle: 'Metaphysical oil · Matte linen', image: '/art/weather-2.webp' },
-      { title: 'Rain, Reconsidering Gravity', subtitle: 'Glazed oil · Impasto highlights', image: '/art/weather-3.webp' },
-      { title: 'Private Storms in the Orchard', subtitle: 'Post-Impressionist oil · Coarse weave', image: '/art/weather-4.webp' },
-      { title: 'Dinner with the Sea Fog', subtitle: 'Surrealist oil · Silver ground', image: '/art/weather-5.webp' }
+      { title: 'Storm on a Dining Chair', artist: 'Celia Wren', year: 1922, medium: 'Oil on soft-ground canvas', image: '/art/weather-1.webp' },
+      { title: 'Barometric Procession, 6:40 p.m.', artist: 'Hugh Iver', year: 1884, medium: 'Oil and chalk on linen', image: '/art/weather-2.webp' },
+      { title: 'Rain Study II', artist: 'Mae Tan', year: 1967, medium: 'Glazed oil on canvas', image: '/art/weather-3.webp' },
+      { title: 'Four Small Storms, Orchard', artist: 'Orla Finch', year: 2006, medium: 'Oil on jute', image: '/art/weather-4.webp' },
+      { title: 'Supper with Sea Fog', artist: 'Benoit Grey', year: 1941, medium: 'Oil and silver leaf on panel', image: '/art/weather-5.webp' }
     ]
   },
   {
-    title: 'Minor Gods at Work',
-    heading: 'Minor Gods<br>at <em>Work</em>',
-    note: 'Divinity is usually pictured at the instant of revelation. This gallery attends instead to maintenance: ironing, watering, mending, folding and baking. Even eternity, it seems, depends upon small repeated gestures.',
+    title: 'The Working Day',
+    heading: 'The Working<br><em>Day</em>',
+    note: 'Work is most visible in its repetition. Watering, mending, folding, baking and roadside repair appear here not as symbols but as skilled jobs, carried out by experienced hands on otherwise unremarkable days.',
+    sign: 'Five scenes of maintenance and service work. Tools are arranged by task; breaks are taken when circumstances permit.',
     accent: '#ffd36a', wall: '#7a6d59',
     works: [
-      { title: 'The Domestic Aspect', subtitle: 'Genre oil · Warm linen', image: '/art/gods-1.webp' },
-      { title: 'River God, Third Floor', subtitle: 'Contemporary oil · Simple grain', image: '/art/gods-2.webp' },
-      { title: 'Roadside Assistance, 2:13 AM', subtitle: 'Romantic oil · Moonlit glazing', image: '/art/gods-3.webp' },
-      { title: 'Patron of Lost Socks', subtitle: 'Social realist oil · Moss impasto', image: '/art/gods-4.webp' },
-      { title: 'Before the First Loaf', subtitle: 'Symbolist oil · Golden ground', image: '/art/gods-5.webp' }
+      { title: 'Ironing', artist: 'Edith Lark', year: 1910, medium: 'Oil on warm-toned linen', image: '/art/gods-1.webp' },
+      { title: 'Watering, Third Floor', artist: 'Noor Bay', year: 1998, medium: 'Oil on canvas', image: '/art/gods-2.webp' },
+      { title: 'Roadside Assistance, 2:13 a.m.', artist: 'Cal Mercer', year: 1975, medium: 'Oil and wax on linen', image: '/art/gods-3.webp' },
+      { title: 'Mending Basket (One Missing)', artist: 'Florence Pike', year: 1932, medium: 'Oil on burlap', image: '/art/gods-4.webp' },
+      { title: 'Before the First Loaf', artist: 'Kavi North', year: 1869, medium: 'Oil and gold ground on wood', image: '/art/gods-5.webp' }
     ]
   },
   {
-    title: 'The Night Garden',
-    heading: 'The Night<br><em>Garden</em>',
-    note: 'Six impossible specimens begin as exact vector geometry, then acquire dragged pigment, raised contours and the tooth of woven canvas. Bright horizontal impasto alternates with dark, translucent scumbling: two mechanical recipes learning to leave a human trace.',
+    title: 'The Garden at Night',
+    heading: 'The Garden<br><em>at Night</em>',
+    note: 'Six botanical studies record the garden after closing, when night-blooming plants, seed fruit and pollinating moths continue their usual work. Strong color preserves details that low light might otherwise conceal.',
+    sign: 'Nocturnal specimens from one enclosed garden. Color has been adjusted for legibility; flowering times are recorded in the labels.',
     accent: '#ff77b7', wall: '#594d67',
     works: [
-      { title: 'Moonflower Keeps the Hours', subtitle: 'Procedural velatura · Directional scumble', image: '/art/night-garden-1.webp' },
-      { title: 'Foxglove Broadcast', subtitle: 'Graphic impasto · Horizontal knife drag', image: '/art/night-garden-2.webp' },
-      { title: 'Blue Lotus, Tidal Clock', subtitle: 'Graphic impasto · Raised contour', image: '/art/night-garden-3.webp' },
-      { title: 'Ferns Remember Lightning', subtitle: 'Procedural velatura · Dark ground', image: '/art/night-garden-4.webp' },
-      { title: 'Pomegranates after Midnight', subtitle: 'Graphic impasto · Woven canvas', image: '/art/night-garden-5.webp' },
-      { title: 'Moths Pollinate the Stars', subtitle: 'Procedural velatura · Edge relief', image: '/art/night-garden-6.webp' }
+      { title: 'Moonflower, 11:52 p.m.', artist: 'Iris Okafor', year: 2018, medium: 'Oil and alkyd on linen', image: '/art/night-garden-1.webp' },
+      { title: 'Foxglove Signal', artist: 'Ren Ito', year: 2021, medium: 'Knife-work oil on canvas', image: '/art/night-garden-2.webp' },
+      { title: 'Blue Lotus / Tidal Clock', artist: 'Sora Bell', year: 2019, medium: 'Raised oil on panel', image: '/art/night-garden-3.webp' },
+      { title: 'Fern after Lightning', artist: 'Mara Quill', year: 2023, medium: 'Oil and charcoal on dark ground', image: '/art/night-garden-4.webp' },
+      { title: 'Pomegranates, Late', artist: 'Yasmin Dey', year: 2020, medium: 'Oil on woven canvas', image: '/art/night-garden-5.webp' },
+      { title: 'Moth Pollination Study', artist: 'Leo Amari', year: 2024, medium: 'Oil and wax relief on linen', image: '/art/night-garden-6.webp' }
     ]
   }
 ];
@@ -405,7 +412,9 @@ function renderCollection() {
     <article class="collection-card" style="--card-accent:${gallery.accent}">
       <div class="collection-art"><img src="${work.image}" alt="${work.title}" loading="lazy"></div>
       <div class="collection-meta"><span>0${room + 1} · ${String(workIndex + 1).padStart(2, '0')}</span><span>${gallery.title}</span></div>
-      <h2>${work.title}</h2><p>${work.subtitle}</p>
+      <h2>${work.title}</h2>
+      <p class="collection-artist">${work.artist}, ${work.year}</p>
+      <p class="collection-medium">${work.medium}</p>
       <button data-visit-room="${room}">View in room <span>→</span></button>
     </article>`).join('');
   collectionGrid.querySelectorAll<HTMLButtonElement>('[data-visit-room]').forEach(button => button.addEventListener('click', () => {
@@ -457,7 +466,8 @@ function setRoom(index: number, teleport = false) {
   curatorCopy.textContent = gallery.note;
   const footerCounts = document.querySelectorAll<HTMLElement>('.curator-footer span');
   footerCounts[0].textContent = `${gallery.works.length} works`;
-  footerCounts[1].textContent = 'Oil on canvas · 2025';
+  const years = gallery.works.map(work => work.year);
+  footerCounts[1].textContent = `${Math.min(...years)}–${Math.max(...years)}`;
   roomIndex.textContent = `0${index + 1}`;
   const progress = (index + 1) / galleries.length * 100;
   progressLine.style.background = `linear-gradient(90deg, ${gallery.accent} ${progress}%, #777 ${progress}%)`;
@@ -518,7 +528,8 @@ function updateCard() {
     const work = galleries[nearest.room].works[nearest.work];
     artCard.querySelector<HTMLElement>('.art-number')!.textContent = `0${nearest.work + 1}`;
     artCard.querySelector<HTMLElement>('h2')!.textContent = work.title;
-    artCard.querySelector<HTMLElement>('p')!.textContent = work.subtitle;
+    artCard.querySelector<HTMLElement>('.art-artist')!.textContent = `${work.artist}, ${work.year}`;
+    artCard.querySelector<HTMLElement>('.art-medium')!.textContent = work.medium;
     lastCard = key;
   }
   artCard.classList.add('visible');

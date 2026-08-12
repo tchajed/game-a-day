@@ -4,15 +4,15 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#12110f" />
-    <meta name="description" content="The Impossible Collection — a virtual museum of AI-generated oil paintings." />
-    <title>The Impossible Collection</title>
+    <meta name="description" content="The Museum of Ordinary Things — portraits, landscapes, weather records, useful objects and other everyday paintings." />
+    <title>The Museum of Ordinary Things</title>
   </head>
   <body>
     <canvas id="museum" aria-label="Interactive 3D museum"></canvas>
-    <div id="loading"><div class="loader-mark">IC</div><p>Preparing the galleries</p><span></span></div>
+    <div id="loading"><div class="loader-mark">MO</div><p>Opening for the day</p><span></span></div>
     <header class="topbar">
-      <a class="brand" href="#" aria-label="The Impossible Collection home">
-        <span class="brand-mark">IC</span><span><b>The Impossible</b><em>Collection</em></span>
+      <a class="brand" href="#" aria-label="The Museum of Ordinary Things home">
+        <span class="brand-mark">MO</span><span><b>Museum of</b><em>Ordinary Things</em></span>
       </a>
       <div class="room-progress" aria-live="polite"><span id="room-index">01</span><i></i><span>06</span></div>
       <div class="view-actions">
@@ -21,30 +21,30 @@
       </div>
     </header>
     <nav class="gallery-nav" aria-label="Choose gallery">
-      <button data-room="0" class="active"><span>01</span><b>The Court of Beasts</b></button>
-      <button data-room="1"><span>02</span><b>Objects, Elsewhere</b></button>
-      <button data-room="2"><span>03</span><b>Worlds Without Us</b></button>
-      <button data-room="3"><span>04</span><b>Impossible Weather</b></button>
-      <button data-room="4"><span>05</span><b>Minor Gods at Work</b></button>
-      <button data-room="5"><span>06</span><b>The Night Garden</b></button>
+      <button data-room="0" class="active"><span>01</span><b>Portraits and Personages</b></button>
+      <button data-room="1"><span>02</span><b>Domestic Arrangements</b></button>
+      <button data-room="2"><span>03</span><b>Views from the Outer Counties</b></button>
+      <button data-room="3"><span>04</span><b>A Brief History of Weather</b></button>
+      <button data-room="4"><span>05</span><b>The Working Day</b></button>
+      <button data-room="5"><span>06</span><b>The Garden at Night</b></button>
     </nav>
     <main id="collection" class="collection" aria-hidden="true">
       <header class="collection-header">
-        <div><p class="collection-kicker">Online collection · <span id="collection-total">41</span> works</p><h1>Every room,<br><em>at a glance.</em></h1></div>
-        <p>Browse the complete collection without walking every corridor. Each work remains connected to its room in the museum.</p>
+        <div><p class="collection-kicker">Collection catalogue · <span id="collection-total">41</span> works</p><h1>Everything<br><em>on view.</em></h1></div>
+        <p>A catalogue of portraits, useful objects, regional views, recorded weather, working life and plants observed after dark.</p>
       </header>
       <nav id="collection-filters" class="collection-filters" aria-label="Filter the collection"></nav>
       <section id="collection-grid" class="collection-grid" aria-live="polite"></section>
     </main>
     <aside class="curator" id="curator">
       <div class="eyebrow">Gallery 01 · Curator's note</div>
-      <h1>The Court<br>of <em>Beasts</em></h1>
+      <h1>Portraits &<br><em>Personages</em></h1>
       <p id="curator-copy"></p>
-      <div class="curator-footer"><span>9 works</span><span>Oil on canvas · 2025</span></div>
+      <div class="curator-footer"><span>9 works</span><span>1742–1956</span></div>
       <button id="enter-gallery">Enter the gallery <span>→</span></button>
     </aside>
     <section class="art-card" id="art-card" aria-live="polite">
-      <span class="art-number"></span><div><h2></h2><p></p></div>
+      <span class="art-number"></span><div><h2></h2><p class="art-artist"></p><p class="art-medium"></p></div>
     </section>
     <div class="controls"><span class="key">W</span><span class="key">A</span><span class="key">S</span><span class="key">D</span><b>Move</b><i></i><span class="mouse">⌁</span><b>Look</b></div>
     <div class="crosshair" aria-hidden="true"></div>
