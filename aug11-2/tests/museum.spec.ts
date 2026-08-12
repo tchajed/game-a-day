@@ -14,15 +14,16 @@ test('loads the 3D museum and curatorial interface', async ({ page }) => {
 test('uses a six-gallery concourse with a separate lower-level room', async ({ page }) => {
   await page.goto('/');
   const layout = await page.evaluate(() => (
-    window as unknown as { museumLayout: { doorwayViolations: unknown[]; topology: string; roomCount: number; galleryCount: number; guideCount: number; concourseFeatureGroups: number; storage: { level: number; capacity: number; occupied: number; lightCount: number } } }
+    window as unknown as { museumLayout: { doorwayViolations: unknown[]; hangingPlanViolations: unknown[]; topology: string; roomCount: number; galleryCount: number; guideCount: number; concourseFeatureGroups: number; storage: { level: number; capacity: number; occupied: number; lightCount: number; largeFormatCapacity: number } } }
   ).museumLayout);
   expect(layout.doorwayViolations).toEqual([]);
+  expect(layout.hangingPlanViolations).toEqual([]);
   expect(layout.topology).toBe('concourse');
   expect(layout.roomCount).toBe(7);
   expect(layout.galleryCount).toBe(6);
   expect(layout.guideCount).toBe(6);
   expect(layout.concourseFeatureGroups).toBeGreaterThanOrEqual(6);
-  expect(layout.storage).toEqual({ level: -7.5, capacity: 42, occupied: 11, lightCount: 12 });
+  expect(layout.storage).toEqual({ level: -7.5, capacity: 42, occupied: 11, lightCount: 12, largeFormatCapacity: 4 });
 });
 
 test('preserves every painting aspect ratio without cropping', async ({ page }) => {
@@ -33,6 +34,28 @@ test('preserves every painting aspect ratio without cropping', async ({ page }) 
   ).museumArtworkFits);
   expect(fits).toHaveLength(41);
   expect(fits.every(fit => Math.abs(fit.imageAspect - fit.displayAspect) < 0.0001)).toBe(true);
+
+  const storedWideWork = fits.find(fit => fit.room === 6 && fit.work === 6) as typeof fits[number] & { displayWidth: number; storageFormat: string };
+  expect(storedWideWork.storageFormat).toBe('large-wide');
+  expect(storedWideWork.displayWidth).toBeGreaterThan(6);
+});
+
+test('balances correctly scaled paintings across every display wall', async ({ page }) => {
+  await page.goto('/');
+  await expect(page.locator('#loading')).toHaveClass(/done/, { timeout: 15_000 });
+  const review = await page.evaluate(() => {
+    const museum = window as unknown as {
+      museumWallLayouts: { room: number; wall: string; works: unknown[] }[];
+      museumArtworkFits: { room: number; imageAspect: number; displayWidth: number; displayHeight: number }[];
+    };
+    return { walls: museum.museumWallLayouts, fits: museum.museumArtworkFits };
+  });
+  expect(review.walls).toHaveLength(18);
+  expect(review.walls.every(wall => wall.works.length > 0)).toBe(true);
+
+  const galleryFits = review.fits.filter(fit => fit.room < 6);
+  expect(galleryFits.filter(fit => fit.imageAspect >= 1.8).every(fit => fit.displayWidth >= 4.8)).toBe(true);
+  expect(galleryFits.filter(fit => fit.imageAspect <= .4).every(fit => fit.displayHeight >= 4.2)).toBe(true);
 });
 
 test('can teleport between all six galleries', async ({ page }) => {

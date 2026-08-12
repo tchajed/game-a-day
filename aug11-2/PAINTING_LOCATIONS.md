@@ -69,7 +69,7 @@ The **Current room** column records the museum layout as implemented. Update thi
 | Marchioness in Winter Dress | Elian Voss | Visible Storage, bay 01 |
 | Highland Crown | Cora Pike | Visible Storage, bay 02 |
 | Breakfast Piece with Moss | Anouk Field | Visible Storage, bay 03 |
-| Red Shoe Reliquary | O. S. Fen | Visible Storage, bay 04 |
+| Red Shoe Reliquary | O. S. Fen | Visible Storage, large-format bay 25 |
 | Ascending City, Late Afternoon | Jo Pell | Visible Storage, bay 05 |
 | Permanent Way (Solar Study) | Arun West | Visible Storage, bay 06 |
 | Cobalt Archive | Mina Søl | Visible Storage, bay 07 |

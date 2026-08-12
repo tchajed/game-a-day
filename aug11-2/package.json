@@ -8,6 +8,8 @@
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
     "test": "bun run build && playwright test",
+    "test:wall-snapshots": "bun run build && playwright test tests/wall-snapshots.spec.ts",
+    "update:wall-snapshots": "bun run build && playwright test tests/wall-snapshots.spec.ts --update-snapshots",
     "art:night-garden": "node scripts/generate-night-garden.mjs --all"
   },
   "dependencies": {

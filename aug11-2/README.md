@@ -3,7 +3,7 @@
 An interactive PlayCanvas museum treating its unusual collection as the stuff of everyday life, with two ways to explore 41 paintings:
 
 - a six-gallery 3D museum arranged around a shared central concourse
-- a lower-level, evenly lit visible-storage room with 42 browsable painting bays (initially empty)
+- a lower-level, evenly lit visible-storage room with 42 browsable painting bays, including four wide-format bays
 - a responsive, filterable online collection grid
 
 ## Galleries
@@ -24,4 +24,6 @@ bun install
 bun run art:night-garden  # requires rsvg-convert and ImageMagick
 bun run dev
 bun run test
+bun run test:wall-snapshots    # compare 18 wall elevations and the wide storage bay
+bun run update:wall-snapshots  # intentionally accept a rehanging
 ```

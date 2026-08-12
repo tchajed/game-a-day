@@ -125,7 +125,7 @@ const storageAssignments: StorageAssignment[] = [
   { slot: 0, room: 0, work: 0 },
   { slot: 1, room: 0, work: 8 },
   { slot: 2, room: 1, work: 3 },
-  { slot: 3, room: 1, work: 6 },
+  { slot: 24, room: 1, work: 6 },
   { slot: 4, room: 2, work: 2 },
   { slot: 5, room: 2, work: 4 },
   { slot: 6, room: 2, work: 5 },
@@ -469,36 +469,59 @@ function storageBox(name: string, position: pc.Vec3, rotation: number, width: nu
   return entity;
 }
 
-type StorageSlot = { position: pc.Vec3; rotation: number; viewPosition: pc.Vec3 };
+type StorageSlot = {
+  position: pc.Vec3;
+  rotation: number;
+  viewPosition: pc.Vec3;
+  maxArtworkWidth: number;
+  maxArtworkHeight: number;
+  format: 'standard' | 'large-wide';
+};
 const storageSlots: StorageSlot[] = [];
 const storageBayY = STORAGE_FLOOR_Y + 2.8;
 
-function addStorageBay(position: pc.Vec3, rotation: number, viewPosition: pc.Vec3) {
+function addStorageBay(
+  position: pc.Vec3,
+  rotation: number,
+  viewPosition: pc.Vec3,
+  bayWidth = 1.42,
+  format: StorageSlot['format'] = 'standard'
+) {
   const slotNumber = storageSlots.length + 1;
-  storageSlots.push({ position, rotation, viewPosition });
-  storageBox(`Empty storage bay ${slotNumber}`, position, rotation, 1.42, 3.25, .09, storageBayMat);
-  storageBox('Storage bay upper rail', new pc.Vec3(position.x, position.y + 1.66, position.z), rotation, 1.55, .08, .15, storageRackMat);
-  storageBox('Storage bay lower rail', new pc.Vec3(position.x, position.y - 1.66, position.z), rotation, 1.55, .08, .15, storageRackMat);
+  storageSlots.push({
+    position,
+    rotation,
+    viewPosition,
+    maxArtworkWidth: bayWidth - .2,
+    maxArtworkHeight: 2.65,
+    format
+  });
+  storageBox(`${format === 'large-wide' ? 'Large-format' : 'Empty'} storage bay ${slotNumber}`, position, rotation, bayWidth, 3.25, .09, storageBayMat);
+  storageBox('Storage bay upper rail', new pc.Vec3(position.x, position.y + 1.66, position.z), rotation, bayWidth + .13, .08, .15, storageRackMat);
+  storageBox('Storage bay lower rail', new pc.Vec3(position.x, position.y - 1.66, position.z), rotation, bayWidth + .13, .08, .15, storageRackMat);
   storageBox(`Storage bay label ${String(slotNumber).padStart(2, '0')}`, new pc.Vec3(position.x, position.y - 1.42, position.z), rotation, .54, .16, .13, plaqueMat);
 }
 
-// Twenty-four perimeter bays, eight end-wall bays and ten two-sided central
-// bays make every one of the collection's 41 paintings accessible at eye level,
-// with one spare bay for rehanging work.
+// Twenty-four side bays, four dedicated wide-format end bays and fourteen
+// two-sided central bays keep every painting accessible at eye level. Wide
+// works use the long uninterrupted walls rather than shrinking into portrait racks.
 Array.from({ length: 12 }, (_, index) => STORAGE_CZ - 9.35 + index * 1.7).forEach(z => {
   addStorageBay(new pc.Vec3(STORAGE_CX - 9.72, storageBayY, z), 90, new pc.Vec3(STORAGE_CX - 8.1, STORAGE_EYE_Y, z));
   addStorageBay(new pc.Vec3(STORAGE_CX + 9.72, storageBayY, z), -90, new pc.Vec3(STORAGE_CX + 8.1, STORAGE_EYE_Y, z));
 });
-Array.from({ length: 8 }, (_, index) => STORAGE_CX - 7 + index * 2).forEach(x => {
-  addStorageBay(new pc.Vec3(x, storageBayY, STORAGE_CZ + 11.72), 180, new pc.Vec3(x, STORAGE_EYE_Y, STORAGE_CZ + 10.1));
+[-4, 4].forEach(x => {
+  addStorageBay(new pc.Vec3(x, storageBayY, STORAGE_CZ + 11.72), 180, new pc.Vec3(x, STORAGE_EYE_Y, STORAGE_CZ + 7.2), 6.8, 'large-wide');
 });
-[-4.4, -2.2, 0, 2.2, 4.4].forEach(x => {
+[-6.35, 6.35].forEach(x => {
+  addStorageBay(new pc.Vec3(x, storageBayY, STORAGE_CZ - 11.72), 0, new pc.Vec3(x, STORAGE_EYE_Y, STORAGE_CZ - 7.2), 4.8, 'large-wide');
+});
+[-6.6, -4.4, -2.2, 0, 2.2, 4.4, 6.6].forEach(x => {
   addStorageBay(new pc.Vec3(x, storageBayY, STORAGE_CZ - .14), 0, new pc.Vec3(x, STORAGE_EYE_Y, STORAGE_CZ - 1.8));
   addStorageBay(new pc.Vec3(x, storageBayY, STORAGE_CZ + .14), 180, new pc.Vec3(x, STORAGE_EYE_Y, STORAGE_CZ + 1.8));
 });
-box('Central rack top', new pc.Vec3(0, STORAGE_FLOOR_Y + 4.52, STORAGE_CZ), new pc.Vec3(11.2, .15, .46), storageRackMat);
-box('Central rack base', new pc.Vec3(0, STORAGE_FLOOR_Y + .22, STORAGE_CZ), new pc.Vec3(11.2, .35, .72), storageRackMat);
-[-5.5, 5.5].forEach(x => box('Central rack end post', new pc.Vec3(x, STORAGE_FLOOR_Y + 2.32, STORAGE_CZ), new pc.Vec3(.18, 4.4, .65), storageRackMat));
+box('Central rack top', new pc.Vec3(0, STORAGE_FLOOR_Y + 4.52, STORAGE_CZ), new pc.Vec3(15.6, .15, .46), storageRackMat);
+box('Central rack base', new pc.Vec3(0, STORAGE_FLOOR_Y + .22, STORAGE_CZ), new pc.Vec3(15.6, .35, .72), storageRackMat);
+[-7.7, 7.7].forEach(x => box('Central rack end post', new pc.Vec3(x, STORAGE_FLOOR_Y + 2.32, STORAGE_CZ), new pc.Vec3(.18, 4.4, .65), storageRackMat));
 
 function loadTexture(url: string): Promise<pc.Texture> {
   return new Promise((resolve, reject) => {
@@ -511,75 +534,99 @@ function loadTexture(url: string): Promise<pc.Texture> {
 }
 
 type Wall = 'north' | 'south' | 'west' | 'east';
-type Hanging = { wall: Wall; along: number; centerY: number; width: number; height: number; frame: number };
+type Hanging = { work: number; wall: Wall; along: number; centerY: number; width: number; height: number; frame: number };
 
-// Every room uses a salon-like rhythm: asymmetric scales, mixed orientations and all available walls.
+// Plans name their source work explicitly. This prevents a storage move from
+// shifting a wide painting into the next portrait-shaped slot.
 const hangingPlans: Hanging[][] = [
   [
-    { wall: 'north', along: -3.55, centerY: 3.22, width: 1.7, height: 4.2, frame: 0 },
-    { wall: 'north', along: -.85, centerY: 3.05, width: 1.45, height: 3.65, frame: 2 },
-    { wall: 'north', along: 2.5, centerY: 3.3, width: 2.05, height: 4.55, frame: 0 },
-    { wall: 'east', along: -3.45, centerY: 3.08, width: 1.6, height: 4.0, frame: 1 },
-    { wall: 'east', along: -.45, centerY: 3.4, width: 1.35, height: 3.4, frame: 3 },
-    { wall: 'east', along: 2.8, centerY: 3.05, width: 1.85, height: 4.25, frame: 2 },
-    { wall: 'west', along: -5.35, centerY: 3.0, width: 3.0, height: 2.05, frame: 3 },
-    { wall: 'west', along: -.75, centerY: 3.55, width: 3.7, height: 2.4, frame: 4 },
-    { wall: 'west', along: 4.75, centerY: 2.75, width: 2.8, height: 1.85, frame: 2 }
+    { work: 1, wall: 'north', along: -3.15, centerY: 3.05, width: 1.4, height: 4.2, frame: 2 },
+    { work: 2, wall: 'north', along: 0, centerY: 3.05, width: 1.4, height: 4.2, frame: 0 },
+    { work: 3, wall: 'north', along: 3.15, centerY: 3.05, width: 1.4, height: 4.2, frame: 1 },
+    { work: 4, wall: 'west', along: -4, centerY: 3.05, width: 1.45, height: 4.35, frame: 3 },
+    { work: 6, wall: 'west', along: 3.2, centerY: 3.05, width: 5.1, height: 1.7, frame: 2 },
+    { work: 5, wall: 'east', along: -4, centerY: 3.05, width: 1.45, height: 4.35, frame: 4 },
+    { work: 7, wall: 'east', along: 3.2, centerY: 3.05, width: 5.1, height: 1.7, frame: 0 }
   ],
   [
-    { wall: 'north', along: -3.65, centerY: 3.15, width: 1.45, height: 3.8, frame: 4 },
-    { wall: 'north', along: 2.65, centerY: 2.95, width: 1.65, height: 3.55, frame: 2 },
-    { wall: 'west', along: -3.25, centerY: 3.35, width: 1.55, height: 3.9, frame: 3 },
-    { wall: 'west', along: -.2, centerY: 2.85, width: 1.35, height: 3.45, frame: 1 },
-    { wall: 'east', along: -5.25, centerY: 3.45, width: 3.35, height: 1.75, frame: 3 },
-    { wall: 'north', along: -.45, centerY: 3.05, width: 3.75, height: 2.05, frame: 2 },
-    { wall: 'east', along: 4.7, centerY: 2.72, width: 2.9, height: 1.6, frame: 4 }
+    { work: 0, wall: 'north', along: -2.2, centerY: 3.05, width: 1.45, height: 4.35, frame: 4 },
+    { work: 1, wall: 'north', along: 2.2, centerY: 3.05, width: 1.45, height: 4.35, frame: 2 },
+    { work: 2, wall: 'west', along: -4.2, centerY: 3.05, width: 1.45, height: 4.35, frame: 3 },
+    { work: 4, wall: 'west', along: 3, centerY: 3.05, width: 5.4, height: 1.8, frame: 1 },
+    { work: 5, wall: 'east', along: 0, centerY: 3.05, width: 6, height: 2, frame: 3 }
   ],
   [
-    { wall: 'north', along: -3.6, centerY: 3.3, width: 1.8, height: 4.35, frame: 1 },
-    { wall: 'north', along: -.5, centerY: 2.92, width: 1.35, height: 3.5, frame: 3 },
-    { wall: 'north', along: 2.7, centerY: 3.38, width: 2.0, height: 4.55, frame: 0 },
-    { wall: 'west', along: -3.45, centerY: 2.95, width: 1.45, height: 3.65, frame: 4 },
-    { wall: 'west', along: -.55, centerY: 3.38, width: 1.7, height: 4.2, frame: 2 },
-    { wall: 'west', along: 2.9, centerY: 3.12, width: 1.75, height: 3.85, frame: 1 },
-    { wall: 'east', along: -5.15, centerY: 3.3, width: 3.8, height: 1.9, frame: 4 },
-    { wall: 'east', along: 4.75, centerY: 4.25, width: 4.05, height: 2.2, frame: 0 },
-    { wall: 'east', along: 4.75, centerY: 1.62, width: 3.0, height: 1.7, frame: 3 }
+    { work: 0, wall: 'north', along: -3.65, centerY: 3.05, width: 1.45, height: 4.35, frame: 1 },
+    { work: 6, wall: 'north', along: 2.15, centerY: 3.05, width: 4.8, height: 1.6, frame: 4 },
+    { work: 1, wall: 'west', along: -4.5, centerY: 3.05, width: 1.45, height: 4.35, frame: 3 },
+    { work: 7, wall: 'west', along: 2.5, centerY: 3.05, width: 5.4, height: 1.8, frame: 0 },
+    { work: 3, wall: 'east', along: -4.5, centerY: 3.05, width: 1.45, height: 4.35, frame: 2 },
+    { work: 8, wall: 'east', along: 2.5, centerY: 3.05, width: 5.4, height: 1.8, frame: 1 }
   ],
   [
-    { wall: 'west', along: -3.45, centerY: 3.2, width: 1.65, height: 4.05, frame: 2 },
-    { wall: 'west', along: -.35, centerY: 3.45, width: 1.45, height: 3.6, frame: 4 },
-    { wall: 'west', along: 3.0, centerY: 3.05, width: 1.8, height: 4.15, frame: 3 },
-    { wall: 'south', along: -2.85, centerY: 3.25, width: 3.7, height: 1.85, frame: 3 },
-    { wall: 'south', along: 2.75, centerY: 2.95, width: 3.25, height: 1.65, frame: 1 }
+    { work: 0, wall: 'south', along: -2.2, centerY: 3.05, width: 1.45, height: 4.35, frame: 2 },
+    { work: 2, wall: 'south', along: 2.2, centerY: 3.05, width: 1.45, height: 4.35, frame: 4 },
+    { work: 3, wall: 'west', along: 0, centerY: 3.05, width: 6, height: 3, frame: 3 },
+    { work: 4, wall: 'east', along: 0, centerY: 3.05, width: 6, height: 3, frame: 1 }
   ],
   [
-    { wall: 'east', along: -3.5, centerY: 3.25, width: 1.6, height: 4.0, frame: 0 },
-    { wall: 'east', along: -.35, centerY: 3.0, width: 1.5, height: 3.75, frame: 3 },
-    { wall: 'east', along: 2.95, centerY: 3.35, width: 1.75, height: 4.2, frame: 2 },
-    { wall: 'south', along: -2.8, centerY: 3.15, width: 3.65, height: 1.82, frame: 2 },
-    { wall: 'south', along: 2.8, centerY: 3.0, width: 3.3, height: 1.65, frame: 4 }
+    { work: 0, wall: 'south', along: -2.2, centerY: 3.05, width: 1.45, height: 4.35, frame: 0 },
+    { work: 1, wall: 'south', along: 2.2, centerY: 3.05, width: 1.45, height: 4.35, frame: 3 },
+    { work: 3, wall: 'west', along: 0, centerY: 3.05, width: 6, height: 3, frame: 2 },
+    { work: 4, wall: 'east', along: 0, centerY: 3.05, width: 6, height: 3, frame: 4 }
   ],
   [
-    { wall: 'south', along: -2.4, centerY: 3.15, width: 2.2, height: 3.05, frame: 4 },
-    { wall: 'south', along: 2.4, centerY: 3.15, width: 2.2, height: 3.05, frame: 0 },
-    { wall: 'west', along: -3.2, centerY: 3.15, width: 2.2, height: 3.05, frame: 3 },
-    { wall: 'west', along: 2.1, centerY: 3.15, width: 2.2, height: 3.05, frame: 1 },
-    { wall: 'east', along: -3.2, centerY: 3.15, width: 2.2, height: 3.05, frame: 2 },
-    { wall: 'east', along: 2.1, centerY: 3.15, width: 2.2, height: 3.05, frame: 4 }
+    { work: 1, wall: 'south', along: -2.2, centerY: 3.05, width: 2.35, height: 3.3, frame: 0 },
+    { work: 3, wall: 'south', along: 2.2, centerY: 3.05, width: 2.35, height: 3.3, frame: 3 },
+    { work: 4, wall: 'west', along: 0, centerY: 3.05, width: 2.8, height: 3.8, frame: 2 },
+    { work: 5, wall: 'east', along: 0, centerY: 3.05, width: 2.8, height: 3.8, frame: 4 }
   ]
 ];
 
+const hangableWalls = rooms.map(room => (
+  room.row === 'north' ? ['north', 'west', 'east'] : ['south', 'west', 'east']
+) as Wall[]);
+
 function findDoorwayViolations() {
-  return hangingPlans.flatMap((plan, room) => plan.flatMap((hanging, work) => {
+  return hangingPlans.flatMap((plan, room) => plan.flatMap(hanging => {
     const entranceWall: Wall = rooms[room].row === 'north' ? 'south' : 'north';
-    return hanging.wall === entranceWall ? [{ room, work, wall: hanging.wall }] : [];
+    return hanging.wall === entranceWall ? [{ room, work: hanging.work, wall: hanging.wall }] : [];
   }));
 }
 
+function findHangingPlanViolations() {
+  return hangingPlans.flatMap((plan, room) => {
+    const issues: { room: number; problem: string; work?: number; wall?: Wall }[] = [];
+    const expectedWorks = galleryDisplayWorkIndices[room];
+    const actualWorks = plan.map(hanging => hanging.work);
+    if ([...expectedWorks].sort().join(',') !== [...actualWorks].sort().join(',')) {
+      issues.push({ room, problem: `display assignment mismatch (${actualWorks.join(',')} vs ${expectedWorks.join(',')})` });
+    }
+    hangableWalls[room].forEach(wall => {
+      if (!plan.some(hanging => hanging.wall === wall)) issues.push({ room, wall, problem: 'empty display wall' });
+    });
+    plan.forEach((hanging, index) => {
+      const wallLength = hanging.wall === 'north' || hanging.wall === 'south' ? ROOM_WIDTH : ROOM_DEPTH;
+      if (Math.abs(hanging.along) + hanging.width / 2 > wallLength / 2 - .4) {
+        issues.push({ room, work: hanging.work, wall: hanging.wall, problem: 'outside horizontal wall bounds' });
+      }
+      if (hanging.centerY - hanging.height / 2 < .55 || hanging.centerY + hanging.height / 2 > 5.55) {
+        issues.push({ room, work: hanging.work, wall: hanging.wall, problem: 'outside vertical wall bounds' });
+      }
+      plan.slice(index + 1).filter(other => other.wall === hanging.wall).forEach(other => {
+        if (Math.abs(other.along - hanging.along) < (other.width + hanging.width) / 2 + .45) {
+          issues.push({ room, work: hanging.work, wall: hanging.wall, problem: `overlaps work ${other.work}` });
+        }
+      });
+    });
+    return issues;
+  });
+}
+
 const doorwayViolations = findDoorwayViolations();
-if (doorwayViolations.length) {
-  throw new Error(`Artwork overlaps a doorway: ${JSON.stringify(doorwayViolations)}`);
+const hangingPlanViolations = findHangingPlanViolations();
+if (doorwayViolations.length || hangingPlanViolations.length) {
+  throw new Error(`Invalid artwork layout: ${JSON.stringify({ doorwayViolations, hangingPlanViolations })}`);
 }
 
 type ArtworkPosition = {
@@ -589,7 +636,7 @@ type ArtworkPosition = {
   proximityPosition: pc.Vec3;
   subjectPosition: pc.Vec3;
 };
-type ArtworkFit = { room: number; work: number; imageAspect: number; displayAspect: number };
+type ArtworkFit = { room: number; work: number; imageAspect: number; displayAspect: number; displayWidth: number; displayHeight: number; wall?: Wall; storageFormat?: StorageSlot['format'] };
 const artworkPositions: ArtworkPosition[] = [];
 const artworkFits: ArtworkFit[] = [];
 
@@ -622,7 +669,15 @@ async function hangArtwork(room: number, work: number, hangingIndex: number, tex
   const hanging = hangingPlans[room][hangingIndex];
   const imageAspect = texture.width / texture.height;
   const fitted = fitArtworkWithin(hanging.width, hanging.height, imageAspect);
-  artworkFits.push({ room, work, imageAspect, displayAspect: fitted.width / fitted.height });
+  artworkFits.push({
+    room,
+    work,
+    imageAspect,
+    displayAspect: fitted.width / fitted.height,
+    displayWidth: fitted.width,
+    displayHeight: fitted.height,
+    wall: hanging.wall
+  });
 
   const canvasMat = new pc.StandardMaterial();
   canvasMat.name = galleries[room].works[work].title;
@@ -651,8 +706,16 @@ async function hangStorageArtwork(assignment: StorageAssignment, texture: pc.Tex
   if (!slot || !source) throw new Error(`Invalid visible-storage assignment: ${JSON.stringify(assignment)}`);
 
   const aspect = texture.width / texture.height;
-  const { width, height } = fitArtworkWithin(1.22, 2.65, aspect);
-  artworkFits.push({ room: STORAGE_ROOM_INDEX, work: assignment.work, imageAspect: aspect, displayAspect: width / height });
+  const { width, height } = fitArtworkWithin(slot.maxArtworkWidth, slot.maxArtworkHeight, aspect);
+  artworkFits.push({
+    room: STORAGE_ROOM_INDEX,
+    work: assignment.work,
+    imageAspect: aspect,
+    displayAspect: width / height,
+    displayWidth: width,
+    displayHeight: height,
+    storageFormat: slot.format
+  });
 
   const canvasMat = new pc.StandardMaterial();
   canvasMat.name = `Stored: ${source.title}`;
@@ -675,8 +738,8 @@ async function hangStorageArtwork(assignment: StorageAssignment, texture: pc.Tex
   });
 }
 
-const galleryTextureJobs = galleryDisplayWorkIndices.flatMap((workIndices, room) => workIndices.map((work, hangingIndex) =>
-  loadTexture(galleries[room].works[work].image).then(texture => hangArtwork(room, work, hangingIndex, texture))
+const galleryTextureJobs = hangingPlans.flatMap((plan, room) => plan.map((hanging, hangingIndex) =>
+  loadTexture(galleries[room].works[hanging.work].image).then(texture => hangArtwork(room, hanging.work, hangingIndex, texture))
 ));
 const storageTextureJobs = storageAssignments.map(assignment => {
   const work = galleries[assignment.room]?.works[assignment.work];
@@ -793,8 +856,7 @@ function visitArtwork(roomIndex: number, workIndex: number) {
     yaw = Math.atan2(-towardArtwork.x, -towardArtwork.z) * 180 / Math.PI;
     pitch = Math.atan2(towardArtwork.y, Math.hypot(towardArtwork.x, towardArtwork.z)) * 180 / Math.PI;
   } else {
-    const hangingIndex = galleryDisplayWorkIndices[roomIndex].indexOf(workIndex);
-    const hanging = hangingPlans[roomIndex][hangingIndex];
+    const hanging = hangingPlans[roomIndex].find(candidate => candidate.work === workIndex);
     if (!hanging) throw new Error(`Painting is not assigned to a display location: ${roomIndex}-${workIndex}`);
     const viewingDistance = Math.max(2.8, hanging.height * .82);
     const position = wallTransform(roomIndex, { ...hanging, centerY: EYE_HEIGHT }, .47 + viewingDistance).position;
@@ -1000,25 +1062,98 @@ Promise.all(textureJobs).finally(() => {
   setTimeout(() => document.querySelector('#loading')?.classList.add('done'), 350);
 });
 
-// Exposed only for deterministic layout and smoke tests.
+function viewWallForSnapshot(roomIndex: number, wall: Wall) {
+  const room = rooms[roomIndex];
+  if (!room || !hangableWalls[roomIndex].includes(wall)) throw new Error(`Wall ${roomIndex}-${wall} is not a display wall`);
+  setCollectionOpen(false);
+  setRoom(roomIndex);
+  panelOpen = false;
+  curator.classList.add('hidden');
+  galleryGuide.classList.remove('visible');
+  artCard.classList.remove('visible');
+  document.exitPointerLock?.();
+  pitch = 0;
+  if (wall === 'north') {
+    camera.setPosition(room.cx, 3.05, room.cz + ROOM_HALF_DEPTH - .9);
+    yaw = 0;
+  } else if (wall === 'south') {
+    camera.setPosition(room.cx, 3.05, room.cz - ROOM_HALF_DEPTH + .9);
+    yaw = 180;
+  } else if (wall === 'west') {
+    camera.setPosition(room.cx + ROOM_HALF_WIDTH - .9, 3.05, room.cz);
+    yaw = 90;
+  } else {
+    camera.setPosition(room.cx - ROOM_HALF_WIDTH + .9, 3.05, room.cz);
+    yaw = -90;
+  }
+  camera.setEulerAngles(pitch, yaw, 0);
+}
+
+function viewStorageSlotForSnapshot(slotIndex: number) {
+  const slot = storageSlots[slotIndex];
+  if (!slot) throw new Error(`Storage slot ${slotIndex} does not exist`);
+  setCollectionOpen(false);
+  setRoom(STORAGE_ROOM_INDEX);
+  panelOpen = false;
+  curator.classList.add('hidden');
+  galleryGuide.classList.remove('visible');
+  artCard.classList.remove('visible');
+  document.exitPointerLock?.();
+  camera.setPosition(slot.viewPosition);
+  const towardArtwork = slot.position.clone().sub(slot.viewPosition);
+  yaw = Math.atan2(-towardArtwork.x, -towardArtwork.z) * 180 / Math.PI;
+  pitch = Math.atan2(towardArtwork.y, Math.hypot(towardArtwork.x, towardArtwork.z)) * 180 / Math.PI;
+  camera.setEulerAngles(pitch, yaw, 0);
+}
+
+const wallSnapshotLayouts = hangingPlans.flatMap((plan, room) => hangableWalls[room].map(wall => ({
+  room,
+  gallery: galleries[room].title,
+  wall,
+  wallWidth: wall === 'north' || wall === 'south' ? ROOM_WIDTH : ROOM_DEPTH,
+  works: plan.filter(hanging => hanging.wall === wall).map(hanging => ({
+    work: hanging.work,
+    title: galleries[room].works[hanging.work].title,
+    image: galleries[room].works[hanging.work].image,
+    along: hanging.along,
+    centerY: hanging.centerY,
+    maxWidth: hanging.width,
+    maxHeight: hanging.height
+  }))
+})));
+
+// Exposed only for deterministic layout, wall-elevation snapshots and smoke tests.
 const testWindow = window as unknown as {
   museumReady: boolean;
-  museumLayout: { doorwayViolations: ReturnType<typeof findDoorwayViolations>; topology: 'concourse'; roomCount: number; galleryCount: number; guideCount: number; concourseFeatureGroups: number; storage: { level: number; capacity: number; occupied: number; lightCount: number } };
+  museumLayout: { doorwayViolations: ReturnType<typeof findDoorwayViolations>; hangingPlanViolations: ReturnType<typeof findHangingPlanViolations>; topology: 'concourse'; roomCount: number; galleryCount: number; guideCount: number; concourseFeatureGroups: number; storage: { level: number; capacity: number; occupied: number; lightCount: number; largeFormatCapacity: number } };
   museumArtworkFits: ArtworkFit[];
+  museumWallLayouts: typeof wallSnapshotLayouts;
+  museumViewWall: (room: number, wall: Wall) => void;
+  museumViewStorageSlot: (slot: number) => void;
   museumViewGuide: (room: number) => void;
   museumTurnAround: () => void;
 };
 testWindow.museumReady = true;
 testWindow.museumLayout = {
   doorwayViolations,
+  hangingPlanViolations,
   topology: 'concourse',
   roomCount: rooms.length + 1,
   galleryCount: rooms.length,
   guideCount: guideTargets.length,
   concourseFeatureGroups: 9,
-  storage: { level: STORAGE_FLOOR_Y, capacity: storageSlots.length, occupied: storageAssignments.length, lightCount: storageLightCount }
+  storage: {
+    level: STORAGE_FLOOR_Y,
+    capacity: storageSlots.length,
+    occupied: storageAssignments.length,
+    lightCount: storageLightCount,
+    largeFormatCapacity: storageSlots.filter(slot => slot.format === 'large-wide').length
+  }
 };
 testWindow.museumArtworkFits = artworkFits;
+testWindow.museumWallLayouts = wallSnapshotLayouts;
+testWindow.museumViewWall = viewWallForSnapshot;
+testWindow.museumViewStorageSlot = viewStorageSlotForSnapshot;
 testWindow.museumViewGuide = (roomIndex: number) => {
   const target = guideTargets[roomIndex];
   const placement = rooms[roomIndex];
