@@ -11,6 +11,14 @@ test('loads the 3D museum and curatorial interface', async ({ page }) => {
   await expect(page.locator('#loading')).toHaveClass(/done/, { timeout: 15_000 });
 });
 
+test('no artwork overlaps an internal doorway', async ({ page }) => {
+  await page.goto('/');
+  const violations = await page.evaluate(() => (
+    window as unknown as { museumLayout: { doorwayViolations: unknown[] } }
+  ).museumLayout.doorwayViolations);
+  expect(violations).toEqual([]);
+});
+
 test('can move between all five galleries', async ({ page }) => {
   await page.goto('/');
   await page.locator('.gallery-nav button').nth(1).click();

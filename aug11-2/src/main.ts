@@ -240,8 +240,8 @@ const hangingPlans: Hanging[][] = [
     { wall: 'south', along: -.55, centerY: 3.38, width: 1.7, height: 4.2, frame: 2 },
     { wall: 'south', along: 2.9, centerY: 3.12, width: 1.75, height: 3.85, frame: 1 },
     { wall: 'east', along: -5.15, centerY: 3.3, width: 3.8, height: 1.9, frame: 4 },
-    { wall: 'east', along: -.35, centerY: 3.42, width: 4.05, height: 2.2, frame: 0 },
-    { wall: 'east', along: 4.75, centerY: 2.7, width: 3.0, height: 1.7, frame: 3 }
+    { wall: 'east', along: 4.75, centerY: 4.25, width: 4.05, height: 2.2, frame: 0 },
+    { wall: 'east', along: 4.75, centerY: 1.62, width: 3.0, height: 1.7, frame: 3 }
   ],
   [
     { wall: 'north', along: -3.45, centerY: 3.2, width: 1.65, height: 4.05, frame: 2 },
@@ -258,6 +258,27 @@ const hangingPlans: Hanging[][] = [
     { wall: 'south', along: 2.8, centerY: 3.0, width: 3.3, height: 1.65, frame: 4 }
   ]
 ];
+
+const DOORWAY_HALF_WIDTH = 2.05;
+const DOORWAY_ART_CLEARANCE = .3;
+
+function findDoorwayViolations() {
+  return hangingPlans.flatMap((plan, room) => plan.flatMap((hanging, work) => {
+    const facesInternalDoorway = (hanging.wall === 'west' && room > 0) ||
+      (hanging.wall === 'east' && room < hangingPlans.length - 1);
+    if (!facesInternalDoorway) return [];
+    const frameHalfWidth = (hanging.width + .2) / 2;
+    const clearance = Math.abs(hanging.along) - frameHalfWidth - DOORWAY_HALF_WIDTH;
+    return clearance < DOORWAY_ART_CLEARANCE
+      ? [{ room, work, wall: hanging.wall, clearance }]
+      : [];
+  }));
+}
+
+const doorwayViolations = findDoorwayViolations();
+if (doorwayViolations.length) {
+  throw new Error(`Artwork overlaps a doorway: ${JSON.stringify(doorwayViolations)}`);
+}
 
 const artworkPositions: { room: number; work: number; position: pc.Vec3 }[] = [];
 
@@ -453,5 +474,10 @@ Promise.all(textureJobs).finally(() => {
   setTimeout(() => document.querySelector('#loading')?.classList.add('done'), 350);
 });
 
-// Exposed only for deterministic smoke tests.
-(window as unknown as { museumReady: boolean }).museumReady = true;
+// Exposed only for deterministic layout and smoke tests.
+const testWindow = window as unknown as {
+  museumReady: boolean;
+  museumLayout: { doorwayViolations: ReturnType<typeof findDoorwayViolations> };
+};
+testWindow.museumReady = true;
+testWindow.museumLayout = { doorwayViolations };
