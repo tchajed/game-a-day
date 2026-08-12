@@ -47,11 +47,9 @@
 
   <!-- neck and softly rounded friendly head -->
   <path d="M94 146q4-24 3-34h36q-1 12 5 34Z" fill="#a64d43"/>
-  <ellipse cx="116" cy="86" rx="54" ry="58" fill="url(#skin)" stroke="#281720" stroke-width="5"/>
-  <ellipse cx="65" cy="91" rx="8" ry="14" fill="#b85e4d"/>
-  <ellipse cx="168" cy="91" rx="8" ry="14" fill="#99463f"/>
-  <circle cx="88" cy="102" r="10" fill="#e79a72" opacity=".2"/>
-  <circle cx="148" cy="101" r="10" fill="#e79a72" opacity=".18"/>
+  <ellipse cx="116" cy="86" rx="52" ry="57" fill="url(#skin)" stroke="#281720" stroke-width="4"/>
+  <ellipse cx="65" cy="91" rx="7" ry="13" fill="#b85e4d"/>
+  <ellipse cx="167" cy="91" rx="7" ry="13" fill="#99463f"/>
 
   <!-- selected B hair: soft forelock, loose bun, curls -->
   <path d="M62 78q-7-43 27-62 39-23 72 8 24 1 29 23 6 24-18 38l-15-18q-1-21-18-32-24 23-61 28l1 40q-13 5-18-5Z" fill="url(#hair)"/>
@@ -62,20 +60,14 @@
   <path d="M78 53q24-31 59-29" fill="none" stroke="#75405a" stroke-width="4" stroke-linecap="round"/>
   <path d="M169 73q20 15 3 34 15 13-2 29" fill="none" stroke="#4d293d" stroke-width="8" stroke-linecap="round"/>
 
-  <!-- soft, open, readable face -->
-  <path d="M81 72q13-9 27 1M129 71q12-8 24 2" fill="none" stroke="#34202a" stroke-width="5" stroke-linecap="round"/>
-  <ellipse cx="98" cy="83" rx="10" ry="7.5" fill="#f3d39a" stroke="#47262d" stroke-width="2"/>
-  <ellipse cx="140" cy="82" rx="10" ry="7.5" fill="#f3d39a" stroke="#47262d" stroke-width="2"/>
-  <circle cx="100" cy="83" r="4.5" fill="#c97837"/>
-  <circle cx="138" cy="82" r="4.5" fill="#c97837"/>
-  <circle cx="101" cy="84" r="2.3" fill="#261820"/>
-  <circle cx="137" cy="83" r="2.3" fill="#261820"/>
-  <circle cx="102" cy="81.5" r="1.2" fill="#ffe1a6"/>
-  <circle cx="139" cy="80.5" r="1.2" fill="#ffe1a6"/>
-  <path d="M117 84q-6 14-2 18 5 3 11-1" fill="none" stroke="#91433e" stroke-width="3" stroke-linecap="round"/>
-  <path d="M87 108q29 35 62-3-30 17-62 3Z" fill="#682c36" stroke="#4d232c" stroke-width="2"/>
-  <path d="M96 111q22 13 43-2" fill="none" stroke="#f4d5a8" stroke-width="6" stroke-linecap="round"/>
-  <path d="M103 125q15 7 27-1" fill="none" stroke="#ba5d5a" stroke-width="3" stroke-linecap="round"/>
+  <!-- deliberately spare face: readable at sprite scale -->
+  <path d="M86 75q10-7 20-1M130 74q10-7 20 1" fill="none" stroke="#34202a" stroke-width="4" stroke-linecap="round"/>
+  <circle cx="99" cy="84" r="3.5" fill="#2a1921"/>
+  <circle cx="140" cy="83" r="3.5" fill="#2a1921"/>
+  <circle cx="100" cy="83" r="1" fill="#efb76f"/>
+  <circle cx="141" cy="82" r="1" fill="#efb76f"/>
+  <path d="M116 91q-3 7 2 8" fill="none" stroke="#90413d" stroke-width="2.5" stroke-linecap="round"/>
+  <path d="M95 109q23 21 46-2" fill="none" stroke="#602b34" stroke-width="5" stroke-linecap="round"/>
 
   <!-- small bureaucratic badge -->
   <g transform="translate(139 167) rotate(4)">
