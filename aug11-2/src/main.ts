@@ -263,10 +263,12 @@ const textureJobs = galleries.flatMap((gallery, room) => gallery.works.map((work
   loadTexture(work.image).then(texture => hangArtwork(room, index, texture))
 ));
 
-// Camera and restrained first-person movement.
+// Camera and restrained first-person movement. A slightly elevated eye line keeps
+// the salon-style upper hangings comfortably visible without looking upward sharply.
+const EYE_HEIGHT = 2.08;
 const camera = new pc.Entity('Visitor camera');
 camera.addComponent('camera', { clearColor: new pc.Color(.055, .052, .045), farClip: 70, nearClip: .08, fov: 65 });
-camera.setPosition(-12, 1.68, 5.2);
+camera.setPosition(-12, EYE_HEIGHT, 5.2);
 app.root.addChild(camera);
 
 let yaw = 0;
@@ -295,7 +297,7 @@ const root = document.documentElement;
 
 function setRoom(index: number, teleport = false) {
   if (teleport) {
-    camera.setPosition(centers[index], 1.68, 4.7);
+    camera.setPosition(centers[index], EYE_HEIGHT, 4.7);
     yaw = 0; pitch = -2;
   }
   if (currentRoom === index && !teleport) return;
@@ -395,7 +397,7 @@ app.on('update', (dt: number) => {
           next.x = boundary + (old.x < boundary ? -.22 : .22);
         }
       }
-      camera.setPosition(next.x, 1.68, next.z);
+      camera.setPosition(next.x, EYE_HEIGHT, next.z);
     }
   }
   const x = camera.getPosition().x;
