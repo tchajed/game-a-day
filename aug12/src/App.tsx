@@ -17,7 +17,6 @@ import {
   Send,
   Ship,
   Stamp,
-  Target,
   X,
 } from 'lucide-react'
 
@@ -43,7 +42,8 @@ type Stage = {
   number: string
   kicker: string
   question: string
-  leadOptions: Array<{ label: string; correct?: boolean }>
+  replyLabel: string
+  replyText: string
   days: number
   columns: string[]
   rows: Array<{ id: string; label: string; values: string[]; change: string; tone?: 'good' | 'warn' | 'bad' }>
@@ -55,11 +55,8 @@ const stages: Record<StageId, Stage> = {
   onboarding: {
     id: 'onboarding', number: 'TUTORIAL', kicker: 'A QUIET TUESDAY',
     question: 'How full is the cargo deck, really?',
-    leadOptions: [
-      { label: 'Two freight calls', correct: true },
-      { label: 'Wednesday schedule' },
-      { label: 'Harbor pricing' },
-    ],
+    replyLabel: 'Question the extra sailing',
+    replyText: 'Not yet. Before we pay for another run, show me what Kestrel is carrying now. How full is the cargo deck, really?',
     days: 1, columns: ['LAST MONTH', 'THIS MONTH'], focus: 'cargo',
     rows: [
       { id: 'tickets', label: 'Passenger tickets', values: ['¤ 42,800', '¤ 45,200'], change: '+6%', tone: 'good' },
@@ -73,11 +70,8 @@ const stages: Record<StageId, Stage> = {
   level1: {
     id: 'level1', number: 'LEVEL 1', kicker: 'THE VANISHING BICYCLES',
     question: 'Why are bicycle fees down 34%?',
-    leadOptions: [
-      { label: 'Cash looks normal' },
-      { label: 'Bicycle fees fell', correct: true },
-      { label: 'Summer traffic' },
-    ],
+    replyLabel: 'Challenge the bicycle figure',
+    replyText: 'Cash is intact and passengers are up. So why are bicycle fees down 34%? Send me the route report before we blame the dock.',
     days: 3, columns: ['EXPECTED', 'REPORTED'], focus: 'bikes',
     rows: [
       { id: 'tickets', label: 'Passenger tickets', values: ['¤ 47,600', '¤ 51,200'], change: '+8%', tone: 'good' },
@@ -97,11 +91,8 @@ const stages: Record<StageId, Stage> = {
   level5: {
     id: 'level5', number: 'LEVEL 5', kicker: 'THE NORTH REEF VOTE',
     question: 'What is Kestrel doing after Beacon 9?',
-    leadOptions: [
-      { label: 'The board vote' },
-      { label: 'Unexplained fuel', correct: true },
-      { label: 'Route closure' },
-    ],
+    replyLabel: 'Ask where the fuel went',
+    replyText: 'A loss does not explain seventy-two percent more fuel. What is Kestrel doing after Beacon 9? Send me Finance’s report.',
     days: 4, columns: ['OCTOBER', 'NOVEMBER'], focus: 'fuel',
     rows: [
       { id: 'passengers', label: 'Passenger fares', values: ['¤ 151,800', '¤ 153,100'], change: '+1%' },
@@ -282,7 +273,7 @@ function App() {
 
   const stageComplete = stageId === 'onboarding' ? done.length > 0 : stageId === 'level1' ? done.length > 0 : remaining === 0 || done.length >= 2
   const currentPrompt = !questionIsUnlocked
-    ? 'Pin the lead in the message.'
+    ? 'Choose your reply.'
     : stageComplete
       ? 'Case solved.'
       : stageId === 'onboarding' && tutorialMailState === 'draft'
@@ -374,19 +365,18 @@ function RequestDesk({ stage, found, pending, remaining, requestedToday, onQueue
   })}</div></div>
 }
 
-function LeadPicker({ stage, onUnlock }: { stage: Stage; onUnlock: () => void }) {
-  const [miss, setMiss] = useState('')
-  return <div className="lead-picker"><span><Target /> PIN THE LEAD</span><div>{stage.leadOptions.map((option) => <button key={option.label} className={miss === option.label ? 'miss' : ''} onClick={() => option.correct ? onUnlock() : setMiss(option.label)}>{option.label}{miss === option.label && <X />}</button>)}</div></div>
+function DialogueChoice({ stage, onChoose }: { stage: Stage; onChoose: () => void }) {
+  return <div className="dialogue-choice"><span>YOUR REPLY</span><button onClick={onChoose}><MessageSquareText /><b>{stage.replyLabel}</b><ChevronRight /></button></div>
 }
 
 function Messages({ message, stage, found, pending, remaining, requestedToday, questionUnlocked, reportReviewed, tutorialMailState, onUnlockQuestion, onTutorialSend, onOpenReport, onQueue }: { message: { from: string; body: string; new: boolean }; stage: Stage; found: Choice[]; pending: PendingAudit[]; remaining: number; requestedToday: boolean; questionUnlocked: boolean; reportReviewed: boolean; tutorialMailState: TutorialMailState; onUnlockQuestion: () => void; onTutorialSend: () => void; onOpenReport: () => void; onQueue: (choice: Choice) => void }) {
   if (stage.id === 'onboarding' && found.length === 0) {
     const sent = tutorialMailState !== 'draft'
     const replied = tutorialMailState === 'reply'
-    const reply = 'Not yet. Check Kestrel’s current load first. How full is the cargo deck, really?'
-    return <section className="messages-screen tutorial-mail"><div className="tool-title"><div><span>INBOX</span><h2>Morning mail</h2></div><Mail /></div><div className="thread-subject"><h3>Add another sailing?</h3><small>{replied ? '3' : sent ? '2' : '1'} message{!sent ? '' : 's'}</small></div><div className="email-thread" aria-live="polite"><article className="thread-message"><div className="portrait">MR</div><div><header><span><b>Mara Rinne</b> · Route manager</span><time>08:12</time></header><p>We turned away two freight calls last week. Should I ask the harbor for a price on an extra Wednesday sailing?</p>{!questionUnlocked && <LeadPicker key={stage.id} stage={stage} onUnlock={onUnlockQuestion} />}</div></article>{questionUnlocked && !sent && <article className="thread-message reply-composer"><div className="portrait">YOU</div><div><header><span><b>Reply all</b> · Mara, Mira</span><time>DRAFT</time></header><p>{reply}</p><button className="send-mail" onClick={onTutorialSend}><Send /> Send</button></div></article>}{sent && <article className="thread-message player-message sent-message"><div className="portrait">YOU</div><div><header><span><b>You</b> · Owner</span><time>08:19</time></header><p>{reply}</p></div></article>}{tutorialMailState === 'sent' && <div className="mail-waiting" role="status"><i /><span><b>Sent</b><small>Waiting for Mira…</small></span></div>}{replied && <article className="thread-message incoming-message"><div className="portrait">MK</div><div><header><span><b>Mira Koski</b> · Dock clerk</span><time>08:22</time></header><p>I’ll check the freight slips against Kestrel’s loading limit.</p></div></article>}</div>{replied && <RequestDesk stage={stage} found={found} pending={pending} remaining={remaining} requestedToday={requestedToday} onQueue={onQueue} />}</section>
+    const reply = stage.replyText
+    return <section className="messages-screen tutorial-mail"><div className="tool-title"><div><span>INBOX</span><h2>Morning mail</h2></div><Mail /></div><div className="thread-subject"><h3>Add another sailing?</h3><small>{replied ? '3' : sent ? '2' : '1'} message{!sent ? '' : 's'}</small></div><div className="email-thread" aria-live="polite"><article className="thread-message"><div className="portrait">MR</div><div><header><span><b>Mara Rinne</b> · Route manager</span><time>08:12</time></header><p>We turned away two freight calls last week. Should I ask the harbor for a price on an extra Wednesday sailing?</p>{!questionUnlocked && <DialogueChoice stage={stage} onChoose={onUnlockQuestion} />}</div></article>{questionUnlocked && !sent && <article className="thread-message reply-composer"><div className="portrait">YOU</div><div><header><span><b>Reply all</b> · Mara, Mira</span><time>DRAFT</time></header><p>{reply}</p><button className="send-mail" onClick={onTutorialSend}><Send /> Send</button></div></article>}{sent && <article className="thread-message player-message sent-message"><div className="portrait">YOU</div><div><header><span><b>You</b> · Owner</span><time>08:19</time></header><p>{reply}</p></div></article>}{tutorialMailState === 'sent' && <div className="mail-waiting" role="status"><i /><span><b>Sent</b><small>Waiting for Mira…</small></span></div>}{replied && <article className="thread-message incoming-message"><div className="portrait">MK</div><div><header><span><b>Mira Koski</b> · Dock clerk</span><time>08:22</time></header><p>I’ll check the freight slips against Kestrel’s loading limit.</p></div></article>}</div>{replied && <RequestDesk stage={stage} found={found} pending={pending} remaining={remaining} requestedToday={requestedToday} onQueue={onQueue} />}</section>
   }
-  return <section className="messages-screen"><div className="tool-title"><div><span>INBOX</span><h2>{found.length > 0 ? 'Latest reply' : 'New mail'}</h2></div><Mail /></div><article className={message.new ? 'new' : ''}><div className="portrait">{message.from.split(/[ ,]/).map((part) => part[0]).slice(0, 2).join('')}</div><div><span>{message.new ? 'NEW REPLY' : 'NEW MESSAGE'}</span><h3>{message.from}</h3><p>{message.body}</p>{!questionUnlocked && <LeadPicker key={stage.id} stage={stage} onUnlock={onUnlockQuestion} />}{questionUnlocked && !reportReviewed && <button className="attachment-button" onClick={onOpenReport}><BookOpen /><span><b>Open route report</b></span><ArrowRight /></button>}</div></article>{reportReviewed && <RequestDesk stage={stage} found={found} pending={pending} remaining={remaining} requestedToday={requestedToday} onQueue={onQueue} />}{found.length > 1 && <div className="older-messages"><span>EARLIER REPLIES</span>{found.slice(0, -1).reverse().map((choice) => <div key={choice.id}><Check /><span><b>{choice.noteFrom}</b><small>{choice.evidence}</small></span></div>)}</div>}</section>
+  return <section className="messages-screen"><div className="tool-title"><div><span>INBOX</span><h2>{found.length > 0 ? 'Latest reply' : 'New mail'}</h2></div><Mail /></div><article className={message.new ? 'new' : ''}><div className="portrait">{message.from.split(/[ ,]/).map((part) => part[0]).slice(0, 2).join('')}</div><div><span>{message.new ? 'NEW REPLY' : 'NEW MESSAGE'}</span><h3>{message.from}</h3><p>{message.body}</p>{!questionUnlocked && <DialogueChoice stage={stage} onChoose={onUnlockQuestion} />}</div></article>{questionUnlocked && !message.new && <article className="player-dialogue"><div className="portrait">YOU</div><div><span>YOUR EMAIL · SENT</span><p>{stage.replyText}</p>{!reportReviewed && <button className="attachment-button" onClick={onOpenReport}><BookOpen /><span><b>Open route report</b></span><ArrowRight /></button>}</div></article>}{reportReviewed && <RequestDesk stage={stage} found={found} pending={pending} remaining={remaining} requestedToday={requestedToday} onQueue={onQueue} />}{found.length > 1 && <div className="older-messages"><span>EARLIER REPLIES</span>{found.slice(0, -1).reverse().map((choice) => <div key={choice.id}><Check /><span><b>{choice.noteFrom}</b><small>{choice.evidence}</small></span></div>)}</div>}</section>
 }
 
 export default App
