@@ -6,7 +6,7 @@ test('loads the 3D museum and curatorial interface', async ({ page }) => {
   await expect(page.locator('#museum')).toBeVisible();
   await expect(page.locator('.curator h1')).toContainText('Portraits');
   await expect(page.locator('.gallery-nav button')).toHaveCount(7);
-  await expect(page.locator('.curator-footer span').first()).toHaveText('9 works');
+  await expect(page.locator('.curator-footer span').first()).toHaveText('7 works');
   await expect.poll(() => page.evaluate(() => (window as unknown as { museumReady?: boolean }).museumReady)).toBe(true);
   await expect(page.locator('#loading')).toHaveClass(/done/, { timeout: 15_000 });
 });
@@ -22,7 +22,7 @@ test('uses a six-gallery concourse with a separate lower-level room', async ({ p
   expect(layout.galleryCount).toBe(6);
   expect(layout.guideCount).toBe(6);
   expect(layout.concourseFeatureGroups).toBeGreaterThanOrEqual(6);
-  expect(layout.storage).toEqual({ level: -7.5, capacity: 42, occupied: 0, lightCount: 12 });
+  expect(layout.storage).toEqual({ level: -7.5, capacity: 42, occupied: 11, lightCount: 12 });
 });
 
 test('can teleport between all six galleries', async ({ page }) => {
@@ -30,33 +30,35 @@ test('can teleport between all six galleries', async ({ page }) => {
   await page.locator('.gallery-nav button').nth(1).click();
   await expect(page.locator('.curator h1')).toContainText('Domestic');
   await expect(page.locator('#room-index')).toHaveText('02');
-  await expect(page.locator('.curator-footer span').first()).toHaveText('7 works');
+  await expect(page.locator('.curator-footer span').first()).toHaveText('5 works');
 
   await page.locator('.gallery-nav button').nth(2).click();
   await expect(page.locator('.curator h1')).toContainText('Outer');
   await expect(page.locator('#room-index')).toHaveText('03');
+  await expect(page.locator('.curator-footer span').first()).toHaveText('6 works');
 
   await page.locator('.gallery-nav button').nth(3).click();
   await expect(page.locator('.curator h1')).toContainText('Weather');
-  await expect(page.locator('.curator-footer span').first()).toHaveText('5 works');
+  await expect(page.locator('.curator-footer span').first()).toHaveText('4 works');
 
   await page.locator('.gallery-nav button').nth(4).click();
   await expect(page.locator('.curator h1')).toContainText('Working');
   await expect(page.locator('#room-index')).toHaveText('05');
+  await expect(page.locator('.curator-footer span').first()).toHaveText('4 works');
   await expect(page.locator('.gallery-nav button').nth(4)).toHaveClass(/active/);
 
   await page.locator('.gallery-nav button').nth(5).click();
   await expect(page.locator('.curator h1')).toContainText('Night');
   await expect(page.locator('#room-index')).toHaveText('06');
-  await expect(page.locator('.curator-footer span').first()).toHaveText('6 works');
+  await expect(page.locator('.curator-footer span').first()).toHaveText('4 works');
 });
 
-test('visible storage starts empty and can be visited on lower level B1', async ({ page }) => {
+test('visible storage holds the reorganized paintings on lower level B1', async ({ page }) => {
   await page.goto('/');
   await page.locator('.gallery-nav button').nth(6).click();
   await expect(page.locator('.curator h1')).toContainText('Visible');
   await expect(page.locator('#room-index')).toHaveText('B1');
-  await expect(page.locator('.curator-footer span').first()).toHaveText('0 / 42 bays occupied');
+  await expect(page.locator('.curator-footer span').first()).toHaveText('11 / 42 bays occupied');
   await expect(page.locator('.gallery-nav button').nth(6)).toHaveClass(/active/);
 });
 
@@ -76,7 +78,7 @@ test('collection view presents and filters the full painting grid', async ({ pag
   await expect(visitButton).toHaveAttribute('data-visit-work', '0');
   await visitButton.click();
   await expect(page.locator('#collection')).not.toHaveClass(/open/);
-  await expect(page.locator('#room-index')).toHaveText('06');
+  await expect(page.locator('#room-index')).toHaveText('B1');
   await expect(page.locator('#curator')).toHaveClass(/hidden/);
   await expect(page.locator('#art-card')).toHaveClass(/visible/);
   await expect(page.locator('#art-card h2')).toHaveText('Moonflower, 11:52 p.m.');

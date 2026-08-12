@@ -119,6 +119,26 @@ const STORAGE_CZ = 39;
 const STORAGE_WIDTH = 20;
 const STORAGE_DEPTH = 24;
 
+type StorageAssignment = { slot: number; room: number; work: number };
+// Slot numbers are zero-based; room/work identify the canonical gallery record.
+const storageAssignments: StorageAssignment[] = [
+  { slot: 0, room: 0, work: 0 },
+  { slot: 1, room: 0, work: 8 },
+  { slot: 2, room: 1, work: 3 },
+  { slot: 3, room: 1, work: 6 },
+  { slot: 4, room: 2, work: 2 },
+  { slot: 5, room: 2, work: 4 },
+  { slot: 6, room: 2, work: 5 },
+  { slot: 7, room: 3, work: 1 },
+  { slot: 8, room: 4, work: 2 },
+  { slot: 9, room: 5, work: 2 },
+  { slot: 10, room: 5, work: 0 }
+];
+const storageAssignmentByWork = new Map(storageAssignments.map(assignment => [`${assignment.room}-${assignment.work}`, assignment]));
+const galleryDisplayWorkIndices = galleries.map((gallery, room) =>
+  gallery.works.flatMap((_, work) => storageAssignmentByWork.has(`${room}-${work}`) ? [] : [work])
+);
+
 const canvas = document.querySelector<HTMLCanvasElement>('#museum')!;
 const app = new pc.Application(canvas, {
   mouse: new pc.Mouse(canvas),
@@ -285,7 +305,7 @@ function storageSignMaterial() {
   context.fillText('Visible Storage', 62, 178);
   context.fillStyle = '#58605d';
   context.font = '400 25px Georgia';
-  context.fillText('42 open-access bays · 0 currently occupied', 62, 235);
+  context.fillText(`42 open-access bays · ${storageAssignments.length} currently occupied`, 62, 235);
   context.font = '500 18px Arial';
   context.letterSpacing = '3px';
   context.fillText('PAINTING STORE · CONTROLLED LIGHT', 62, 306);
@@ -580,8 +600,8 @@ function wallBox(name: string, room: number, hanging: Hanging, depth: number, wi
   return entity;
 }
 
-async function hangArtwork(room: number, work: number, texture: pc.Texture) {
-  const hanging = hangingPlans[room][work];
+async function hangArtwork(room: number, work: number, hangingIndex: number, texture: pc.Texture) {
+  const hanging = hangingPlans[room][hangingIndex];
   const canvasMat = new pc.StandardMaterial();
   canvasMat.name = galleries[room].works[work].title;
   canvasMat.diffuse = new pc.Color(1, 1, 1);
@@ -601,11 +621,6 @@ async function hangArtwork(room: number, work: number, texture: pc.Texture) {
   const viewPoint = wallTransform(room, { ...hanging, centerY: 1.68 }, 1.35).position;
   artworkPositions.push({ displayRoom: room, sourceRoom: room, work, position: viewPoint });
 }
-
-type StorageAssignment = { slot: number; room: number; work: number };
-// Add { slot, room, work } entries here when moving paintings into storage.
-// Slot numbers are zero-based and room/work refer to the source galleries above.
-const storageAssignments: StorageAssignment[] = [];
 
 async function hangStorageArtwork(assignment: StorageAssignment, texture: pc.Texture) {
   const slot = storageSlots[assignment.slot];
@@ -632,8 +647,8 @@ async function hangStorageArtwork(assignment: StorageAssignment, texture: pc.Tex
   artworkPositions.push({ displayRoom: STORAGE_ROOM_INDEX, sourceRoom: assignment.room, work: assignment.work, position: slot.viewPosition });
 }
 
-const galleryTextureJobs = galleries.flatMap((gallery, room) => gallery.works.map((work, index) =>
-  loadTexture(work.image).then(texture => hangArtwork(room, index, texture))
+const galleryTextureJobs = galleryDisplayWorkIndices.flatMap((workIndices, room) => workIndices.map((work, hangingIndex) =>
+  loadTexture(galleries[room].works[work].image).then(texture => hangArtwork(room, work, hangingIndex, texture))
 ));
 const storageTextureJobs = storageAssignments.map(assignment => {
   const work = galleries[assignment.room]?.works[assignment.work];
@@ -692,15 +707,20 @@ let collectionFilter = -1;
 function renderCollection() {
   const visible = collectionWorks.filter(entry => collectionFilter < 0 || entry.room === collectionFilter);
   collectionTotal.textContent = String(visible.length);
-  collectionGrid.innerHTML = visible.map(({ gallery, room, work, workIndex }) => `
-    <article class="collection-card" style="--card-accent:${gallery.accent}">
-      <div class="collection-art"><img src="${work.image}" alt="${work.title}" loading="lazy"></div>
-      <div class="collection-meta"><span>0${room + 1} · ${String(workIndex + 1).padStart(2, '0')}</span><span>${gallery.title}</span></div>
-      <h2>${work.title}</h2>
-      <p class="collection-artist">${work.artist}, ${work.year}</p>
-      <p class="collection-medium">${work.medium}</p>
-      <button data-visit-room="${room}" data-visit-work="${workIndex}">View in room <span>→</span></button>
-    </article>`).join('');
+  collectionGrid.innerHTML = visible.map(({ gallery, room, work, workIndex }) => {
+    const storageAssignment = storageAssignmentByWork.get(`${room}-${workIndex}`);
+    const locationNumber = storageAssignment ? `B1 · ${String(storageAssignment.slot + 1).padStart(2, '0')}` : `0${room + 1} · ${String(workIndex + 1).padStart(2, '0')}`;
+    const locationName = storageAssignment ? 'Visible Storage' : gallery.title;
+    return `
+      <article class="collection-card" style="--card-accent:${storageAssignment ? STORAGE_ACCENT : gallery.accent}">
+        <div class="collection-art"><img src="${work.image}" alt="${work.title}" loading="lazy"></div>
+        <div class="collection-meta"><span>${locationNumber}</span><span>${locationName}</span></div>
+        <h2>${work.title}</h2>
+        <p class="collection-artist">${work.artist}, ${work.year}</p>
+        <p class="collection-medium">${work.medium}</p>
+        <button data-visit-room="${room}" data-visit-work="${workIndex}">View in ${storageAssignment ? 'storage' : 'room'} <span>→</span></button>
+      </article>`;
+  }).join('');
   collectionGrid.querySelectorAll<HTMLButtonElement>('[data-visit-work]').forEach(button => button.addEventListener('click', () => {
     visitArtwork(Number(button.dataset.visitRoom), Number(button.dataset.visitWork));
   }));
@@ -734,16 +754,29 @@ collectionToggle.addEventListener('click', () => setCollectionOpen(!collectionOp
 renderCollection();
 
 function visitArtwork(roomIndex: number, workIndex: number) {
-  const hanging = hangingPlans[roomIndex][workIndex];
-  const viewingDistance = Math.max(2.8, hanging.height * .82);
-  const position = wallTransform(roomIndex, { ...hanging, centerY: EYE_HEIGHT }, .47 + viewingDistance).position;
-  const wallYaw: Record<Wall, number> = { north: 0, south: 180, west: 90, east: -90 };
-
+  const storageAssignment = storageAssignmentByWork.get(`${roomIndex}-${workIndex}`);
   setCollectionOpen(false);
-  setRoom(roomIndex);
-  camera.setPosition(position);
-  yaw = wallYaw[hanging.wall];
-  pitch = Math.atan2(hanging.centerY - EYE_HEIGHT, viewingDistance) * 180 / Math.PI;
+
+  if (storageAssignment) {
+    const slot = storageSlots[storageAssignment.slot];
+    const towardArtwork = slot.position.clone().sub(slot.viewPosition);
+    setRoom(STORAGE_ROOM_INDEX);
+    camera.setPosition(slot.viewPosition);
+    yaw = Math.atan2(-towardArtwork.x, -towardArtwork.z) * 180 / Math.PI;
+    pitch = Math.atan2(towardArtwork.y, Math.hypot(towardArtwork.x, towardArtwork.z)) * 180 / Math.PI;
+  } else {
+    const hangingIndex = galleryDisplayWorkIndices[roomIndex].indexOf(workIndex);
+    const hanging = hangingPlans[roomIndex][hangingIndex];
+    if (!hanging) throw new Error(`Painting is not assigned to a display location: ${roomIndex}-${workIndex}`);
+    const viewingDistance = Math.max(2.8, hanging.height * .82);
+    const position = wallTransform(roomIndex, { ...hanging, centerY: EYE_HEIGHT }, .47 + viewingDistance).position;
+    const wallYaw: Record<Wall, number> = { north: 0, south: 180, west: 90, east: -90 };
+    setRoom(roomIndex);
+    camera.setPosition(position);
+    yaw = wallYaw[hanging.wall];
+    pitch = Math.atan2(hanging.centerY - EYE_HEIGHT, viewingDistance) * 180 / Math.PI;
+  }
+
   panelOpen = false;
   curator.classList.add('hidden');
   lastCard = '';
@@ -773,7 +806,7 @@ function setRoom(index: number, teleport = false) {
   if (isStorage) {
     document.querySelector<HTMLElement>('.eyebrow')!.textContent = 'Lower level B1 · Collections care';
     document.querySelector<HTMLElement>('.curator h1')!.innerHTML = 'Visible<br><em>Storage</em>';
-    curatorCopy.textContent = 'An evenly lit, open painting store with 42 individually numbered bays. The room begins empty, ready for works moved off display during rehanging.';
+    curatorCopy.textContent = 'An evenly lit, open painting store with 42 individually numbered bays. Works moved off display remain fully accessible here during rehanging.';
     enterLabel.textContent = 'Enter visible storage';
     footerCounts[0].textContent = `${storageAssignments.length} / ${storageSlots.length} bays occupied`;
     footerCounts[1].textContent = 'Lower level B1';
@@ -786,8 +819,9 @@ function setRoom(index: number, teleport = false) {
     document.querySelector<HTMLElement>('.curator h1')!.innerHTML = gallery.heading;
     curatorCopy.textContent = gallery.note;
     enterLabel.textContent = 'Enter the gallery';
-    footerCounts[0].textContent = `${gallery.works.length} works`;
-    const years = gallery.works.map(work => work.year);
+    const displayedWorks = galleryDisplayWorkIndices[index].map(work => gallery.works[work]);
+    footerCounts[0].textContent = `${displayedWorks.length} works`;
+    const years = displayedWorks.map(work => work.year);
     footerCounts[1].textContent = `${Math.min(...years)}–${Math.max(...years)}`;
     roomIndex.textContent = `0${index + 1}`;
     const progress = (index + 1) / (galleries.length + 1) * 100;
