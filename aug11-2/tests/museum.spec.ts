@@ -72,19 +72,26 @@ test('visible storage holds the reorganized paintings on lower level B1', async 
   await expect(page.locator('.gallery-nav button').nth(6)).toHaveClass(/active/);
 });
 
-test('collection view presents, filters, and opens directional painting explanations', async ({ page }) => {
+test('collection view gives visible storage its own category and opens stored works', async ({ page }) => {
   await page.goto('/');
   await page.locator('#collection-toggle').click();
   await expect(page.locator('#collection')).toHaveClass(/open/);
   await expect(page.locator('#collection-grid .collection-card')).toHaveCount(42);
   await expect(page.locator('#collection-total')).toHaveText('42');
+  await expect(page.locator('#collection-filters button')).toHaveCount(8);
 
-  await page.locator('#collection-filters button').nth(6).click();
-  await expect(page.locator('#collection-grid .collection-card')).toHaveCount(6);
-  await expect(page.locator('#collection-total')).toHaveText('6');
-  await expect(page.locator('#collection-grid h2').first()).toHaveText('Moonflower, 11:52 p.m.');
+  await page.locator('#collection-filters [data-filter="5"]').click();
+  await expect(page.locator('#collection-grid .collection-card')).toHaveCount(4);
+  await expect(page.locator('#collection-grid')).not.toContainText('Moonflower, 11:52 p.m.');
 
-  const visitButton = page.locator('#collection-grid [data-visit-room]').first();
+  await page.locator('#collection-filters [data-filter="6"]').click();
+  await expect(page.locator('#collection-grid .collection-card')).toHaveCount(11);
+  await expect(page.locator('#collection-total')).toHaveText('11');
+  await expect(page.locator('#collection-grid h2').first()).toHaveText('Marchioness in Winter Dress');
+  await expect(page.locator('#collection-grid')).toContainText('Moonflower, 11:52 p.m.');
+
+  const moonflower = page.locator('.collection-card').filter({ has: page.getByRole('heading', { name: 'Moonflower, 11:52 p.m.', exact: true }) });
+  const visitButton = moonflower.locator('[data-visit-room]');
   await expect(visitButton).toHaveAttribute('data-visit-work', '0');
   await visitButton.click();
   await expect(page.locator('#collection')).not.toHaveClass(/open/);
@@ -99,18 +106,21 @@ test('collection view presents, filters, and opens directional painting explanat
   await expect(page.locator('#art-card')).not.toHaveClass(/visible/);
 });
 
-test('shows the new Roadside Assistance while keeping The Puncture in storage', async ({ page }) => {
+test('shows Roadside Assistance in its gallery and The Puncture only in storage', async ({ page }) => {
   await page.goto('/');
   await page.locator('#collection-toggle').click();
-  await page.locator('#collection-filters button').nth(5).click();
+  await page.locator('#collection-filters [data-filter="4"]').click();
 
   const roadside = page.locator('.collection-card').filter({ has: page.getByRole('heading', { name: 'Roadside Assistance', exact: true }) });
   await expect(roadside).toContainText('The Working Day');
   await expect(roadside.locator('img')).toHaveAttribute('src', '/art/gods-6.webp');
+  await expect(page.locator('#collection-grid')).not.toContainText('The Puncture, 2:13 a.m.');
 
+  await page.locator('#collection-filters [data-filter="6"]').click();
   const puncture = page.locator('.collection-card').filter({ has: page.getByRole('heading', { name: 'The Puncture, 2:13 a.m.', exact: true }) });
   await expect(puncture).toContainText('Visible Storage');
   await expect(puncture.locator('img')).toHaveAttribute('src', '/art/gods-3.webp');
+  await expect(page.locator('#collection-grid')).not.toContainText('Roadside Assistance');
 });
 
 test('room signs open an easy-to-read guide when viewed', async ({ page }) => {

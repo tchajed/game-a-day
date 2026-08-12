@@ -734,7 +734,11 @@ const collectionWorks = galleries.flatMap((gallery, room) => gallery.works.map((
 let collectionFilter = -1;
 
 function renderCollection() {
-  const visible = collectionWorks.filter(entry => collectionFilter < 0 || entry.room === collectionFilter);
+  const visible = collectionWorks.filter(entry => {
+    if (collectionFilter < 0) return true;
+    const isStored = storageAssignmentByWork.has(`${entry.room}-${entry.workIndex}`);
+    return collectionFilter === STORAGE_ROOM_INDEX ? isStored : entry.room === collectionFilter && !isStored;
+  });
   collectionTotal.textContent = String(visible.length);
   collectionGrid.innerHTML = visible.map(({ gallery, room, work, workIndex }) => {
     const storageAssignment = storageAssignmentByWork.get(`${room}-${workIndex}`);
@@ -756,8 +760,9 @@ function renderCollection() {
 }
 
 collectionFilters.innerHTML = [
-  '<button class="active" data-filter="-1">All galleries</button>',
-  ...galleries.map((gallery, room) => `<button data-filter="${room}"><span>0${room + 1}</span>${gallery.title}</button>`)
+  '<button class="active" data-filter="-1">All works</button>',
+  ...galleries.map((gallery, room) => `<button data-filter="${room}"><span>0${room + 1}</span>${gallery.title}</button>`),
+  `<button data-filter="${STORAGE_ROOM_INDEX}"><span>B1</span>Visible Storage</button>`
 ].join('');
 collectionFilters.querySelectorAll<HTMLButtonElement>('button').forEach(button => button.addEventListener('click', () => {
   collectionFilter = Number(button.dataset.filter);
