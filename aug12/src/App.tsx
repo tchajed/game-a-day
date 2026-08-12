@@ -8,6 +8,7 @@ import {
   Clock3,
   FileSearch,
   Mail,
+  LockKeyhole,
   MapPinned,
   MessageSquareText,
   NotebookPen,
@@ -16,6 +17,7 @@ import {
   Send,
   Ship,
   Stamp,
+  Target,
   X,
 } from 'lucide-react'
 
@@ -40,36 +42,43 @@ type Stage = {
   id: StageId
   number: string
   kicker: string
-  title: string
-  brief: string
   question: string
+  leadOptions: Array<{ label: string; correct?: boolean }>
   days: number
   columns: string[]
   rows: Array<{ id: string; label: string; values: string[]; change: string; tone?: 'good' | 'warn' | 'bad' }>
   focus: string
-  guide?: string
   choices: Choice[]
 }
 
 const stages: Record<StageId, Stage> = {
   onboarding: {
-    id: 'onboarding', number: 'TUTORIAL', kicker: 'A QUIET TUESDAY', title: 'The morning run.',
-    brief: 'One unread message from the route manager.',
-    question: 'How full is the cargo deck, really?', days: 1, columns: ['LAST MONTH', 'THIS MONTH'], focus: 'cargo',
-    guide: 'Mira is waiting for the go-ahead.',
+    id: 'onboarding', number: 'TUTORIAL', kicker: 'A QUIET TUESDAY',
+    question: 'How full is the cargo deck, really?',
+    leadOptions: [
+      { label: 'Two freight calls', correct: true },
+      { label: 'Wednesday schedule' },
+      { label: 'Harbor pricing' },
+    ],
+    days: 1, columns: ['LAST MONTH', 'THIS MONTH'], focus: 'cargo',
     rows: [
       { id: 'tickets', label: 'Passenger tickets', values: ['¤ 42,800', '¤ 45,200'], change: '+6%', tone: 'good' },
       { id: 'cargo', label: 'Cargo sales', values: ['¤ 18,400', '¤ 19,100'], change: '+4%', tone: 'good' },
       { id: 'fuel', label: 'Fuel', values: ['¤ 12,900', '¤ 13,100'], change: '+2%' },
       { id: 'profit', label: 'Route profit', values: ['¤ 11,600', '¤ 13,900'], change: '+20%', tone: 'good' },
     ],
-    choices: [{ id: 'capacity', title: 'Check deck capacity', detail: 'Ask Mira to compare sold cargo weight with the ship’s safe capacity.', time: 1, icon: 'records', strong: true,
+    choices: [{ id: 'capacity', title: 'Check deck capacity', detail: 'Compare sold weight with safe capacity.', time: 1, icon: 'records', strong: true,
       finding: 'The deck sails only 61% full. Market-day freight alone could fill most of the gap—without adding a sailing.', evidence: '39% unused cargo capacity', noteFrom: 'Mira, dock clerk', note: 'Farmers keep asking about market-day crates. We have always told them the deck is full. It clearly is not.' }],
   },
   level1: {
-    id: 'level1', number: 'LEVEL 1', kicker: 'THE VANISHING BICYCLES', title: 'A small number is out of place.',
-    brief: 'New mail from Mara includes the weekly route report.',
-    question: 'Why are bicycle fees down 34%?', days: 3, columns: ['EXPECTED', 'REPORTED'], focus: 'bikes',
+    id: 'level1', number: 'LEVEL 1', kicker: 'THE VANISHING BICYCLES',
+    question: 'Why are bicycle fees down 34%?',
+    leadOptions: [
+      { label: 'Cash looks normal' },
+      { label: 'Bicycle fees fell', correct: true },
+      { label: 'Summer traffic' },
+    ],
+    days: 3, columns: ['EXPECTED', 'REPORTED'], focus: 'bikes',
     rows: [
       { id: 'tickets', label: 'Passenger tickets', values: ['¤ 47,600', '¤ 51,200'], change: '+8%', tone: 'good' },
       { id: 'bikes', label: 'Bicycle fees', values: ['¤ 6,400', '¤ 4,200'], change: '−34%', tone: 'warn' },
@@ -77,18 +86,23 @@ const stages: Record<StageId, Stage> = {
       { id: 'cash', label: 'Cash received', values: ['¤ 74,100', '¤ 75,900'], change: '+2%' },
     ],
     choices: [
-      { id: 'sample', title: 'Sample ten tickets', detail: 'Ask Jori to trace bicycle tickets from the kiosk to the ledger.', time: 1, icon: 'records', strong: true,
+      { id: 'sample', title: 'Sample ten tickets', detail: 'Trace bicycle tickets into the ledger.', time: 1, icon: 'records', strong: true,
         finding: 'All ten fees were collected. A new clerk posted them to Passenger tickets instead of Bicycle fees.', evidence: '10 ticket stubs matched', noteFrom: 'Jori, ticket clerk', note: 'That was me. The new screen puts “bicycle” under passenger extras. I used the line above it. I’m sorry—I can fix the batch.' },
-      { id: 'ask', title: 'Ask the dockmaster', detail: 'Ask Petra whether fewer bicycles boarded this week.', time: 1, icon: 'people',
+      { id: 'ask', title: 'Ask the dockmaster', detail: 'Check whether fewer bicycles boarded.', time: 1, icon: 'people',
         finding: 'The dockmaster remembers a normal number of bicycles, but cannot explain where the fees were posted.', evidence: 'Verbal count only', noteFrom: 'Petra, dockmaster', note: 'Plenty of bicycles. More than last month, if anything. You should check with the ticket desk.' },
-      { id: 'count', title: 'Count today’s bicycles', detail: 'Have Petra observe one sailing and compare it with today’s sales.', time: 1, icon: 'map',
+      { id: 'count', title: 'Count today’s bicycles', detail: 'Compare one sailing with today’s sales.', time: 1, icon: 'map',
         finding: 'Today’s count matches today’s sales. The earlier weekly discrepancy remains unresolved.', evidence: 'One sailing observed', noteFrom: 'Petra, dockmaster', note: 'Today looks fine. Whatever happened, it happened before this morning.' },
     ],
   },
   level5: {
-    id: 'level5', number: 'LEVEL 5', kicker: 'THE NORTH REEF VOTE', title: 'The route is hiding something.',
-    brief: 'Urgent mail from Captain Vale includes Finance’s route report.',
-    question: 'What is Kestrel doing after Beacon 9?', days: 4, columns: ['OCTOBER', 'NOVEMBER'], focus: 'fuel',
+    id: 'level5', number: 'LEVEL 5', kicker: 'THE NORTH REEF VOTE',
+    question: 'What is Kestrel doing after Beacon 9?',
+    leadOptions: [
+      { label: 'The board vote' },
+      { label: 'Unexplained fuel', correct: true },
+      { label: 'Route closure' },
+    ],
+    days: 4, columns: ['OCTOBER', 'NOVEMBER'], focus: 'fuel',
     rows: [
       { id: 'passengers', label: 'Passenger fares', values: ['¤ 151,800', '¤ 153,100'], change: '+1%' },
       { id: 'cargo', label: 'Cargo contracts', values: ['¤ 103,700', '¤ 119,600'], change: '+15%', tone: 'warn' },
@@ -96,13 +110,13 @@ const stages: Record<StageId, Stage> = {
       { id: 'profit', label: 'Route profit', values: ['¤ 63,600', '−¤ 17,900'], change: 'LOSS', tone: 'bad' },
     ],
     choices: [
-      { id: 'gps', title: 'Recover deleted GPS tracks', detail: 'Ask Ivo to restore Kestrel’s antenna cache and map every November voyage.', time: 2, icon: 'map', strong: true,
+      { id: 'gps', title: 'Recover GPS tracks', detail: 'Restore November route history.', time: 2, icon: 'map', strong: true,
         finding: 'Seven night voyages turn west after Beacon 9 and stop at Lysa—an inhabited island erased from public charts.', evidence: '7 recovered tracks to Lysa', noteFrom: 'Ivo, fleet systems', note: 'The bridge history was deleted. The antenna cache was not. Someone wanted these voyages forgotten.' },
-      { id: 'weight', title: 'Cross-check cargo weights', detail: 'Ask Oren to compare manifests with independent weighbridge records.', time: 2, icon: 'records', strong: true,
+      { id: 'weight', title: 'Cross-check cargo', detail: 'Compare manifests with weighbridge records.', time: 2, icon: 'records', strong: true,
         finding: 'Kestrel carried 74 undeclared tonnes for Aster Trading. Finance signed every late manifest.', evidence: '74 hidden tonnes', noteFrom: 'Oren, dockmaster', note: 'The scales are right. The manifests are fiction. Aster trucks arrive after my freight office closes.' },
-      { id: 'scans', title: 'Reconcile passenger scans', detail: 'Ask Mina to match each boarding scan with an official destination.', time: 1, icon: 'records', strong: true,
+      { id: 'scans', title: 'Reconcile scans', detail: 'Match boardings with destinations.', time: 1, icon: 'records', strong: true,
         finding: 'Thirty-seven passengers boarded late sailings and never scanned off at any listed port.', evidence: '37 open journeys', noteFrom: 'Mina, ticketing', note: 'It is not a reader fault. The same people disappear after Beacon 9 every Thursday.' },
-      { id: 'captain', title: 'Interview Captain Vale', detail: 'Ask Vale directly about the fuel, passengers, and night sailings.', time: 2, icon: 'people',
+      { id: 'captain', title: 'Interview Captain Vale', detail: 'Ask about fuel and night sailings.', time: 2, icon: 'people',
         finding: 'Vale says Kestrel supplies sixty-two people on Lysa. She also alleges Finance sells spare hold space to smugglers.', evidence: 'Captain’s signed statement', noteFrom: 'Captain Vale', note: 'Lysa was struck from the map. Its people did not stop existing. Protect my crew, and I will testify.' },
     ],
   },
@@ -143,7 +157,7 @@ function App() {
   const [stageId, setStageId] = useState<StageId>('onboarding')
   const [tool, setTool] = useState<Tool>('messages')
   const [selectedRow, setSelectedRow] = useState('')
-  const [showTutorialIntro, setShowTutorialIntro] = useState(true)
+  const [questionUnlocked, setQuestionUnlocked] = useState<Record<StageId, boolean>>({ onboarding: false, level1: false, level5: false })
   const [tutorialMailState, setTutorialMailState] = useState<TutorialMailState>('draft')
   const audioContext = useRef<AudioContext | null>(null)
   const [completed, setCompleted] = useState<Record<StageId, string[]>>({ onboarding: [], level1: [], level5: [] })
@@ -166,7 +180,8 @@ function App() {
   const remaining = stage.days - currentDay
   const foundChoices = stage.choices.filter((choice) => done.includes(choice.id))
   const strongEvidence = foundChoices.filter((choice) => choice.strong).length
-  const reportReviewed = stageId === 'onboarding' || selectedRow === stage.focus
+  const questionIsUnlocked = questionUnlocked[stageId]
+  const reportReviewed = questionIsUnlocked && (stageId === 'onboarding' || selectedRow === stage.focus)
   const requestedToday = stagePending.some((item) => item.startedDay === currentDay)
 
   useEffect(() => {
@@ -261,24 +276,26 @@ function App() {
     setPending(emptyPending())
     setDaysSpent({ onboarding: 0, level1: 0, level5: 0 })
     setTutorialMailState('draft')
-    setShowTutorialIntro(true)
+    setQuestionUnlocked({ onboarding: false, level1: false, level5: false })
     jumpTo('onboarding')
   }
 
   const stageComplete = stageId === 'onboarding' ? done.length > 0 : stageId === 'level1' ? done.length > 0 : remaining === 0 || done.length >= 2
-  const currentPrompt = stageComplete
-    ? 'The question is answered.'
-    : stageId === 'onboarding' && tutorialMailState === 'draft'
-      ? 'Reply to Mara.'
-      : stageId === 'onboarding' && tutorialMailState === 'sent'
-        ? 'Wait for Mira’s reply.'
-        : !reportReviewed
-        ? 'Open the attached report.'
-        : requestedToday
-          ? 'The request is sent. End the day when you’re ready.'
-          : stagePending.length > 0
-            ? 'Another reply is still in progress.'
-            : 'Choose one email request for today.'
+  const currentPrompt = !questionIsUnlocked
+    ? 'Pin the lead in the message.'
+    : stageComplete
+      ? 'Case solved.'
+      : stageId === 'onboarding' && tutorialMailState === 'draft'
+        ? 'Reply to Mara.'
+        : stageId === 'onboarding' && tutorialMailState === 'sent'
+          ? 'Waiting for Mira…'
+          : !reportReviewed
+            ? 'Open the report.'
+            : requestedToday
+              ? 'Request sent. End the day.'
+              : stagePending.length > 0
+                ? 'One reply is pending.'
+                : 'Choose today’s request.'
 
   return (
     <main className={`game stage-${stageId}`}>
@@ -286,48 +303,47 @@ function App() {
       <header className="game-header">
         <div className="brand"><span><Anchor /></span><div><b>NORTHSTAR</b><small>THE LEDGER GAME</small></div></div>
         <nav className="voyage-progress" aria-label="Demo chapters">
-          {order.map((id, index) => <button key={id} className={`${id === stageId ? 'current' : ''} ${index < stageIndex ? 'past' : ''}`} onClick={() => jumpTo(id)}><i>{index < stageIndex ? <Check /> : index + 1}</i><span>{stages[id].number}<small>{id === 'onboarding' ? 'Follow a hunch' : id === 'level1' ? 'Fix a mistake' : 'Follow the mystery'}</small></span></button>)}
+          {order.map((id, index) => <button key={id} className={`${id === stageId ? 'current' : ''} ${index < stageIndex ? 'past' : ''}`} onClick={() => jumpTo(id)}><i>{index < stageIndex ? <Check /> : index + 1}</i><span>{stages[id].number}</span></button>)}
         </nav>
         <div className="day-counter"><Clock3 /><span><b>{remaining}</b><small>DAYS LEFT</small></span></div>
       </header>
 
-      <section className="chapter-intro">
-        <div><span>{stage.number} · {stage.kicker}</span><h1>{stage.title}</h1><p>{stage.brief}</p></div>
-        <div className="chapter-question"><Search /><span><small>OPEN QUESTION</small><b>{stage.question}</b></span></div>
+      <section className={`chapter-intro ${questionIsUnlocked ? 'unlocked' : 'locked'}`}>
+        <div className="chapter-marker"><span>{stage.number}</span><b>{stage.kicker}</b></div>
+        {questionIsUnlocked
+          ? <div className="chapter-question"><Search /><span><small>OPEN QUESTION</small><b>{stage.question}</b></span></div>
+          : <div className="question-lock" aria-label="Open question locked"><LockKeyhole /><span>LOCKED</span></div>}
       </section>
 
       <section className="play-area">
         <nav className="tools" aria-label="Investigation tools">
-          <button className={tool === 'messages' ? 'active' : ''} onClick={() => setTool('messages')}><Mail /><span><b>MESSAGES</b><small>Inbox & requests</small></span>{(stageId === 'onboarding' && !tutorialThreadRead) || foundChoices.length > 0 ? <i /> : null}</button>
-          <button disabled={stage.id === 'onboarding'} className={tool === 'report' ? 'active' : ''} onClick={() => setTool('report')}><BookOpen /><span><b>REPORT</b><small>{stage.id === 'onboarding' ? 'No attachment yet' : 'Inspect the numbers'}</small></span>{!reportReviewed && <i />}</button>
-          <button className={tool === 'journal' ? 'active' : ''} onClick={() => setTool('journal')}><NotebookPen /><span><b>JOURNAL</b><small>{foundChoices.length === 0 ? 'Private notes' : `${foundChoices.length} finding${foundChoices.length === 1 ? '' : 's'}`}</small></span>{foundChoices.length > 0 && <i />}</button>
+          <button className={tool === 'messages' ? 'active' : ''} onClick={() => setTool('messages')}><Mail /><span><b>MESSAGES</b></span>{(stageId === 'onboarding' && !tutorialThreadRead) || foundChoices.length > 0 ? <i /> : null}</button>
+          <button disabled={stage.id === 'onboarding' || !questionIsUnlocked} className={tool === 'report' ? 'active' : ''} onClick={() => setTool('report')}><BookOpen /><span><b>REPORT</b></span>{questionIsUnlocked && !reportReviewed && <i />}</button>
+          <button disabled={!questionIsUnlocked} className={tool === 'journal' ? 'active' : ''} onClick={() => setTool('journal')}><NotebookPen /><span><b>JOURNAL</b></span>{foundChoices.length > 0 && <i />}</button>
         </nav>
 
         <div className="tool-screen" key={tool}>
           {tool === 'report' && <Report stage={stage} selectedRow={selectedRow} onSelect={setSelectedRow} onContinue={() => setTool('messages')} />}
           {tool === 'journal' && <Journal stage={stage} found={foundChoices} pending={stagePending} />}
-          {tool === 'messages' && <Messages message={message} stage={stage} found={foundChoices} pending={stagePending} remaining={remaining} requestedToday={requestedToday} reportReviewed={reportReviewed} tutorialMailState={tutorialMailState} onTutorialSend={sendTutorialReply} onOpenReport={() => setTool('report')} onQueue={queueAudit} />}
+          {tool === 'messages' && <Messages message={message} stage={stage} found={foundChoices} pending={stagePending} remaining={remaining} requestedToday={requestedToday} questionUnlocked={questionIsUnlocked} reportReviewed={reportReviewed} tutorialMailState={tutorialMailState} onUnlockQuestion={() => setQuestionUnlocked((all) => ({ ...all, [stageId]: true }))} onTutorialSend={sendTutorialReply} onOpenReport={() => setTool('report')} onQueue={queueAudit} />}
         </div>
 
         <aside className="mission-card day-card">
           <span className="mission-label">DAY {currentDay + 1} · TODAY</span>
           <h2>{currentPrompt}</h2>
-          <div className="day-agenda">
+          {stagePending.length > 0 && <div className="day-agenda">
             <span>OUTBOX</span>
-            {stagePending.length === 0 ? <p>No research requests in progress.</p> : stagePending.map((item) => {
+            {stagePending.map((item) => {
               const choice = stage.choices.find((candidate) => candidate.id === item.choiceId)!
-              return <div key={item.choiceId}><Clock3 /><span><b>{choice.title}</b><small>Reply in {item.remaining} day{item.remaining === 1 ? '' : 's'}</small></span></div>
+              return <div key={item.choiceId}><Clock3 /><span><b>{choice.title}</b><small>{item.remaining} day{item.remaining === 1 ? '' : 's'}</small></span></div>
             })}
-          </div>
-          {remaining > 0 && stagePending.length > 0 && <button className="big-action next-day" onClick={advanceDay}>End day · get tomorrow’s mail <ArrowRight /></button>}
-          {remaining > 0 && stagePending.length === 0 && !stageComplete && <button className="big-action muted" disabled>Send a request first <Mail /></button>}
+          </div>}
+          {remaining > 0 && stagePending.length > 0 && <button className="big-action next-day" onClick={advanceDay}>End day <ArrowRight /></button>}
           {stageId !== 'level5' && stageComplete && <button className="big-action success" onClick={nextStage}>Continue to {stageId === 'onboarding' ? 'Level 1' : 'Level 5'} <ArrowRight /></button>}
           {stageId === 'level5' && (stageComplete || debug) && <button className="big-action danger" onClick={() => setShowDecision(true)}>Face the board <ArrowRight /></button>}
           {debug && <button className="debug-reset" onClick={reset}><RotateCcw /> Reset demo</button>}
         </aside>
       </section>
-
-      {showTutorialIntro && stageId === 'onboarding' && <div className="overlay tutorial-overlay"><article className="tutorial-context"><div className="context-mark"><Anchor /></div><span>THE VELA ARCHIPELAGO</span><h2>You run Northstar Ferries.</h2><p>Passengers, bicycles, and freight move between the islands on your ships. From a small office above the harbor, you make sense of the company through two things: the numbers people file, and the emails they send when those numbers do not add up.</p><button onClick={() => { setShowTutorialIntro(false); setTool('messages') }}>Open the morning inbox <ArrowRight /></button></article></div>}
 
       {result && <div className="overlay"><article className="result-card mail-result"><button className="close" onClick={dismissResult}><X /></button><div className="mail-result-heading"><div className="result-icon"><Mail /></div><div><span>NEW EMAIL · REQUEST COMPLETE</span><h2>{result.noteFrom}</h2></div></div><div className="result-email"><header><b>{result.noteFrom}</b><time>THIS MORNING</time></header><p>{result.note}</p></div><div className={`journal-response ${journalVisible ? 'writing' : ''}`} aria-live="polite"><div><NotebookPen /><span><small>ADDED TO JOURNAL</small><b>{journalVisible ? 'Writing…' : 'Reading…'}</b></span></div>{journalVisible && <p>{result.finding}</p>}</div>{journalVisible && <div className="evidence-ticket"><Stamp /><span><small>KEY EVIDENCE</small><b>{result.evidence}</b></span></div>}<button disabled={!journalVisible} onClick={() => { dismissResult(); setTool('messages') }}>{resultQueue.length > 0 ? 'Read next reply' : 'Back to inbox'} <ArrowRight /></button></article></div>}
 
@@ -341,15 +357,15 @@ function App() {
 function Report({ stage, selectedRow, onSelect, onContinue }: { stage: Stage; selectedRow: string; onSelect: (id: string) => void; onContinue: () => void }) {
   const selected = stage.rows.find((row) => row.id === selectedRow)
   const focusSelected = selectedRow === stage.focus
-  return <section className="report-screen"><div className="tool-title"><div><span>ATTACHMENT · ROUTE REPORT</span><h2>Route snapshot</h2><p>Select the account that best matches the question in your inbox.</p></div><Search /></div><div className="report-table"><div className="report-head"><span>ACCOUNT</span>{stage.columns.map((col) => <span key={col}>{col}</span>)}<span>CHANGE</span></div>{stage.rows.map((row) => <button key={row.id} className={`${selectedRow === row.id ? 'selected' : ''} ${row.tone ?? ''}`} onClick={() => onSelect(row.id)}><b>{row.label}</b>{row.values.map((value) => <span key={value}>{value}</span>)}<em>{row.change}</em></button>)}</div><div className="report-tip"><span><b>{selected?.label ?? 'No account selected'}</b><small>{focusSelected ? 'This is the discrepancy the email points toward.' : selected ? 'Interesting, but it does not answer the current question.' : 'Look for the line that does not fit the rest of the report.'}</small></span><button disabled={!focusSelected} onClick={onContinue}>{focusSelected ? 'Reply with a request' : 'Find the unusual line'} {focusSelected && <ArrowRight />}</button></div></section>
+  return <section className="report-screen"><div className="tool-title"><div><span>ATTACHMENT</span><h2>Route report</h2></div><Search /></div><div className="report-table"><div className="report-head"><span>ACCOUNT</span>{stage.columns.map((col) => <span key={col}>{col}</span>)}<span>CHANGE</span></div>{stage.rows.map((row) => <button key={row.id} className={`${selectedRow === row.id ? 'selected' : ''} ${row.tone ?? ''}`} onClick={() => onSelect(row.id)}><b>{row.label}</b>{row.values.map((value) => <span key={value}>{value}</span>)}<em>{row.change}</em></button>)}</div><div className="report-tip"><span><b>{selected?.label ?? 'No account selected'}</b><small>{focusSelected ? 'This is the discrepancy the email points toward.' : selected ? 'Interesting, but it does not answer the current question.' : 'Look for the line that does not fit the rest of the report.'}</small></span><button disabled={!focusSelected} onClick={onContinue}>{focusSelected ? 'Reply with a request' : 'Find the unusual line'} {focusSelected && <ArrowRight />}</button></div></section>
 }
 
 function Journal({ stage, found, pending }: { stage: Stage; found: Choice[]; pending: PendingAudit[] }) {
-  return <section className="journal-screen"><div className="tool-title"><div><span>PRIVATE · OWNER’S JOURNAL</span><h2>{stage.question}</h2><p>What I know, not what I can prove.</p></div><NotebookPen /></div><div className="journal-pages"><article className="journal-opening"><small>OPEN QUESTION</small><p>{stage.id === 'onboarding' ? 'Before paying for another sailing, I need to know whether Kestrel is actually full.' : stage.id === 'level1' ? 'The cash is present and passengers are up. The bicycle line is the thing that does not fit.' : 'Finance sees a loss. Vale sees a reason for every extra litre. I need to find where the ship goes.'}</p></article>{found.map((choice, index) => <article className="journal-entry" key={choice.id}><header><span>FINDING {String(index + 1).padStart(2, '0')}</span><Stamp /></header><h3>{choice.evidence}</h3><p>{choice.finding}</p><small>From: {choice.noteFrom}</small></article>)}{pending.length > 0 && <div className="journal-pending"><Clock3 /><span><b>{pending.length} request{pending.length === 1 ? '' : 's'} in progress</b><small>The journal updates when replies arrive.</small></span></div>}</div></section>
+  return <section className="journal-screen"><div className="tool-title"><div><span>PRIVATE JOURNAL</span><h2>{stage.question}</h2></div><NotebookPen /></div><div className="journal-pages"><article className="journal-opening"><small>OPEN QUESTION</small><p>{stage.id === 'onboarding' ? 'Before paying for another sailing, I need to know whether Kestrel is actually full.' : stage.id === 'level1' ? 'The cash is present and passengers are up. The bicycle line is the thing that does not fit.' : 'Finance sees a loss. Vale sees a reason for every extra litre. I need to find where the ship goes.'}</p></article>{found.map((choice, index) => <article className="journal-entry" key={choice.id}><header><span>FINDING {String(index + 1).padStart(2, '0')}</span><Stamp /></header><h3>{choice.evidence}</h3><p>{choice.finding}</p><small>From: {choice.noteFrom}</small></article>)}{pending.length > 0 && <div className="journal-pending"><Clock3 /><span><b>{pending.length} request{pending.length === 1 ? '' : 's'} in progress</b><small>The journal updates when replies arrive.</small></span></div>}</div></section>
 }
 
 function RequestDesk({ stage, found, pending, remaining, requestedToday, onQueue }: { stage: Stage; found: Choice[]; pending: PendingAudit[]; remaining: number; requestedToday: boolean; onQueue: (choice: Choice) => void }) {
-  return <div className="request-desk"><div className="request-heading"><span>REPLY WITH A REQUEST</span><p>Email one person today. Replies arrive after you end the day.</p></div><div className="request-cards">{stage.choices.map((choice) => {
+  return <div className="request-desk"><div className="request-heading"><span>CHOOSE TODAY’S REQUEST</span></div><div className="request-cards">{stage.choices.map((choice) => {
     const isDone = found.some((item) => item.id === choice.id)
     const queued = pending.find((item) => item.choiceId === choice.id)
     const tooLate = choice.time > remaining
@@ -358,13 +374,19 @@ function RequestDesk({ stage, found, pending, remaining, requestedToday, onQueue
   })}</div></div>
 }
 
-function Messages({ message, stage, found, pending, remaining, requestedToday, reportReviewed, tutorialMailState, onTutorialSend, onOpenReport, onQueue }: { message: { from: string; body: string; new: boolean }; stage: Stage; found: Choice[]; pending: PendingAudit[]; remaining: number; requestedToday: boolean; reportReviewed: boolean; tutorialMailState: TutorialMailState; onTutorialSend: () => void; onOpenReport: () => void; onQueue: (choice: Choice) => void }) {
+function LeadPicker({ stage, onUnlock }: { stage: Stage; onUnlock: () => void }) {
+  const [miss, setMiss] = useState('')
+  return <div className="lead-picker"><span><Target /> PIN THE LEAD</span><div>{stage.leadOptions.map((option) => <button key={option.label} className={miss === option.label ? 'miss' : ''} onClick={() => option.correct ? onUnlock() : setMiss(option.label)}>{option.label}{miss === option.label && <X />}</button>)}</div></div>
+}
+
+function Messages({ message, stage, found, pending, remaining, requestedToday, questionUnlocked, reportReviewed, tutorialMailState, onUnlockQuestion, onTutorialSend, onOpenReport, onQueue }: { message: { from: string; body: string; new: boolean }; stage: Stage; found: Choice[]; pending: PendingAudit[]; remaining: number; requestedToday: boolean; questionUnlocked: boolean; reportReviewed: boolean; tutorialMailState: TutorialMailState; onUnlockQuestion: () => void; onTutorialSend: () => void; onOpenReport: () => void; onQueue: (choice: Choice) => void }) {
   if (stage.id === 'onboarding' && found.length === 0) {
     const sent = tutorialMailState !== 'draft'
     const replied = tutorialMailState === 'reply'
-    return <section className="messages-screen tutorial-mail"><div className="tool-title"><div><span>MESSAGES · INBOX</span><h2>A question from the morning run.</h2></div><Mail /></div><div className="thread-subject"><span>SUBJECT</span><h3>Morning run — add another sailing?</h3><small>{replied ? '3' : sent ? '2' : '1'} message{!sent ? '' : 's'} · Today</small></div><div className="email-thread" aria-live="polite"><article className="thread-message"><div className="portrait">MR</div><div><header><span><b>Mara Rinne</b> · Route manager</span><time>08:12</time></header><p>We turned away two freight calls last week. Should I ask the harbor for a price on an extra Wednesday sailing?</p></div></article>{!sent && <article className="thread-message reply-composer"><div className="portrait">YOU</div><div><header><span><b>Reply all</b> · Mara, Mira</span><time>DRAFT</time></header><p>Not yet. My instinct says Kestrel could be doing more on the runs we already make. How full is the cargo deck, really?</p><button className="send-mail" onClick={onTutorialSend}><Send /> Send email</button></div></article>}{sent && <article className="thread-message player-message sent-message"><div className="portrait">YOU</div><div><header><span><b>You</b> · Owner</span><time>08:19</time></header><p>Not yet. My instinct says Kestrel could be doing more on the runs we already make. How full is the cargo deck, really?</p></div></article>}{tutorialMailState === 'sent' && <div className="mail-waiting" role="status"><i /><span><b>Message sent</b><small>Waiting for Mira’s reply…</small></span></div>}{replied && <article className="thread-message incoming-message"><div className="portrait">MK</div><div><header><span><b>Mira Koski</b> · Dock clerk</span><time>08:22</time></header><p>I can pull the freight slips and check them against her loading limit. I’ll send you what I find tomorrow.</p></div></article>}</div>{replied && <RequestDesk stage={stage} found={found} pending={pending} remaining={remaining} requestedToday={requestedToday} onQueue={onQueue} />}</section>
+    const reply = 'Not yet. Check Kestrel’s current load first. How full is the cargo deck, really?'
+    return <section className="messages-screen tutorial-mail"><div className="tool-title"><div><span>INBOX</span><h2>Morning mail</h2></div><Mail /></div><div className="thread-subject"><h3>Add another sailing?</h3><small>{replied ? '3' : sent ? '2' : '1'} message{!sent ? '' : 's'}</small></div><div className="email-thread" aria-live="polite"><article className="thread-message"><div className="portrait">MR</div><div><header><span><b>Mara Rinne</b> · Route manager</span><time>08:12</time></header><p>We turned away two freight calls last week. Should I ask the harbor for a price on an extra Wednesday sailing?</p>{!questionUnlocked && <LeadPicker key={stage.id} stage={stage} onUnlock={onUnlockQuestion} />}</div></article>{questionUnlocked && !sent && <article className="thread-message reply-composer"><div className="portrait">YOU</div><div><header><span><b>Reply all</b> · Mara, Mira</span><time>DRAFT</time></header><p>{reply}</p><button className="send-mail" onClick={onTutorialSend}><Send /> Send</button></div></article>}{sent && <article className="thread-message player-message sent-message"><div className="portrait">YOU</div><div><header><span><b>You</b> · Owner</span><time>08:19</time></header><p>{reply}</p></div></article>}{tutorialMailState === 'sent' && <div className="mail-waiting" role="status"><i /><span><b>Sent</b><small>Waiting for Mira…</small></span></div>}{replied && <article className="thread-message incoming-message"><div className="portrait">MK</div><div><header><span><b>Mira Koski</b> · Dock clerk</span><time>08:22</time></header><p>I’ll check the freight slips against Kestrel’s loading limit.</p></div></article>}</div>{replied && <RequestDesk stage={stage} found={found} pending={pending} remaining={remaining} requestedToday={requestedToday} onQueue={onQueue} />}</section>
   }
-  return <section className="messages-screen"><div className="tool-title"><div><span>MESSAGES · INBOX</span><h2>{found.length > 0 ? 'Latest replies.' : 'New mail.'}</h2></div><Mail /></div><article className={message.new ? 'new' : ''}><div className="portrait">{message.from.split(/[ ,]/).map((part) => part[0]).slice(0, 2).join('')}</div><div><span>{message.new ? 'NEW REPLY' : 'NEW MESSAGE'}</span><h3>{message.from}</h3><p>{message.body}</p>{!reportReviewed && <button className="attachment-button" onClick={onOpenReport}><BookOpen /><span><b>Open attached route report</b><small>Find the account this email points toward.</small></span><ArrowRight /></button>}</div></article>{reportReviewed && <RequestDesk stage={stage} found={found} pending={pending} remaining={remaining} requestedToday={requestedToday} onQueue={onQueue} />}{found.length > 1 && <div className="older-messages"><span>EARLIER REPLIES</span>{found.slice(0, -1).reverse().map((choice) => <div key={choice.id}><Check /><span><b>{choice.noteFrom}</b><small>{choice.evidence}</small></span></div>)}</div>}</section>
+  return <section className="messages-screen"><div className="tool-title"><div><span>INBOX</span><h2>{found.length > 0 ? 'Latest reply' : 'New mail'}</h2></div><Mail /></div><article className={message.new ? 'new' : ''}><div className="portrait">{message.from.split(/[ ,]/).map((part) => part[0]).slice(0, 2).join('')}</div><div><span>{message.new ? 'NEW REPLY' : 'NEW MESSAGE'}</span><h3>{message.from}</h3><p>{message.body}</p>{!questionUnlocked && <LeadPicker key={stage.id} stage={stage} onUnlock={onUnlockQuestion} />}{questionUnlocked && !reportReviewed && <button className="attachment-button" onClick={onOpenReport}><BookOpen /><span><b>Open route report</b></span><ArrowRight /></button>}</div></article>{reportReviewed && <RequestDesk stage={stage} found={found} pending={pending} remaining={remaining} requestedToday={requestedToday} onQueue={onQueue} />}{found.length > 1 && <div className="older-messages"><span>EARLIER REPLIES</span>{found.slice(0, -1).reverse().map((choice) => <div key={choice.id}><Check /><span><b>{choice.noteFrom}</b><small>{choice.evidence}</small></span></div>)}</div>}</section>
 }
 
 export default App
