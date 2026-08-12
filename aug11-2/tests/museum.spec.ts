@@ -14,11 +14,13 @@ test('loads the 3D museum and curatorial interface', async ({ page }) => {
 test('uses a six-room concourse layout with clear doorways', async ({ page }) => {
   await page.goto('/');
   const layout = await page.evaluate(() => (
-    window as unknown as { museumLayout: { doorwayViolations: unknown[]; topology: string; roomCount: number } }
+    window as unknown as { museumLayout: { doorwayViolations: unknown[]; topology: string; roomCount: number; guideCount: number; concourseFeatureGroups: number } }
   ).museumLayout);
   expect(layout.doorwayViolations).toEqual([]);
   expect(layout.topology).toBe('concourse');
   expect(layout.roomCount).toBe(6);
+  expect(layout.guideCount).toBe(6);
+  expect(layout.concourseFeatureGroups).toBeGreaterThanOrEqual(6);
 });
 
 test('can teleport between all six galleries', async ({ page }) => {
@@ -62,6 +64,16 @@ test('collection view presents and filters the full painting grid', async ({ pag
   await page.locator('#collection-grid [data-visit-room]').first().click();
   await expect(page.locator('#collection')).not.toHaveClass(/open/);
   await expect(page.locator('#room-index')).toHaveText('06');
+});
+
+test('room signs open an easy-to-read guide when viewed', async ({ page }) => {
+  await page.goto('/');
+  await page.evaluate(() => (
+    window as unknown as { museumViewGuide: (room: number) => void }
+  ).museumViewGuide(2));
+  await expect(page.locator('#gallery-guide')).toHaveClass(/visible/);
+  await expect(page.locator('#gallery-guide-title')).toHaveText('Views from the Outer Counties');
+  await expect(page.locator('#gallery-guide-copy')).toContainText('regional survey');
 });
 
 test('enter control dismisses the curator note', async ({ page }) => {

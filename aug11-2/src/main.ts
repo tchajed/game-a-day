@@ -163,6 +163,11 @@ const paleWoodMat = material('Pale maple frame', '#b59b72', { gloss: .3 });
 const blackFrameMat = material('Museum black frame', '#242321', { gloss: .2 });
 const plaqueMat = material('Wall label', '#d8d1c1', { gloss: .12 });
 const benchMat = material('Bench', '#4b3028', { gloss: .48 });
+const stoneMat = material('Honzed limestone', '#aaa18f', { gloss: .16 });
+const deskMat = material('Information desk oak', '#6b4931', { gloss: .42 });
+const planterMat = material('Terracotta planter', '#75513e', { gloss: .2 });
+const leafMat = material('Plant leaves', '#41513c', { gloss: .24 });
+const sculptureMat = material('Concourse sculpture', '#b8aa91', { metal: .12, gloss: .5 });
 const frameMaterials = [brassMat, darkMat, oakMat, paleWoodMat, blackFrameMat];
 
 function box(name: string, position: pc.Vec3, scale: pc.Vec3, mat: pc.Material, parent?: pc.Entity) {
@@ -172,6 +177,80 @@ function box(name: string, position: pc.Vec3, scale: pc.Vec3, mat: pc.Material, 
   e.setLocalScale(scale);
   (parent ?? app.root).addChild(e);
   return e;
+}
+
+function primitive(name: string, type: 'cylinder' | 'sphere' | 'cone', position: pc.Vec3, scale: pc.Vec3, mat: pc.Material) {
+  const e = new pc.Entity(name);
+  e.addComponent('render', { type, material: mat });
+  e.setPosition(position);
+  e.setLocalScale(scale);
+  app.root.addChild(e);
+  return e;
+}
+
+function wrapText(context: CanvasRenderingContext2D, text: string, maxWidth: number) {
+  const words = text.split(' ');
+  const lines: string[] = [];
+  let line = '';
+  words.forEach(word => {
+    const candidate = line ? `${line} ${word}` : word;
+    if (line && context.measureText(candidate).width > maxWidth) {
+      lines.push(line);
+      line = word;
+    } else {
+      line = candidate;
+    }
+  });
+  if (line) lines.push(line);
+  return lines;
+}
+
+function canvasMaterial(name: string, title: string, room: number, vertical = false) {
+  const canvas = document.createElement('canvas');
+  canvas.width = vertical ? 600 : 1200;
+  canvas.height = vertical ? 760 : 280;
+  const context = canvas.getContext('2d')!;
+  context.fillStyle = '#e7e0d2';
+  context.fillRect(0, 0, canvas.width, canvas.height);
+  context.fillStyle = galleries[room].accent;
+  context.fillRect(0, 0, vertical ? 18 : 22, canvas.height);
+  context.fillStyle = '#1d1b17';
+  context.font = vertical ? '500 25px Arial' : '500 25px Arial';
+  context.letterSpacing = '4px';
+  context.fillText(`GALLERY ${String(room + 1).padStart(2, '0')}`, vertical ? 58 : 55, vertical ? 75 : 62);
+  context.letterSpacing = '0px';
+  context.font = vertical ? '500 62px Georgia' : '500 70px Georgia';
+  const lines = wrapText(context, title, vertical ? 480 : 1010);
+  lines.slice(0, vertical ? 4 : 2).forEach((line, index) => context.fillText(line, vertical ? 58 : 55, (vertical ? 175 : 153) + index * (vertical ? 72 : 76)));
+  if (vertical) {
+    context.fillStyle = '#5f594f';
+    context.font = '500 19px Arial';
+    context.letterSpacing = '3px';
+    context.fillText('ROOM GUIDE', 58, 610);
+    context.letterSpacing = '0px';
+    context.font = '400 21px Georgia';
+    context.fillText('Look here for an introduction', 58, 665);
+    context.fillText('to the room.', 58, 696);
+  }
+  const texture = new pc.Texture(app.graphicsDevice, {
+    width: canvas.width,
+    height: canvas.height,
+    mipmaps: true,
+    minFilter: pc.FILTER_LINEAR_MIPMAP_LINEAR,
+    magFilter: pc.FILTER_LINEAR,
+    anisotropy: 8
+  });
+  texture.setSource(canvas);
+  const signMat = new pc.StandardMaterial();
+  signMat.name = name;
+  signMat.diffuse = new pc.Color(1, 1, 1);
+  signMat.diffuseMap = texture;
+  signMat.emissive = new pc.Color(.18, .18, .18);
+  signMat.emissiveMap = texture;
+  signMat.emissiveIntensity = .35;
+  signMat.gloss = .12;
+  signMat.update();
+  return signMat;
 }
 
 // Six galleries open directly onto a shared concourse. Unlike the former
@@ -202,6 +281,35 @@ box('Concourse east wall', new pc.Vec3(22, 3, 0), new pc.Vec3(.28, 6.2, 10), con
   app.root.addChild(light);
 });
 
+// Everyday public furniture makes the concourse feel occupied without blocking
+// the six direct routes between opposite galleries.
+box('Information desk', new pc.Vec3(-7, .72, 0), new pc.Vec3(4.2, 1.22, 1.05), deskMat);
+box('Information desk counter', new pc.Vec3(-7, 1.42, -.08), new pc.Vec3(4.55, .18, 1.3), stoneMat);
+box('Information desk inset', new pc.Vec3(-7, .78, .55), new pc.Vec3(2.1, .52, .05), brassMat);
+primitive('Desk lamp', 'sphere', new pc.Vec3(-8.25, 1.7, 0), new pc.Vec3(.25, .14, .25), brassMat);
+box('Concourse sculpture plinth', new pc.Vec3(7, .42, 0), new pc.Vec3(1.45, .84, 1.45), stoneMat);
+primitive('Sculpture lower stone', 'sphere', new pc.Vec3(6.85, 1.38, 0), new pc.Vec3(.72, .72, .72), sculptureMat);
+primitive('Sculpture brass axis', 'cylinder', new pc.Vec3(7.18, 2.05, 0), new pc.Vec3(.18, 1.55, .18), brassMat).setEulerAngles(0, 0, -18);
+primitive('Sculpture upper stone', 'sphere', new pc.Vec3(7.46, 2.65, 0), new pc.Vec3(.48, .48, .48), sculptureMat);
+
+function addPlanter(x: number, z: number) {
+  primitive('Concourse planter', 'cylinder', new pc.Vec3(x, .48, z), new pc.Vec3(.75, .95, .75), planterMat);
+  primitive('Planter foliage', 'sphere', new pc.Vec3(x, 1.3, z), new pc.Vec3(1.05, .8, 1.05), leafMat);
+  primitive('Planter foliage', 'sphere', new pc.Vec3(x - .38, 1.64, z + .08), new pc.Vec3(.55, .72, .55), leafMat);
+}
+addPlanter(-20.25, -3.2);
+addPlanter(-20.25, 3.2);
+addPlanter(20.25, -3.2);
+addPlanter(20.25, 3.2);
+box('West concourse bench', new pc.Vec3(-19.8, .62, 0), new pc.Vec3(.72, .24, 3.1), benchMat);
+box('West bench support', new pc.Vec3(-19.8, .3, 0), new pc.Vec3(.5, .58, .35), brassMat);
+box('East concourse bench', new pc.Vec3(19.8, .62, 0), new pc.Vec3(.72, .24, 3.1), benchMat);
+box('East bench support', new pc.Vec3(19.8, .3, 0), new pc.Vec3(.5, .58, .35), brassMat);
+box('Concourse directory', new pc.Vec3(14.9, 1.45, 2.9), new pc.Vec3(1.25, 2.65, .18), darkMat);
+box('Directory brass header', new pc.Vec3(14.9, 2.48, 2.78), new pc.Vec3(1.05, .12, .08), brassMat);
+
+const guideTargets: { room: number; position: pc.Vec3 }[] = [];
+
 rooms.forEach(({ cx, cz, row }, index) => {
   const wallMat = material(`Gallery ${index + 1} plaster`, galleries[index].wall, { gloss: .16 });
   box(`Gallery ${index + 1} floor`, new pc.Vec3(cx, -.16, cz), new pc.Vec3(ROOM_WIDTH, .3, ROOM_DEPTH), floorMat);
@@ -217,6 +325,17 @@ rooms.forEach(({ cx, cz, row }, index) => {
   box('Portal lintel', new pc.Vec3(cx, 5.3, innerZ), new pc.Vec3(4, 1.6, .32), wallMat);
   box('Portal brass edge L', new pc.Vec3(cx - 2.02, 2.25, innerZ), new pc.Vec3(.07, 4.5, .35), brassMat);
   box('Portal brass edge R', new pc.Vec3(cx + 2.02, 2.25, innerZ), new pc.Vec3(.07, 4.5, .35), brassMat);
+
+  const exteriorSignZ = innerZ + (row === 'north' ? .23 : -.23);
+  const exteriorSignX = cx + (row === 'north' ? 3.75 : -3.75);
+  box(`${galleries[index].title} entrance sign`, new pc.Vec3(exteriorSignX, 3.15, exteriorSignZ), new pc.Vec3(3.25, .76, .1), canvasMaterial(`Gallery ${index + 1} entrance lettering`, galleries[index].title, index));
+
+  const guideX = cx + (row === 'north' ? 3.85 : -3.85);
+  const guideZ = innerZ + (row === 'north' ? -1.7 : 1.7);
+  box(`Gallery ${index + 1} guide sign`, new pc.Vec3(guideX, 1.7, guideZ), new pc.Vec3(1.35, 1.72, .1), canvasMaterial(`Gallery ${index + 1} guide lettering`, galleries[index].title, index, true));
+  box('Guide sign post', new pc.Vec3(guideX, .66, guideZ), new pc.Vec3(.09, .55, .09), brassMat);
+  box('Guide sign foot', new pc.Vec3(guideX, .22, guideZ), new pc.Vec3(.72, .08, .48), brassMat);
+  guideTargets.push({ room: index, position: new pc.Vec3(guideX, 1.72, guideZ + (row === 'north' ? .15 : -.15)) });
 
   const benchZ = cz + (row === 'north' ? 1.1 : -1.1);
   box('Bench seat', new pc.Vec3(cx, .63, benchZ), new pc.Vec3(3.2, .25, .72), benchMat);
@@ -375,6 +494,7 @@ let currentRoom = 0;
 let panelOpen = true;
 let collectionOpen = false;
 let lastCard = '';
+let lastGuide = -1;
 const held = new Set<string>();
 
 window.addEventListener('keydown', e => {
@@ -395,6 +515,7 @@ const curatorCopy = document.querySelector<HTMLElement>('#curator-copy')!;
 const roomIndex = document.querySelector<HTMLElement>('#room-index')!;
 const progressLine = document.querySelector<HTMLElement>('.room-progress i')!;
 const artCard = document.querySelector<HTMLElement>('#art-card')!;
+const galleryGuide = document.querySelector<HTMLElement>('#gallery-guide')!;
 const collection = document.querySelector<HTMLElement>('#collection')!;
 const collectionGrid = document.querySelector<HTMLElement>('#collection-grid')!;
 const collectionFilters = document.querySelector<HTMLElement>('#collection-filters')!;
@@ -513,9 +634,32 @@ document.querySelector('#sound')!.addEventListener('click', () => {
   }
 });
 
-function updateCard() {
+function updateGuide() {
+  if (panelOpen || collectionOpen) {
+    galleryGuide.classList.remove('visible');
+    galleryGuide.setAttribute('aria-hidden', 'true');
+    return false;
+  }
+  const target = guideTargets.find(guide => guide.room === currentRoom);
+  if (!target) return false;
+  const towardSign = target.position.clone().sub(camera.getPosition());
+  const distance = towardSign.length();
+  const visible = distance < 5.4 && towardSign.normalize().dot(camera.forward) > .94;
+  galleryGuide.classList.toggle('visible', visible);
+  galleryGuide.setAttribute('aria-hidden', String(!visible));
+  if (visible && lastGuide !== currentRoom) {
+    const gallery = galleries[currentRoom];
+    galleryGuide.querySelector<HTMLElement>('#gallery-guide-number')!.textContent = String(currentRoom + 1).padStart(2, '0');
+    galleryGuide.querySelector<HTMLElement>('#gallery-guide-title')!.textContent = gallery.title;
+    galleryGuide.querySelector<HTMLElement>('#gallery-guide-copy')!.textContent = gallery.sign;
+    lastGuide = currentRoom;
+  }
+  return visible;
+}
+
+function updateCard(guideVisible: boolean) {
   const p = camera.getPosition();
-  if (panelOpen || collectionOpen) { artCard.classList.remove('visible'); return; }
+  if (panelOpen || collectionOpen || guideVisible) { artCard.classList.remove('visible'); return; }
   let nearest: typeof artworkPositions[number] | undefined;
   let distance = Infinity;
   artworkPositions.filter(a => a.room === currentRoom).forEach(a => {
@@ -565,7 +709,8 @@ app.on('update', (dt: number) => {
   const position = camera.getPosition();
   const occupiedRoom = rooms.findIndex(room => Math.abs(position.x - room.cx) < ROOM_HALF_WIDTH && Math.abs(position.z - room.cz) < ROOM_HALF_DEPTH);
   if (occupiedRoom >= 0 && occupiedRoom !== currentRoom) setRoom(occupiedRoom);
-  updateCard();
+  const guideVisible = updateGuide();
+  updateCard(guideVisible);
 });
 
 setRoom(0, true);
@@ -576,7 +721,18 @@ Promise.all(textureJobs).finally(() => {
 // Exposed only for deterministic layout and smoke tests.
 const testWindow = window as unknown as {
   museumReady: boolean;
-  museumLayout: { doorwayViolations: ReturnType<typeof findDoorwayViolations>; topology: 'concourse'; roomCount: number };
+  museumLayout: { doorwayViolations: ReturnType<typeof findDoorwayViolations>; topology: 'concourse'; roomCount: number; guideCount: number; concourseFeatureGroups: number };
+  museumViewGuide: (room: number) => void;
 };
 testWindow.museumReady = true;
-testWindow.museumLayout = { doorwayViolations, topology: 'concourse', roomCount: rooms.length };
+testWindow.museumLayout = { doorwayViolations, topology: 'concourse', roomCount: rooms.length, guideCount: guideTargets.length, concourseFeatureGroups: 8 };
+testWindow.museumViewGuide = (roomIndex: number) => {
+  const target = guideTargets[roomIndex];
+  const placement = rooms[roomIndex];
+  setRoom(roomIndex);
+  panelOpen = false;
+  curator.classList.add('hidden');
+  camera.setPosition(target.position.x, EYE_HEIGHT, target.position.z + (placement.row === 'north' ? -2.6 : 2.6));
+  yaw = placement.row === 'north' ? 180 : 0;
+  pitch = 3;
+};
