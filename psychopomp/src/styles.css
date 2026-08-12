@@ -1,0 +1,258 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Inknut+Antiqua:wght@500;600&display=swap');
+
+:root {
+  color: #f3e5c4;
+  background: #130d17;
+  font-family: "DM Mono", monospace;
+  font-synthesis: none;
+}
+
+* { box-sizing: border-box; }
+
+html, body, #app { width: 100%; min-height: 100%; margin: 0; }
+
+body {
+  min-height: 100vh;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 50% 25%, #4d2534 0, #1a101c 55%, #09070b 100%);
+}
+
+button { font: inherit; }
+
+.game-shell {
+  --ink: #151016;
+  position: relative;
+  width: 100vw;
+  height: 100svh;
+  min-height: 520px;
+  overflow: hidden;
+  isolation: isolate;
+  background: #261522;
+}
+
+#scene {
+  display: block;
+  width: 100%;
+  height: 100%;
+  image-rendering: auto;
+}
+
+.grain {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  opacity: .17;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 220 220' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.82' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.22'/%3E%3C/svg%3E");
+  mix-blend-mode: soft-light;
+}
+
+.topbar {
+  position: absolute;
+  z-index: 4;
+  inset: 0 0 auto;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: clamp(14px, 2.4vw, 28px);
+  pointer-events: none;
+}
+
+.assignment {
+  max-width: min(70vw, 470px);
+  padding: 10px 14px 11px;
+  border-left: 3px solid #ef944f;
+  background: rgb(22 14 22 / 78%);
+  box-shadow: 8px 8px 0 rgb(18 9 17 / 28%);
+  backdrop-filter: blur(5px);
+}
+
+.assignment__kicker,
+.assignment__detail {
+  display: block;
+  color: #d4b984;
+  font-size: clamp(9px, 1.3vw, 12px);
+  letter-spacing: .16em;
+  text-transform: uppercase;
+}
+
+.assignment__title {
+  display: block;
+  margin: 2px 0 3px;
+  color: #fff1cf;
+  font-family: "Inknut Antiqua", Georgia, serif;
+  font-size: clamp(14px, 2vw, 20px);
+  line-height: 1.2;
+}
+
+.progress {
+  display: flex;
+  gap: 8px;
+  padding: 8px;
+  background: rgb(22 14 22 / 72%);
+}
+
+.progress__mark {
+  display: grid;
+  width: 28px;
+  height: 28px;
+  place-items: center;
+  border: 1px solid #9f755a;
+  color: #9f755a;
+  font-size: 12px;
+}
+
+.progress__mark.done {
+  border-color: #ef944f;
+  color: #140e14;
+  background: #ef944f;
+}
+
+.interact-prompt {
+  position: absolute;
+  z-index: 5;
+  left: 50%;
+  bottom: clamp(115px, 19vh, 178px);
+  translate: -50% 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px 8px 9px;
+  border: 1px solid #f1c48e;
+  color: #fff0d0;
+  background: rgb(21 13 20 / 92%);
+  box-shadow: 5px 5px 0 rgb(14 6 12 / 45%);
+  font-size: clamp(11px, 1.5vw, 14px);
+  letter-spacing: .05em;
+  text-transform: uppercase;
+}
+
+.interact-prompt kbd {
+  display: grid;
+  min-width: 26px;
+  height: 26px;
+  padding: 0 5px;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  color: #25131b;
+  background: #ef944f;
+  font: 600 13px "DM Mono", monospace;
+}
+
+.dialogue {
+  position: absolute;
+  z-index: 8;
+  left: clamp(14px, 6vw, 82px);
+  right: clamp(14px, 6vw, 82px);
+  bottom: clamp(16px, 4vh, 42px);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px 24px;
+  min-height: 145px;
+  padding: clamp(18px, 2.5vw, 27px) clamp(18px, 3.4vw, 38px);
+  border: 2px solid #e0b77d;
+  background: rgb(20 12 19 / 96%);
+  box-shadow: 9px 9px 0 #8e422f, 13px 13px 0 rgb(13 7 12 / 55%);
+}
+
+.dialogue::before {
+  content: "";
+  position: absolute;
+  inset: 7px;
+  border: 1px solid rgb(224 183 125 / 25%);
+  pointer-events: none;
+}
+
+.dialogue__copy { position: relative; min-width: 0; }
+
+.dialogue__speaker {
+  margin: 0 0 5px;
+  color: #ef944f;
+  font-family: "Inknut Antiqua", Georgia, serif;
+  font-size: clamp(14px, 2vw, 19px);
+  letter-spacing: .02em;
+}
+
+.dialogue__text {
+  max-width: 870px;
+  margin: 0;
+  color: #f7e7c5;
+  font-size: clamp(13px, 1.8vw, 17px);
+  line-height: 1.55;
+}
+
+.dialogue__option {
+  position: relative;
+  align-self: end;
+  min-width: 150px;
+  padding: 12px 18px;
+  border: 1px solid #ef944f;
+  color: #26131b;
+  background: #ef944f;
+  cursor: pointer;
+  box-shadow: 4px 4px 0 #843b30;
+  text-transform: uppercase;
+  transition: translate .12s, box-shadow .12s, filter .12s;
+}
+
+.dialogue__option::after { content: "  ›"; }
+.dialogue__option:hover, .dialogue__option:focus-visible {
+  outline: 2px solid #fff1cd;
+  outline-offset: 3px;
+  filter: brightness(1.1);
+}
+.dialogue__option:active { translate: 3px 3px; box-shadow: 1px 1px 0 #843b30; }
+
+.controls {
+  position: absolute;
+  z-index: 6;
+  inset: auto 15px 16px;
+  display: none;
+  justify-content: space-between;
+  pointer-events: none;
+}
+
+.controls__move { display: flex; gap: 8px; }
+.controls button {
+  width: 48px;
+  height: 48px;
+  border: 1px solid #e8bd81;
+  border-radius: 50%;
+  color: #ffecca;
+  background: rgb(26 15 23 / 78%);
+  box-shadow: 3px 3px 0 rgb(89 39 35 / 80%);
+  pointer-events: auto;
+  touch-action: none;
+}
+.controls__talk { width: auto !important; padding-inline: 16px; border-radius: 24px !important; }
+
+.debug-panel {
+  position: absolute;
+  z-index: 9;
+  top: 92px;
+  right: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px;
+  background: rgb(0 0 0 / 65%);
+}
+.debug-panel button { border: 1px solid #c88857; color: #f8e8ca; background: #27151e; cursor: pointer; }
+
+[hidden] { display: none !important; }
+
+@media (pointer: coarse), (max-width: 720px) {
+  .controls { display: flex; }
+  .game-shell:not(.is-talking) .controls { display: flex; }
+  .game-shell.is-talking .controls { display: none; }
+  .dialogue { grid-template-columns: 1fr; bottom: 18px; }
+  .dialogue__option { justify-self: stretch; }
+  .interact-prompt { bottom: 88px; }
+}
+
+@media (max-height: 620px) {
+  .dialogue { min-height: 128px; padding-block: 14px; }
+  .dialogue__text { line-height: 1.35; }
+}
