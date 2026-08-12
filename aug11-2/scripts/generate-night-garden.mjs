@@ -51,10 +51,10 @@ const fern = (x, y, scale, flip = 1) => {
   return `<g><path d="M ${x} ${y + 55 * scale} Q ${x + flip * 35 * scale} ${y - 230 * scale} ${x + flip * 190 * scale} ${y - 535 * scale}" fill="none" stroke="#d3be72" stroke-width="${10 * scale}" stroke-linecap="round"/>${leaves}</g>`;
 };
 
-// Two procedural paint recipes share the same clean-vector starting point:
-// “graphic-impasto” uses bright pigment, dark contour and horizontal knife marks;
-// “velatura” uses a dark ground, directional scumble and restrained edge relief.
-// They draw on the material qualities in the supplied Thiebaud and Peto references,
+// The collection currently uses the “velatura” recipe: a dark ground,
+// directional scumble and restrained edge relief. The transformation pipeline
+// retains the brighter “graphic-impasto” recipe for future experiments.
+// Both draw on the material qualities in the supplied Thiebaud and Peto references,
 // without sampling or shipping either reference image.
 const works = [
   {
@@ -75,7 +75,7 @@ const works = [
       <g fill="#f7d478">${Array.from({length:14},(_,i)=>`<circle cx="450" cy="560" r="8" transform="rotate(${i*25.7} 450 560) translate(0 -43)"/>`).join('')}</g>`)
   },
   {
-    file: 'night-garden-2', title: 'Foxglove Broadcast', strategy: 'graphic-impasto',
+    file: 'night-garden-2', title: 'Foxglove Broadcast', strategy: 'velatura',
     svg: svg('Foxglove Broadcast', `
       <linearGradient id="bg" x2="1" y2="1"><stop stop-color="#461e36"/><stop offset=".55" stop-color="#8d3d45"/><stop offset="1" stop-color="#db805e"/></linearGradient>
       <linearGradient id="bell"><stop stop-color="#ffcfb3"/><stop offset=".6" stop-color="#d66c83"/><stop offset="1" stop-color="#813a65"/></linearGradient>`, `
@@ -90,7 +90,7 @@ const works = [
       <path d="M452 228 C400 184 409 122 453 81 C497 126 510 185 452 228Z" fill="#e9a56f"/>`)
   },
   {
-    file: 'night-garden-3', title: 'Blue Lotus, Tidal Clock', strategy: 'graphic-impasto',
+    file: 'night-garden-3', title: 'Blue Lotus, Tidal Clock', strategy: 'velatura',
     svg: svg('Blue Lotus, Tidal Clock', `
       <linearGradient id="bg" x2="0" y2="1"><stop stop-color="#092b3d"/><stop offset="1" stop-color="#0a5b65"/></linearGradient>
       <linearGradient id="petal" x2="0" y2="1"><stop stop-color="#b7e8df"/><stop offset=".6" stop-color="#5aa5b7"/><stop offset="1" stop-color="#265b8c"/></linearGradient>`, `
@@ -118,7 +118,7 @@ const works = [
       <g fill="#d8c276" opacity=".85"><circle cx="145" cy="870" r="9"/><circle cx="758" cy="820" r="7"/><circle cx="672" cy="958" r="5"/></g>`)
   },
   {
-    file: 'night-garden-5', title: 'Pomegranates after Midnight', strategy: 'graphic-impasto',
+    file: 'night-garden-5', title: 'Pomegranates after Midnight', strategy: 'velatura',
     svg: svg('Pomegranates after Midnight', `
       <linearGradient id="bg" x2="0" y2="1"><stop stop-color="#1d1835"/><stop offset="1" stop-color="#35204a"/></linearGradient>
       <radialGradient id="fruit"><stop offset="0" stop-color="#d95a4d"/><stop offset=".72" stop-color="#8f263a"/><stop offset="1" stop-color="#501c34"/></radialGradient>`, `
