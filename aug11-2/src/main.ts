@@ -582,7 +582,13 @@ if (doorwayViolations.length) {
   throw new Error(`Artwork overlaps a doorway: ${JSON.stringify(doorwayViolations)}`);
 }
 
-type ArtworkPosition = { displayRoom: number; sourceRoom: number; work: number; position: pc.Vec3 };
+type ArtworkPosition = {
+  displayRoom: number;
+  sourceRoom: number;
+  work: number;
+  proximityPosition: pc.Vec3;
+  subjectPosition: pc.Vec3;
+};
 type ArtworkFit = { room: number; work: number; imageAspect: number; displayAspect: number };
 const artworkPositions: ArtworkPosition[] = [];
 const artworkFits: ArtworkFit[] = [];
@@ -634,8 +640,9 @@ async function hangArtwork(room: number, work: number, hangingIndex: number, tex
   const labelHanging = { ...hanging, centerY: Math.max(.38, hanging.centerY - fitted.height / 2 - .23) };
   wallBox('Artwork label', room, labelHanging, .45, Math.min(.7, fitted.width * .45), .16, .055, plaqueMat);
 
-  const viewPoint = wallTransform(room, { ...hanging, centerY: 1.68 }, 1.35).position;
-  artworkPositions.push({ displayRoom: room, sourceRoom: room, work, position: viewPoint });
+  const proximityPosition = wallTransform(room, { ...hanging, centerY: 1.68 }, 1.35).position;
+  const subjectPosition = wallTransform(room, hanging, .47).position;
+  artworkPositions.push({ displayRoom: room, sourceRoom: room, work, proximityPosition, subjectPosition });
 }
 
 async function hangStorageArtwork(assignment: StorageAssignment, texture: pc.Texture) {
@@ -659,7 +666,13 @@ async function hangStorageArtwork(assignment: StorageAssignment, texture: pc.Tex
   const artPosition = slot.position.clone().add(towardViewer.clone().mulScalar(.2));
   storageBox('Stored artwork frame', framePosition, slot.rotation, width + .12, height + .12, .1, blackFrameMat);
   storageBox(source.title, artPosition, slot.rotation, width, height, .055, canvasMat);
-  artworkPositions.push({ displayRoom: STORAGE_ROOM_INDEX, sourceRoom: assignment.room, work: assignment.work, position: slot.viewPosition });
+  artworkPositions.push({
+    displayRoom: STORAGE_ROOM_INDEX,
+    sourceRoom: assignment.room,
+    work: assignment.work,
+    proximityPosition: slot.viewPosition,
+    subjectPosition: artPosition
+  });
 }
 
 const galleryTextureJobs = galleryDisplayWorkIndices.flatMap((workIndices, room) => workIndices.map((work, hangingIndex) =>
@@ -907,15 +920,26 @@ function updateGuide() {
   return visible;
 }
 
+function isPositionInView(position: pc.Vec3) {
+  const towardPosition = position.clone().sub(camera.getPosition());
+  if (towardPosition.dot(camera.forward) <= 0) return false;
+
+  const screenPosition = camera.camera!.worldToScreen(position);
+  return screenPosition.x >= 0 && screenPosition.x <= canvas.clientWidth
+    && screenPosition.y >= 0 && screenPosition.y <= canvas.clientHeight;
+}
+
 function updateCard(guideVisible: boolean) {
   const p = camera.getPosition();
   if (panelOpen || collectionOpen || guideVisible) { artCard.classList.remove('visible'); return; }
   let nearest: typeof artworkPositions[number] | undefined;
   let distance = Infinity;
-  artworkPositions.filter(a => a.displayRoom === currentRoom).forEach(a => {
-    const d = Math.hypot(p.x - a.position.x, p.z - a.position.z);
-    if (d < distance) { distance = d; nearest = a; }
-  });
+  artworkPositions
+    .filter(a => a.displayRoom === currentRoom && isPositionInView(a.subjectPosition))
+    .forEach(a => {
+      const d = Math.hypot(p.x - a.proximityPosition.x, p.z - a.proximityPosition.z);
+      if (d < distance) { distance = d; nearest = a; }
+    });
   if (!nearest || distance > 3.15) { artCard.classList.remove('visible'); return; }
   const key = `${nearest.displayRoom}-${nearest.sourceRoom}-${nearest.work}`;
   if (key !== lastCard) {
@@ -982,6 +1006,7 @@ const testWindow = window as unknown as {
   museumLayout: { doorwayViolations: ReturnType<typeof findDoorwayViolations>; topology: 'concourse'; roomCount: number; galleryCount: number; guideCount: number; concourseFeatureGroups: number; storage: { level: number; capacity: number; occupied: number; lightCount: number } };
   museumArtworkFits: ArtworkFit[];
   museumViewGuide: (room: number) => void;
+  museumTurnAround: () => void;
 };
 testWindow.museumReady = true;
 testWindow.museumLayout = {
@@ -1004,3 +1029,4 @@ testWindow.museumViewGuide = (roomIndex: number) => {
   yaw = placement.row === 'north' ? 180 : 0;
   pitch = 3;
 };
+testWindow.museumTurnAround = () => { yaw += 180; };

@@ -72,7 +72,7 @@ test('visible storage holds the reorganized paintings on lower level B1', async 
   await expect(page.locator('.gallery-nav button').nth(6)).toHaveClass(/active/);
 });
 
-test('collection view presents and filters the full painting grid', async ({ page }) => {
+test('collection view presents, filters, and opens directional painting explanations', async ({ page }) => {
   await page.goto('/');
   await page.locator('#collection-toggle').click();
   await expect(page.locator('#collection')).toHaveClass(/open/);
@@ -92,6 +92,11 @@ test('collection view presents and filters the full painting grid', async ({ pag
   await expect(page.locator('#curator')).toHaveClass(/hidden/);
   await expect(page.locator('#art-card')).toHaveClass(/visible/);
   await expect(page.locator('#art-card h2')).toHaveText('Moonflower, 11:52 p.m.');
+
+  await page.evaluate(() => (
+    window as unknown as { museumTurnAround: () => void }
+  ).museumTurnAround());
+  await expect(page.locator('#art-card')).not.toHaveClass(/visible/);
 });
 
 test('room signs open an easy-to-read guide when viewed', async ({ page }) => {
