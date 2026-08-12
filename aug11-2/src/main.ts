@@ -86,6 +86,20 @@ const galleries: Gallery[] = [
       { title: 'Patron of Lost Socks', subtitle: 'Social realist oil · Moss impasto', image: '/art/gods-4.webp' },
       { title: 'Before the First Loaf', subtitle: 'Symbolist oil · Golden ground', image: '/art/gods-5.webp' }
     ]
+  },
+  {
+    title: 'The Night Garden',
+    heading: 'The Night<br><em>Garden</em>',
+    note: 'Six impossible specimens begin as exact vector geometry, then acquire dragged pigment, raised contours and the tooth of woven canvas. Bright horizontal impasto alternates with dark, translucent scumbling: two mechanical recipes learning to leave a human trace.',
+    accent: '#ff77b7', wall: '#594d67',
+    works: [
+      { title: 'Moonflower Keeps the Hours', subtitle: 'Procedural velatura · Directional scumble', image: '/art/night-garden-1.webp' },
+      { title: 'Foxglove Broadcast', subtitle: 'Graphic impasto · Horizontal knife drag', image: '/art/night-garden-2.webp' },
+      { title: 'Blue Lotus, Tidal Clock', subtitle: 'Graphic impasto · Raised contour', image: '/art/night-garden-3.webp' },
+      { title: 'Ferns Remember Lightning', subtitle: 'Procedural velatura · Dark ground', image: '/art/night-garden-4.webp' },
+      { title: 'Pomegranates after Midnight', subtitle: 'Graphic impasto · Woven canvas', image: '/art/night-garden-5.webp' },
+      { title: 'Moths Pollinate the Stars', subtitle: 'Procedural velatura · Edge relief', image: '/art/night-garden-6.webp' }
+    ]
   }
 ];
 
@@ -153,48 +167,66 @@ function box(name: string, position: pc.Vec3, scale: pc.Vec3, mat: pc.Material, 
   return e;
 }
 
-// One continuous enfilade: three rooms connected by aligned doorways.
+// Six galleries open directly onto a shared concourse. Unlike the former
+// enfilade, every room is one doorway away from the hub.
 const ROOM_WIDTH = 12;
+const ROOM_DEPTH = 16;
 const ROOM_HALF_WIDTH = ROOM_WIDTH / 2;
-const centers = [-24, -12, 0, 12, 24];
-centers.forEach((cx, index) => {
+const ROOM_HALF_DEPTH = ROOM_DEPTH / 2;
+type RoomPlacement = { cx: number; cz: number; row: 'north' | 'south' };
+const rooms: RoomPlacement[] = [
+  { cx: -14, cz: -13, row: 'north' }, { cx: 0, cz: -13, row: 'north' }, { cx: 14, cz: -13, row: 'north' },
+  { cx: -14, cz: 13, row: 'south' }, { cx: 0, cz: 13, row: 'south' }, { cx: 14, cz: 13, row: 'south' }
+];
+const concourseMat = material('Concourse plaster', '#605e59', { gloss: .14 });
+box('Concourse floor', new pc.Vec3(0, -.16, 0), new pc.Vec3(44, .3, 10), floorMat);
+box('Concourse ceiling', new pc.Vec3(0, 6.12, 0), new pc.Vec3(44, .22, 10), ceilingMat);
+box('Concourse west wall', new pc.Vec3(-22, 3, 0), new pc.Vec3(.28, 6.2, 10), concourseMat);
+box('Concourse east wall', new pc.Vec3(22, 3, 0), new pc.Vec3(.28, 6.2, 10), concourseMat);
+[-21, -7, 7, 21].forEach(x => {
+  box('Concourse north infill', new pc.Vec3(x, 3, -5), new pc.Vec3(2, 6.2, .28), concourseMat);
+  box('Concourse south infill', new pc.Vec3(x, 3, 5), new pc.Vec3(2, 6.2, .28), concourseMat);
+});
+[-14, 0, 14].forEach(x => {
+  box('Concourse light track', new pc.Vec3(x, 5.8, 0), new pc.Vec3(7.5, .06, .06), darkMat);
+  const light = new pc.Entity('Concourse light');
+  light.addComponent('light', { type: 'omni', color: new pc.Color(1, .83, .63), intensity: .9, range: 9, castShadows: false });
+  light.setPosition(x, 4.8, 0);
+  app.root.addChild(light);
+});
+
+rooms.forEach(({ cx, cz, row }, index) => {
   const wallMat = material(`Gallery ${index + 1} plaster`, galleries[index].wall, { gloss: .16 });
-  box(`Gallery ${index + 1} floor`, new pc.Vec3(cx, -.16, 0), new pc.Vec3(12, .3, 16), floorMat);
-  box(`Gallery ${index + 1} ceiling`, new pc.Vec3(cx, 6.12, 0), new pc.Vec3(12, .22, 16), ceilingMat);
-  box('North wall', new pc.Vec3(cx, 3, -8), new pc.Vec3(12, 6.2, .28), wallMat);
-  box('South wall', new pc.Vec3(cx, 3, 8), new pc.Vec3(12, 6.2, .28), wallMat);
-  // A quiet center bench anchors each gallery.
-  box('Bench seat', new pc.Vec3(cx, .63, 1.1), new pc.Vec3(3.2, .25, .72), benchMat);
-  box('Bench leg L', new pc.Vec3(cx - 1.25, .28, 1.1), new pc.Vec3(.18, .55, .58), brassMat);
-  box('Bench leg R', new pc.Vec3(cx + 1.25, .28, 1.1), new pc.Vec3(.18, .55, .58), brassMat);
-  // Two lighting tracks wash all four walls without making the room feel staged.
-  [-4.2, 4.2].forEach(trackZ => {
+  box(`Gallery ${index + 1} floor`, new pc.Vec3(cx, -.16, cz), new pc.Vec3(ROOM_WIDTH, .3, ROOM_DEPTH), floorMat);
+  box(`Gallery ${index + 1} ceiling`, new pc.Vec3(cx, 6.12, cz), new pc.Vec3(ROOM_WIDTH, .22, ROOM_DEPTH), ceilingMat);
+  box('West wall', new pc.Vec3(cx - ROOM_HALF_WIDTH, 3, cz), new pc.Vec3(.28, 6.2, ROOM_DEPTH), wallMat);
+  box('East wall', new pc.Vec3(cx + ROOM_HALF_WIDTH, 3, cz), new pc.Vec3(.28, 6.2, ROOM_DEPTH), wallMat);
+
+  const outerZ = cz + (row === 'north' ? -ROOM_HALF_DEPTH : ROOM_HALF_DEPTH);
+  const innerZ = cz + (row === 'north' ? ROOM_HALF_DEPTH : -ROOM_HALF_DEPTH);
+  box('Outer wall', new pc.Vec3(cx, 3, outerZ), new pc.Vec3(ROOM_WIDTH, 6.2, .28), wallMat);
+  box('Portal wall left', new pc.Vec3(cx - 4, 3, innerZ), new pc.Vec3(4, 6.2, .28), wallMat);
+  box('Portal wall right', new pc.Vec3(cx + 4, 3, innerZ), new pc.Vec3(4, 6.2, .28), wallMat);
+  box('Portal lintel', new pc.Vec3(cx, 5.3, innerZ), new pc.Vec3(4, 1.6, .32), wallMat);
+  box('Portal brass edge L', new pc.Vec3(cx - 2.02, 2.25, innerZ), new pc.Vec3(.07, 4.5, .35), brassMat);
+  box('Portal brass edge R', new pc.Vec3(cx + 2.02, 2.25, innerZ), new pc.Vec3(.07, 4.5, .35), brassMat);
+
+  const benchZ = cz + (row === 'north' ? 1.1 : -1.1);
+  box('Bench seat', new pc.Vec3(cx, .63, benchZ), new pc.Vec3(3.2, .25, .72), benchMat);
+  box('Bench leg L', new pc.Vec3(cx - 1.25, .28, benchZ), new pc.Vec3(.18, .55, .58), brassMat);
+  box('Bench leg R', new pc.Vec3(cx + 1.25, .28, benchZ), new pc.Vec3(.18, .55, .58), brassMat);
+
+  [-4.2, 4.2].forEach(trackOffset => {
+    const trackZ = cz + trackOffset;
     box('Lighting track', new pc.Vec3(cx, 5.82, trackZ), new pc.Vec3(8, .06, .06), darkMat);
     [-3.5, 0, 3.5].forEach(offset => {
       const light = new pc.Entity('Gallery spotlight');
       light.addComponent('light', { type: 'omni', color: new pc.Color(1, .86, .68), intensity: index === 2 ? 1.25 : 1.12, range: 7.4, castShadows: false });
-      light.setPosition(cx + offset, 4.55, trackZ * .82);
+      light.setPosition(cx + offset, 4.55, cz + trackOffset * .82);
       app.root.addChild(light);
       box('Spot housing', new pc.Vec3(cx + offset, 5.7, trackZ), new pc.Vec3(.18, .24, .18), darkMat);
     });
   });
-});
-
-// Outer walls.
-const room0Wall = material('Outer plaster L', galleries[0].wall, { gloss: .16 });
-const lastRoomWall = material('Outer plaster R', galleries[galleries.length - 1].wall, { gloss: .16 });
-box('West outer wall', new pc.Vec3(centers[0] - ROOM_HALF_WIDTH, 3, 0), new pc.Vec3(.28, 6.2, 16), room0Wall);
-box('East outer wall', new pc.Vec3(centers.at(-1)! + ROOM_HALF_WIDTH, 3, 0), new pc.Vec3(.28, 6.2, 16), lastRoomWall);
-
-// Internal walls are interrupted by tall, aligned portals.
-const boundaries = centers.slice(0, -1).map(center => center + ROOM_HALF_WIDTH);
-boundaries.forEach((x, i) => {
-  const leftMat = material(`Portal plaster ${i}`, galleries[i].wall, { gloss: .16 });
-  box('Portal wall north', new pc.Vec3(x, 3, -5), new pc.Vec3(.28, 6.2, 6), leftMat);
-  box('Portal wall south', new pc.Vec3(x, 3, 5), new pc.Vec3(.28, 6.2, 6), leftMat);
-  box('Portal lintel', new pc.Vec3(x, 5.3, 0), new pc.Vec3(.32, 1.6, 4), leftMat);
-  box('Portal brass edge N', new pc.Vec3(x + .02, 2.25, -2.02), new pc.Vec3(.35, 4.5, .07), brassMat);
-  box('Portal brass edge S', new pc.Vec3(x + .02, 2.25, 2.02), new pc.Vec3(.35, 4.5, .07), brassMat);
 });
 
 function loadTexture(url: string): Promise<pc.Texture> {
@@ -216,9 +248,9 @@ const hangingPlans: Hanging[][] = [
     { wall: 'north', along: -3.55, centerY: 3.22, width: 1.7, height: 4.2, frame: 0 },
     { wall: 'north', along: -.85, centerY: 3.05, width: 1.45, height: 3.65, frame: 2 },
     { wall: 'north', along: 2.5, centerY: 3.3, width: 2.05, height: 4.55, frame: 0 },
-    { wall: 'south', along: -3.45, centerY: 3.08, width: 1.6, height: 4.0, frame: 1 },
-    { wall: 'south', along: -.45, centerY: 3.4, width: 1.35, height: 3.4, frame: 3 },
-    { wall: 'south', along: 2.8, centerY: 3.05, width: 1.85, height: 4.25, frame: 2 },
+    { wall: 'east', along: -3.45, centerY: 3.08, width: 1.6, height: 4.0, frame: 1 },
+    { wall: 'east', along: -.45, centerY: 3.4, width: 1.35, height: 3.4, frame: 3 },
+    { wall: 'east', along: 2.8, centerY: 3.05, width: 1.85, height: 4.25, frame: 2 },
     { wall: 'west', along: -5.35, centerY: 3.0, width: 3.0, height: 2.05, frame: 3 },
     { wall: 'west', along: -.75, centerY: 3.55, width: 3.7, height: 2.4, frame: 4 },
     { wall: 'west', along: 4.75, centerY: 2.75, width: 2.8, height: 1.85, frame: 2 }
@@ -226,8 +258,8 @@ const hangingPlans: Hanging[][] = [
   [
     { wall: 'north', along: -3.65, centerY: 3.15, width: 1.45, height: 3.8, frame: 4 },
     { wall: 'north', along: 2.65, centerY: 2.95, width: 1.65, height: 3.55, frame: 2 },
-    { wall: 'south', along: -3.25, centerY: 3.35, width: 1.55, height: 3.9, frame: 3 },
-    { wall: 'south', along: -.2, centerY: 2.85, width: 1.35, height: 3.45, frame: 1 },
+    { wall: 'west', along: -3.25, centerY: 3.35, width: 1.55, height: 3.9, frame: 3 },
+    { wall: 'west', along: -.2, centerY: 2.85, width: 1.35, height: 3.45, frame: 1 },
     { wall: 'east', along: -5.25, centerY: 3.45, width: 3.35, height: 1.75, frame: 3 },
     { wall: 'north', along: -.45, centerY: 3.05, width: 3.75, height: 2.05, frame: 2 },
     { wall: 'east', along: 4.7, centerY: 2.72, width: 2.9, height: 1.6, frame: 4 }
@@ -236,42 +268,41 @@ const hangingPlans: Hanging[][] = [
     { wall: 'north', along: -3.6, centerY: 3.3, width: 1.8, height: 4.35, frame: 1 },
     { wall: 'north', along: -.5, centerY: 2.92, width: 1.35, height: 3.5, frame: 3 },
     { wall: 'north', along: 2.7, centerY: 3.38, width: 2.0, height: 4.55, frame: 0 },
-    { wall: 'south', along: -3.45, centerY: 2.95, width: 1.45, height: 3.65, frame: 4 },
-    { wall: 'south', along: -.55, centerY: 3.38, width: 1.7, height: 4.2, frame: 2 },
-    { wall: 'south', along: 2.9, centerY: 3.12, width: 1.75, height: 3.85, frame: 1 },
+    { wall: 'west', along: -3.45, centerY: 2.95, width: 1.45, height: 3.65, frame: 4 },
+    { wall: 'west', along: -.55, centerY: 3.38, width: 1.7, height: 4.2, frame: 2 },
+    { wall: 'west', along: 2.9, centerY: 3.12, width: 1.75, height: 3.85, frame: 1 },
     { wall: 'east', along: -5.15, centerY: 3.3, width: 3.8, height: 1.9, frame: 4 },
     { wall: 'east', along: 4.75, centerY: 4.25, width: 4.05, height: 2.2, frame: 0 },
     { wall: 'east', along: 4.75, centerY: 1.62, width: 3.0, height: 1.7, frame: 3 }
   ],
   [
-    { wall: 'north', along: -3.45, centerY: 3.2, width: 1.65, height: 4.05, frame: 2 },
-    { wall: 'north', along: -.35, centerY: 3.45, width: 1.45, height: 3.6, frame: 4 },
-    { wall: 'north', along: 3.0, centerY: 3.05, width: 1.8, height: 4.15, frame: 3 },
+    { wall: 'west', along: -3.45, centerY: 3.2, width: 1.65, height: 4.05, frame: 2 },
+    { wall: 'west', along: -.35, centerY: 3.45, width: 1.45, height: 3.6, frame: 4 },
+    { wall: 'west', along: 3.0, centerY: 3.05, width: 1.8, height: 4.15, frame: 3 },
     { wall: 'south', along: -2.85, centerY: 3.25, width: 3.7, height: 1.85, frame: 3 },
     { wall: 'south', along: 2.75, centerY: 2.95, width: 3.25, height: 1.65, frame: 1 }
   ],
   [
-    { wall: 'north', along: -3.5, centerY: 3.25, width: 1.6, height: 4.0, frame: 0 },
-    { wall: 'north', along: -.35, centerY: 3.0, width: 1.5, height: 3.75, frame: 3 },
-    { wall: 'north', along: 2.95, centerY: 3.35, width: 1.75, height: 4.2, frame: 2 },
+    { wall: 'east', along: -3.5, centerY: 3.25, width: 1.6, height: 4.0, frame: 0 },
+    { wall: 'east', along: -.35, centerY: 3.0, width: 1.5, height: 3.75, frame: 3 },
+    { wall: 'east', along: 2.95, centerY: 3.35, width: 1.75, height: 4.2, frame: 2 },
     { wall: 'south', along: -2.8, centerY: 3.15, width: 3.65, height: 1.82, frame: 2 },
     { wall: 'south', along: 2.8, centerY: 3.0, width: 3.3, height: 1.65, frame: 4 }
+  ],
+  [
+    { wall: 'south', along: -2.4, centerY: 3.15, width: 2.2, height: 3.05, frame: 4 },
+    { wall: 'south', along: 2.4, centerY: 3.15, width: 2.2, height: 3.05, frame: 0 },
+    { wall: 'west', along: -3.2, centerY: 3.15, width: 2.2, height: 3.05, frame: 3 },
+    { wall: 'west', along: 2.1, centerY: 3.15, width: 2.2, height: 3.05, frame: 1 },
+    { wall: 'east', along: -3.2, centerY: 3.15, width: 2.2, height: 3.05, frame: 2 },
+    { wall: 'east', along: 2.1, centerY: 3.15, width: 2.2, height: 3.05, frame: 4 }
   ]
 ];
 
-const DOORWAY_HALF_WIDTH = 2.05;
-const DOORWAY_ART_CLEARANCE = .3;
-
 function findDoorwayViolations() {
   return hangingPlans.flatMap((plan, room) => plan.flatMap((hanging, work) => {
-    const facesInternalDoorway = (hanging.wall === 'west' && room > 0) ||
-      (hanging.wall === 'east' && room < hangingPlans.length - 1);
-    if (!facesInternalDoorway) return [];
-    const frameHalfWidth = (hanging.width + .2) / 2;
-    const clearance = Math.abs(hanging.along) - frameHalfWidth - DOORWAY_HALF_WIDTH;
-    return clearance < DOORWAY_ART_CLEARANCE
-      ? [{ room, work, wall: hanging.wall, clearance }]
-      : [];
+    const entranceWall: Wall = rooms[room].row === 'north' ? 'south' : 'north';
+    return hanging.wall === entranceWall ? [{ room, work, wall: hanging.wall }] : [];
   }));
 }
 
@@ -282,22 +313,22 @@ if (doorwayViolations.length) {
 
 const artworkPositions: { room: number; work: number; position: pc.Vec3 }[] = [];
 
-function wallTransform(cx: number, hanging: Hanging, depth: number) {
-  if (hanging.wall === 'north') return { position: new pc.Vec3(cx + hanging.along, hanging.centerY, -8 + depth), rotation: 0 };
-  if (hanging.wall === 'south') return { position: new pc.Vec3(cx + hanging.along, hanging.centerY, 8 - depth), rotation: 180 };
-  if (hanging.wall === 'west') return { position: new pc.Vec3(cx - 6 + depth, hanging.centerY, hanging.along), rotation: 90 };
-  return { position: new pc.Vec3(cx + 6 - depth, hanging.centerY, hanging.along), rotation: -90 };
+function wallTransform(room: number, hanging: Hanging, depth: number) {
+  const { cx, cz } = rooms[room];
+  if (hanging.wall === 'north') return { position: new pc.Vec3(cx + hanging.along, hanging.centerY, cz - ROOM_HALF_DEPTH + depth), rotation: 0 };
+  if (hanging.wall === 'south') return { position: new pc.Vec3(cx + hanging.along, hanging.centerY, cz + ROOM_HALF_DEPTH - depth), rotation: 180 };
+  if (hanging.wall === 'west') return { position: new pc.Vec3(cx - ROOM_HALF_WIDTH + depth, hanging.centerY, cz + hanging.along), rotation: 90 };
+  return { position: new pc.Vec3(cx + ROOM_HALF_WIDTH - depth, hanging.centerY, cz + hanging.along), rotation: -90 };
 }
 
-function wallBox(name: string, cx: number, hanging: Hanging, depth: number, width: number, height: number, thickness: number, mat: pc.Material) {
-  const transform = wallTransform(cx, hanging, depth);
+function wallBox(name: string, room: number, hanging: Hanging, depth: number, width: number, height: number, thickness: number, mat: pc.Material) {
+  const transform = wallTransform(room, hanging, depth);
   const entity = box(name, transform.position, new pc.Vec3(width, height, thickness), mat);
   entity.setEulerAngles(0, transform.rotation, 0);
   return entity;
 }
 
 async function hangArtwork(room: number, work: number, texture: pc.Texture) {
-  const cx = centers[room];
   const hanging = hangingPlans[room][work];
   const canvasMat = new pc.StandardMaterial();
   canvasMat.name = galleries[room].works[work].title;
@@ -308,14 +339,14 @@ async function hangArtwork(room: number, work: number, texture: pc.Texture) {
   canvasMat.update();
 
   const border = hanging.frame === 1 ? .11 : hanging.frame === 4 ? .16 : .2;
-  wallBox('Artwork outer frame', cx, hanging, .27, hanging.width + border, hanging.height + border, .17, frameMaterials[hanging.frame]);
-  wallBox('Frame inset', cx, hanging, .39, hanging.width + .055, hanging.height + .055, .1, darkMat);
-  wallBox(galleries[room].works[work].title, cx, hanging, .47, hanging.width, hanging.height, .065, canvasMat);
+  wallBox('Artwork outer frame', room, hanging, .27, hanging.width + border, hanging.height + border, .17, frameMaterials[hanging.frame]);
+  wallBox('Frame inset', room, hanging, .39, hanging.width + .055, hanging.height + .055, .1, darkMat);
+  wallBox(galleries[room].works[work].title, room, hanging, .47, hanging.width, hanging.height, .065, canvasMat);
 
   const labelHanging = { ...hanging, centerY: Math.max(.38, hanging.centerY - hanging.height / 2 - .23) };
-  wallBox('Artwork label', cx, labelHanging, .45, Math.min(.7, hanging.width * .45), .16, .055, plaqueMat);
+  wallBox('Artwork label', room, labelHanging, .45, Math.min(.7, hanging.width * .45), .16, .055, plaqueMat);
 
-  const viewPoint = wallTransform(cx, { ...hanging, centerY: 1.68 }, 1.35).position;
+  const viewPoint = wallTransform(room, { ...hanging, centerY: 1.68 }, 1.35).position;
   artworkPositions.push({ room, work, position: viewPoint });
 }
 
@@ -328,7 +359,7 @@ const textureJobs = galleries.flatMap((gallery, room) => gallery.works.map((work
 const EYE_HEIGHT = 2.08;
 const camera = new pc.Entity('Visitor camera');
 camera.addComponent('camera', { clearColor: new pc.Color(.055, .052, .045), farClip: 95, nearClip: .08, fov: 65 });
-camera.setPosition(centers[0], EYE_HEIGHT, 5.2);
+camera.setPosition(rooms[0].cx, EYE_HEIGHT, rooms[0].cz + 4.7);
 app.root.addChild(camera);
 
 let yaw = 0;
@@ -357,8 +388,10 @@ const root = document.documentElement;
 
 function setRoom(index: number, teleport = false) {
   if (teleport) {
-    camera.setPosition(centers[index], EYE_HEIGHT, 4.7);
-    yaw = 0; pitch = -2;
+    const room = rooms[index];
+    camera.setPosition(room.cx, EYE_HEIGHT, room.cz + (room.row === 'north' ? 4.7 : -4.7));
+    yaw = room.row === 'north' ? 0 : 180;
+    pitch = -2;
   }
   if (currentRoom === index && !teleport) return;
   currentRoom = index;
@@ -436,6 +469,13 @@ function updateCard() {
   artCard.classList.add('visible');
 }
 
+function isWalkable(x: number, z: number) {
+  const inConcourse = x > -21.55 && x < 21.55 && z > -4.45 && z < 4.45;
+  const inGallery = rooms.some(room => Math.abs(x - room.cx) < 5.45 && Math.abs(z - room.cz) < 7.45);
+  const inPortal = rooms.some(room => Math.abs(x - room.cx) < 1.82 && Math.abs(z - (room.row === 'north' ? -5 : 5)) < .75);
+  return inConcourse || inGallery || inPortal;
+}
+
 app.on('update', (dt: number) => {
   camera.setEulerAngles(pitch, yaw, 0);
   if (!panelOpen) {
@@ -450,22 +490,15 @@ app.on('update', (dt: number) => {
       move.normalize().mulScalar(Math.min(dt, .04) * 3.25);
       const old = camera.getPosition().clone();
       const next = old.clone().add(move);
-      const minX = centers[0] - ROOM_HALF_WIDTH + .55;
-      const maxX = centers.at(-1)! + ROOM_HALF_WIDTH - .55;
-      next.x = Math.max(minX, Math.min(maxX, next.x));
-      next.z = Math.max(-7.35, Math.min(7.35, next.z));
-      // Keep visitors from walking through the internal walls outside their door openings.
-      for (const boundary of boundaries) {
-        if ((old.x - boundary) * (next.x - boundary) < 0 && Math.abs(next.z) > 1.82) {
-          next.x = boundary + (old.x < boundary ? -.22 : .22);
-        }
-      }
-      camera.setPosition(next.x, EYE_HEIGHT, next.z);
+      // Resolve axes independently so the visitor slides along walls instead of sticking.
+      const resolvedX = isWalkable(next.x, old.z) ? next.x : old.x;
+      const resolvedZ = isWalkable(resolvedX, next.z) ? next.z : old.z;
+      camera.setPosition(resolvedX, EYE_HEIGHT, resolvedZ);
     }
   }
-  const x = camera.getPosition().x;
-  const room = Math.max(0, Math.min(galleries.length - 1, Math.floor((x - centers[0] + ROOM_HALF_WIDTH) / ROOM_WIDTH)));
-  if (room !== currentRoom) setRoom(room);
+  const position = camera.getPosition();
+  const occupiedRoom = rooms.findIndex(room => Math.abs(position.x - room.cx) < ROOM_HALF_WIDTH && Math.abs(position.z - room.cz) < ROOM_HALF_DEPTH);
+  if (occupiedRoom >= 0 && occupiedRoom !== currentRoom) setRoom(occupiedRoom);
   updateCard();
 });
 
@@ -477,7 +510,7 @@ Promise.all(textureJobs).finally(() => {
 // Exposed only for deterministic layout and smoke tests.
 const testWindow = window as unknown as {
   museumReady: boolean;
-  museumLayout: { doorwayViolations: ReturnType<typeof findDoorwayViolations> };
+  museumLayout: { doorwayViolations: ReturnType<typeof findDoorwayViolations>; topology: 'concourse'; roomCount: number };
 };
 testWindow.museumReady = true;
-testWindow.museumLayout = { doorwayViolations };
+testWindow.museumLayout = { doorwayViolations, topology: 'concourse', roomCount: rooms.length };

@@ -5,21 +5,23 @@ test('loads the 3D museum and curatorial interface', async ({ page }) => {
   await expect(page).toHaveTitle(/Impossible Collection/);
   await expect(page.locator('#museum')).toBeVisible();
   await expect(page.locator('.curator h1')).toContainText('The Court');
-  await expect(page.locator('.gallery-nav button')).toHaveCount(5);
+  await expect(page.locator('.gallery-nav button')).toHaveCount(6);
   await expect(page.locator('.curator-footer span').first()).toHaveText('9 works');
   await expect.poll(() => page.evaluate(() => (window as unknown as { museumReady?: boolean }).museumReady)).toBe(true);
   await expect(page.locator('#loading')).toHaveClass(/done/, { timeout: 15_000 });
 });
 
-test('no artwork overlaps an internal doorway', async ({ page }) => {
+test('uses a six-room concourse layout with clear doorways', async ({ page }) => {
   await page.goto('/');
-  const violations = await page.evaluate(() => (
-    window as unknown as { museumLayout: { doorwayViolations: unknown[] } }
-  ).museumLayout.doorwayViolations);
-  expect(violations).toEqual([]);
+  const layout = await page.evaluate(() => (
+    window as unknown as { museumLayout: { doorwayViolations: unknown[]; topology: string; roomCount: number } }
+  ).museumLayout);
+  expect(layout.doorwayViolations).toEqual([]);
+  expect(layout.topology).toBe('concourse');
+  expect(layout.roomCount).toBe(6);
 });
 
-test('can move between all five galleries', async ({ page }) => {
+test('can teleport between all six galleries', async ({ page }) => {
   await page.goto('/');
   await page.locator('.gallery-nav button').nth(1).click();
   await expect(page.locator('.curator h1')).toContainText('Objects');
@@ -38,6 +40,11 @@ test('can move between all five galleries', async ({ page }) => {
   await expect(page.locator('.curator h1')).toContainText('Minor Gods');
   await expect(page.locator('#room-index')).toHaveText('05');
   await expect(page.locator('.gallery-nav button').nth(4)).toHaveClass(/active/);
+
+  await page.locator('.gallery-nav button').nth(5).click();
+  await expect(page.locator('.curator h1')).toContainText('Night');
+  await expect(page.locator('#room-index')).toHaveText('06');
+  await expect(page.locator('.curator-footer span').first()).toHaveText('6 works');
 });
 
 test('enter control dismisses the curator note', async ({ page }) => {

@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
-    "test": "playwright test",
+    "test": "bun run build && playwright test",
     "art:night-garden": "node scripts/generate-night-garden.mjs --all"
   },
   "dependencies": {
