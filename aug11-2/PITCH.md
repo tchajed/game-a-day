@@ -1,5 +1,5 @@
 # Museum of Ordinary Things
 
-**Enter a museum where the impossible is treated as perfectly ordinary.** Wander seven atmospheric rooms, inspect forty-two uncanny paintings, and browse the collection catalogue to discover fox aristocrats, seated thunderstorms, nocturnal gardens, and the quiet logic connecting them all.
+**Enter a museum of perfectly ordinary AI art.** Wander through perfectly curated art and look at some paintings. What does it all mean?
 
 ![The Portraits and Personages gallery](screenshots/museum-entry.png)
