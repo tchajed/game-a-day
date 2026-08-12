@@ -60,6 +60,32 @@ const galleries: Gallery[] = [
       { title: 'Obsidian Weather', subtitle: 'Sublime oil · Dark velatura', image: '/art/worlds-8.webp' },
       { title: 'The Seed Observatory', subtitle: 'Tonal oil · Rough linen', image: '/art/worlds-9.webp' }
     ]
+  },
+  {
+    title: 'The Department of Impossible Weather',
+    heading: 'Impossible<br><em>Weather</em>',
+    note: 'Here weather has abandoned scale, direction and duty. A storm may become furniture, a guest, or private property. These works invite us to regard the atmosphere not as background, but as an eccentric social presence.',
+    accent: '#a9c9ff', wall: '#69737d',
+    works: [
+      { title: 'The Storm Takes a Seat', subtitle: 'Tonal oil · Soft-brushed canvas', image: '/art/weather-1.webp' },
+      { title: 'Procession at Barometric Dusk', subtitle: 'Metaphysical oil · Matte linen', image: '/art/weather-2.webp' },
+      { title: 'Rain, Reconsidering Gravity', subtitle: 'Glazed oil · Impasto highlights', image: '/art/weather-3.webp' },
+      { title: 'Private Storms in the Orchard', subtitle: 'Post-Impressionist oil · Coarse weave', image: '/art/weather-4.webp' },
+      { title: 'Dinner with the Sea Fog', subtitle: 'Surrealist oil · Silver ground', image: '/art/weather-5.webp' }
+    ]
+  },
+  {
+    title: 'Minor Gods at Work',
+    heading: 'Minor Gods<br>at <em>Work</em>',
+    note: 'Divinity is usually pictured at the instant of revelation. This gallery attends instead to maintenance: ironing, watering, mending, folding and baking. Even eternity, it seems, depends upon small repeated gestures.',
+    accent: '#ffd36a', wall: '#7a6d59',
+    works: [
+      { title: 'The Domestic Aspect', subtitle: 'Genre oil · Warm linen', image: '/art/gods-1.webp' },
+      { title: 'River God, Third Floor', subtitle: 'Contemporary oil · Simple grain', image: '/art/gods-2.webp' },
+      { title: 'Roadside Assistance, 2:13 AM', subtitle: 'Romantic oil · Moonlit glazing', image: '/art/gods-3.webp' },
+      { title: 'Patron of Lost Socks', subtitle: 'Social realist oil · Moss impasto', image: '/art/gods-4.webp' },
+      { title: 'Before the First Loaf', subtitle: 'Symbolist oil · Golden ground', image: '/art/gods-5.webp' }
+    ]
   }
 ];
 
@@ -128,7 +154,9 @@ function box(name: string, position: pc.Vec3, scale: pc.Vec3, mat: pc.Material, 
 }
 
 // One continuous enfilade: three rooms connected by aligned doorways.
-const centers = [-12, 0, 12];
+const ROOM_WIDTH = 12;
+const ROOM_HALF_WIDTH = ROOM_WIDTH / 2;
+const centers = [-24, -12, 0, 12, 24];
 centers.forEach((cx, index) => {
   const wallMat = material(`Gallery ${index + 1} plaster`, galleries[index].wall, { gloss: .16 });
   box(`Gallery ${index + 1} floor`, new pc.Vec3(cx, -.16, 0), new pc.Vec3(12, .3, 16), floorMat);
@@ -154,12 +182,13 @@ centers.forEach((cx, index) => {
 
 // Outer walls.
 const room0Wall = material('Outer plaster L', galleries[0].wall, { gloss: .16 });
-const room2Wall = material('Outer plaster R', galleries[2].wall, { gloss: .16 });
-box('West outer wall', new pc.Vec3(-18, 3, 0), new pc.Vec3(.28, 6.2, 16), room0Wall);
-box('East outer wall', new pc.Vec3(18, 3, 0), new pc.Vec3(.28, 6.2, 16), room2Wall);
+const lastRoomWall = material('Outer plaster R', galleries[galleries.length - 1].wall, { gloss: .16 });
+box('West outer wall', new pc.Vec3(centers[0] - ROOM_HALF_WIDTH, 3, 0), new pc.Vec3(.28, 6.2, 16), room0Wall);
+box('East outer wall', new pc.Vec3(centers.at(-1)! + ROOM_HALF_WIDTH, 3, 0), new pc.Vec3(.28, 6.2, 16), lastRoomWall);
 
 // Internal walls are interrupted by tall, aligned portals.
-[-6, 6].forEach((x, i) => {
+const boundaries = centers.slice(0, -1).map(center => center + ROOM_HALF_WIDTH);
+boundaries.forEach((x, i) => {
   const leftMat = material(`Portal plaster ${i}`, galleries[i].wall, { gloss: .16 });
   box('Portal wall north', new pc.Vec3(x, 3, -5), new pc.Vec3(.28, 6.2, 6), leftMat);
   box('Portal wall south', new pc.Vec3(x, 3, 5), new pc.Vec3(.28, 6.2, 6), leftMat);
@@ -213,6 +242,20 @@ const hangingPlans: Hanging[][] = [
     { wall: 'east', along: -5.15, centerY: 3.3, width: 3.8, height: 1.9, frame: 4 },
     { wall: 'east', along: -.35, centerY: 3.42, width: 4.05, height: 2.2, frame: 0 },
     { wall: 'east', along: 4.75, centerY: 2.7, width: 3.0, height: 1.7, frame: 3 }
+  ],
+  [
+    { wall: 'north', along: -3.45, centerY: 3.2, width: 1.65, height: 4.05, frame: 2 },
+    { wall: 'north', along: -.35, centerY: 3.45, width: 1.45, height: 3.6, frame: 4 },
+    { wall: 'north', along: 3.0, centerY: 3.05, width: 1.8, height: 4.15, frame: 3 },
+    { wall: 'south', along: -2.85, centerY: 3.25, width: 3.7, height: 1.85, frame: 3 },
+    { wall: 'south', along: 2.75, centerY: 2.95, width: 3.25, height: 1.65, frame: 1 }
+  ],
+  [
+    { wall: 'north', along: -3.5, centerY: 3.25, width: 1.6, height: 4.0, frame: 0 },
+    { wall: 'north', along: -.35, centerY: 3.0, width: 1.5, height: 3.75, frame: 3 },
+    { wall: 'north', along: 2.95, centerY: 3.35, width: 1.75, height: 4.2, frame: 2 },
+    { wall: 'south', along: -2.8, centerY: 3.15, width: 3.65, height: 1.82, frame: 2 },
+    { wall: 'south', along: 2.8, centerY: 3.0, width: 3.3, height: 1.65, frame: 4 }
   ]
 ];
 
@@ -263,8 +306,8 @@ const textureJobs = galleries.flatMap((gallery, room) => gallery.works.map((work
 // the salon-style upper hangings comfortably visible without looking upward sharply.
 const EYE_HEIGHT = 2.08;
 const camera = new pc.Entity('Visitor camera');
-camera.addComponent('camera', { clearColor: new pc.Color(.055, .052, .045), farClip: 70, nearClip: .08, fov: 65 });
-camera.setPosition(-12, EYE_HEIGHT, 5.2);
+camera.addComponent('camera', { clearColor: new pc.Color(.055, .052, .045), farClip: 95, nearClip: .08, fov: 65 });
+camera.setPosition(centers[0], EYE_HEIGHT, 5.2);
 app.root.addChild(camera);
 
 let yaw = 0;
@@ -307,7 +350,8 @@ function setRoom(index: number, teleport = false) {
   footerCounts[0].textContent = `${gallery.works.length} works`;
   footerCounts[1].textContent = 'Oil on canvas · 2025';
   roomIndex.textContent = `0${index + 1}`;
-  progressLine.style.background = `linear-gradient(90deg, ${gallery.accent} ${(index + 1) * 33.333}%, #777 ${(index + 1) * 33.333}%)`;
+  const progress = (index + 1) / galleries.length * 100;
+  progressLine.style.background = `linear-gradient(90deg, ${gallery.accent} ${progress}%, #777 ${progress}%)`;
   root.style.setProperty('--acid', gallery.accent);
   if (teleport) {
     panelOpen = true;
@@ -385,10 +429,12 @@ app.on('update', (dt: number) => {
       move.normalize().mulScalar(Math.min(dt, .04) * 3.25);
       const old = camera.getPosition().clone();
       const next = old.clone().add(move);
-      next.x = Math.max(-17.45, Math.min(17.45, next.x));
+      const minX = centers[0] - ROOM_HALF_WIDTH + .55;
+      const maxX = centers.at(-1)! + ROOM_HALF_WIDTH - .55;
+      next.x = Math.max(minX, Math.min(maxX, next.x));
       next.z = Math.max(-7.35, Math.min(7.35, next.z));
       // Keep visitors from walking through the internal walls outside their door openings.
-      for (const boundary of [-6, 6]) {
+      for (const boundary of boundaries) {
         if ((old.x - boundary) * (next.x - boundary) < 0 && Math.abs(next.z) > 1.82) {
           next.x = boundary + (old.x < boundary ? -.22 : .22);
         }
@@ -397,7 +443,7 @@ app.on('update', (dt: number) => {
     }
   }
   const x = camera.getPosition().x;
-  const room = x < -6 ? 0 : x < 6 ? 1 : 2;
+  const room = Math.max(0, Math.min(galleries.length - 1, Math.floor((x - centers[0] + ROOM_HALF_WIDTH) / ROOM_WIDTH)));
   if (room !== currentRoom) setRoom(room);
   updateCard();
 });
