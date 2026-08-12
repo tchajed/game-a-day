@@ -1,9 +1,9 @@
 # Northstar Ledger
 
-**The books balance. The boats don't.** You have six working days before the board shuts down an unprofitable ferry route. Interrogate the spreadsheet, choose which costly records to audit, and follow the replies from captains, clerks, and passengers toward an island that officially does not exist. Northstar Ledger is a five-minute accounting mystery where every cell is a question, every audit spends precious time, and the truth must survive the boardroom.
+**Every number tells a story—if you ask the right question.** Learn the ropes by finding unused room on a ferry, solve an honest ticketing mistake, then leap ahead to a boardroom crisis involving secret voyages and an island erased from the map. Northstar Ledger is a three-part, five-minute auditing mystery built around just three tools: read the report, choose an audit, and listen to the people behind the cells.
 
 ## Screenshots
 
-![Northstar Ledger spreadsheet and audit interface](screenshots/ledger.png)
+![Northstar Ledger three-tool report interface](screenshots/ledger.png)
 
-![North Reef case file](screenshots/case-file.png)
+![Choosing an audit in the North Reef mystery](screenshots/case-file.png)
