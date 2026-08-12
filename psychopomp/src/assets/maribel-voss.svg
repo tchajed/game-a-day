@@ -1,0 +1,64 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 360" role="img" aria-labelledby="title desc">
+  <title id="title">Maribel Voss, onboarding facilitator</title>
+  <desc id="desc">A cheerful human facilitator in a warm orange jacket, carrying an overfilled clipboard.</desc>
+  <defs>
+    <linearGradient id="jacket" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#f19a56"/>
+      <stop offset=".5" stop-color="#ca6042"/>
+      <stop offset="1" stop-color="#863c3d"/>
+    </linearGradient>
+    <linearGradient id="skin" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#d98a69"/>
+      <stop offset="1" stop-color="#9d4f47"/>
+    </linearGradient>
+    <linearGradient id="paper" x1="0" y1="0" x2="0" y2="1">
+      <stop stop-color="#f7dda7"/>
+      <stop offset="1" stop-color="#cba96e"/>
+    </linearGradient>
+  </defs>
+
+  <!-- grounded, practical legs -->
+  <path d="m73 243 33 1-7 98-34 1Z" fill="#342432" stroke="#171018" stroke-width="5"/>
+  <path d="m110 243 32-3 13 101-35 1Z" fill="#49303b" stroke="#171018" stroke-width="5"/>
+  <path d="m63 337 39-2 8 14H53Z" fill="#171219"/>
+  <path d="m120 336 38-2 15 15h-53Z" fill="#191319"/>
+  <path d="M87 251 79 333M130 250l12 82" stroke="#795044" stroke-opacity=".5" stroke-width="2"/>
+
+  <!-- warm, rounded jacket -->
+  <path d="M53 132 81 111l58 3 31 31-20 108-90-2-19-82Z" fill="url(#jacket)" stroke="#26151d" stroke-width="6" stroke-linejoin="round"/>
+  <path d="m82 113 27 43 30-42-8 87H91Z" fill="#f5a55e"/>
+  <path d="m109 156-18 45 36 1Z" fill="#7f3840" opacity=".85"/>
+  <path d="M59 139 45 215l22 8 23-73Z" fill="#d36a48" stroke="#26151d" stroke-width="5"/>
+  <path d="m151 136 34 65-20 13-42-65Z" fill="#b84f40" stroke="#26151d" stroke-width="5"/>
+  <path d="M61 249h87" stroke="#ef9d59" stroke-opacity=".55" stroke-width="3"/>
+
+  <!-- HR badge -->
+  <g transform="translate(60 162) rotate(-3)">
+    <path d="M0 0h35v23H2Z" fill="#f5c975" stroke="#8c4939" stroke-width="2"/>
+    <text x="7" y="16" fill="#301b22" font-family="monospace" font-size="12" font-weight="700">HR</text>
+  </g>
+
+  <!-- clipboard tucked into a perpetually busy arm -->
+  <g transform="translate(164 191) rotate(-8)">
+    <path d="M0 0h49v73H0Z" fill="url(#paper)" stroke="#32202a" stroke-width="5"/>
+    <path d="M14-6h21v12H14Z" fill="#794247" stroke="#32202a" stroke-width="3"/>
+    <path d="M10 21h29M10 34h25M10 47h30M10 60h20" stroke="#82665a" stroke-width="3" stroke-linecap="round"/>
+    <path d="m36 16 4 4 8-10" fill="none" stroke="#b85b42" stroke-width="3"/>
+  </g>
+  <path d="m158 197 19 29" stroke="#a34d42" stroke-width="13" stroke-linecap="round"/>
+  <path d="m174 224 10 9" stroke="#d48364" stroke-width="10" stroke-linecap="round"/>
+
+  <!-- expressive head and excellent hair -->
+  <path d="m91 115 3-23 36-2 5 29Z" fill="#a65148"/>
+  <path d="M74 39 103 20l39 14 16 32-12 47-36 19-41-28-5-40Z" fill="url(#skin)" stroke="#281720" stroke-width="6" stroke-linejoin="round"/>
+  <path d="M68 73 63 48l29-33 42 2 28 25-9 25-19-8-8-24-33 19-5 34Z" fill="#382330"/>
+  <path d="M139 24q31-18 44 6 8 20-13 31l-18-1-12-21Z" fill="#3a2431"/>
+  <path d="m74 47 23-27 39 1" fill="none" stroke="#5b3540" stroke-width="5" stroke-linecap="round"/>
+  <!-- bright, slightly over-enthusiastic face -->
+  <path d="m89 70 10-4 8 7-11 5Z" fill="#2a1821"/>
+  <path d="m122 67 10 1 4 8-12-1Z" fill="#2a1821"/>
+  <circle cx="100" cy="71" r="2" fill="#efb56f"/>
+  <circle cx="129" cy="72" r="2" fill="#efb56f"/>
+  <path d="M102 101q18 13 31-5" fill="none" stroke="#6c3034" stroke-width="4" stroke-linecap="round"/>
+  <path d="m111 79-5 11 10 2" fill="none" stroke="#9b4b45" stroke-width="3" stroke-linejoin="round"/>
+</svg>

@@ -1,4 +1,7 @@
 import "./styles.css";
+import bixSpriteUrl from "./assets/bix.svg";
+import maribelSpriteUrl from "./assets/maribel-voss.svg";
+import nixSpriteUrl from "./assets/nix-hollow-cowl.svg";
 
 type NpcId = "maribel" | "bix";
 type DialogueLine = { speaker: string; text: string; option: string };
@@ -56,6 +59,12 @@ const TALK_RANGE = 170;
 const player = { x: 1080, facing: 1, walking: false };
 const keys = new Set<string>();
 const met = new Set<NpcId>();
+const maribelSprite = new Image();
+maribelSprite.src = maribelSpriteUrl;
+const bixSprite = new Image();
+bixSprite.src = bixSpriteUrl;
+const nixSprite = new Image();
+nixSprite.src = nixSpriteUrl;
 const npcs: Npc[] = [
   {
     id: "maribel",
@@ -259,96 +268,57 @@ function drawSign(x: number, y: number) {
 
 function drawClipboardHuman(x: number, y: number, t: number) {
   const bob = Math.sin(t * 2.2) * 2;
+  const spriteWidth = 153;
+  const spriteHeight = 250;
   ctx.save();
   ctx.translate(x, y + bob);
-  // shadow
   ctx.fillStyle = "rgba(10,6,9,.35)";
-  ctx.beginPath(); ctx.ellipse(0, 6, 48, 10, 0, 0, Math.PI * 2); ctx.fill();
-  // legs and shoes
-  poly([[-22, -69], [-3, -69], [-8, -8], [-27, -7]], "#372433", "#171018", 3);
-  poly([[4, -68], [24, -65], [31, -10], [11, -7]], "#4b2b37", "#171018", 3);
-  poly([[-34, -12], [-7, -12], [-4, 0], [-38, 0]], "#171318");
-  poly([[10, -12], [39, -9], [39, 1], [8, 0]], "#171318");
-  // jacket
-  poly([[-38, -154], [-20, -178], [23, -179], [43, -147], [26, -68], [-27, -69]], "#d06b48", "#26141d", 4);
-  poly([[-20, -178], [0, -155], [23, -179], [11, -116], [-8, -116]], "#ee9a58");
-  // arm + clipboard
-  poly([[31, -153], [55, -111], [42, -103], [18, -139]], "#c85f42", "#26141d", 3);
-  ctx.save(); ctx.translate(48, -102); ctx.rotate(-.14);
-  ctx.fillStyle = "#f0d39b"; ctx.fillRect(-18, -24, 37, 49);
-  ctx.strokeStyle = "#3b2530"; ctx.lineWidth = 2; ctx.strokeRect(-18, -24, 37, 49);
-  ctx.fillStyle = "#7b3e3c"; ctx.fillRect(-8, -28, 17, 7);
-  line([[-10, -12], [12, -12]], "#8a6b5d", 2); line([[-10, -3], [9, -3]], "#8a6b5d", 2); line([[-10, 6], [13, 6]], "#8a6b5d", 2);
-  ctx.restore();
-  // neck/head/hair
-  poly([[-10, -188], [12, -188], [13, -170], [-8, -170]], "#a95a46");
-  poly([[-23, -224], [-4, -239], [21, -224], [18, -188], [-4, -176], [-25, -194]], "#bd6f54", "#26141d", 4);
-  poly([[-27, -217], [-12, -239], [15, -235], [27, -218], [14, -212], [7, -226], [-21, -213]], "#36202c");
-  ctx.fillStyle = "#36202c"; ctx.beginPath(); ctx.arc(23, -229, 14, 0, Math.PI * 2); ctx.fill();
-  // features
-  poly([[-8, -209], [-1, -212], [2, -207], [-5, -205]], "#2b1821");
-  line([[4, -192], [13, -194], [16, -199]], "#6c2f32", 2);
-  // badge
-  ctx.fillStyle = "#f5c671"; ctx.fillRect(-25, -146, 25, 16);
-  ctx.fillStyle = "#2b1720"; ctx.font = "600 9px 'DM Mono'"; ctx.fillText("HR", -20, -135);
+  ctx.beginPath();
+  ctx.ellipse(4, 6, 48, 10, 0, 0, Math.PI * 2);
+  ctx.fill();
+  if (maribelSprite.complete && maribelSprite.naturalWidth > 0) {
+    ctx.drawImage(maribelSprite, -spriteWidth / 2, -spriteHeight, spriteWidth, spriteHeight);
+  }
   ctx.restore();
 }
 
 function drawDog(x: number, y: number, t: number) {
   const bob = Math.sin(t * 4) * 2;
-  ctx.save(); ctx.translate(x, y + bob);
-  ctx.fillStyle = "rgba(10,6,9,.35)"; ctx.beginPath(); ctx.ellipse(0, 5, 62, 11, 0, 0, Math.PI * 2); ctx.fill();
-  // wagging tail
-  const wag = Math.sin(t * 8) * .38;
-  ctx.save(); ctx.translate(45, -62); ctx.rotate(wag);
-  poly([[0, 0], [29, -39], [43, -36], [23, 1]], "#cc814a", "#24151c", 4); ctx.restore();
-  // legs
-  poly([[-37, -47], [-17, -46], [-20, 0], [-39, 0]], "#b96842", "#24151c", 3);
-  poly([[20, -47], [39, -43], [40, 0], [20, 0]], "#c87845", "#24151c", 3);
-  // body and vest
-  poly([[-47, -92], [28, -99], [52, -72], [40, -36], [-35, -37], [-58, -62]], "#d58b4d", "#24151c", 4);
-  poly([[-25, -97], [25, -99], [45, -70], [35, -50], [-22, -49]], "#7d3c43", "#24151c", 3);
-  poly([[-20, -90], [5, -90], [1, -67], [-24, -68]], "#edb85f");
-  ctx.fillStyle = "#30202a"; ctx.font = "600 10px 'DM Mono'"; ctx.fillText("L2", -17, -75);
-  // neck/head
-  poly([[-49, -95], [-38, -126], [-8, -141], [22, -121], [26, -89], [-4, -71], [-38, -78]], "#d78a4e", "#24151c", 4);
-  // ears
-  poly([[-42, -122], [-48, -170], [-15, -139]], "#b86443", "#24151c", 4);
-  poly([[-5, -141], [18, -172], [20, -121]], "#c67345", "#24151c", 4);
-  poly([[-39, -132], [-43, -158], [-25, -140]], "#6f3940");
-  poly([[3, -141], [15, -160], [15, -131]], "#6f3940");
-  // muzzle and face
-  poly([[-34, -111], [-10, -121], [14, -108], [5, -88], [-24, -88]], "#edb86e", "#24151c", 3);
-  poly([[7, -111], [18, -104], [7, -98], [0, -104]], "#24151c");
-  poly([[-28, -125], [-19, -131], [-12, -124], [-20, -120]], "#24151c");
-  line([[-13, -94], [-5, -89], [3, -94]], "#7b3335", 2);
+  const happyTilt = Math.sin(t * 2.6) * .012;
+  const spriteWidth = 170;
+  const spriteHeight = 159;
+  ctx.save();
+  ctx.translate(x, y + bob);
+  ctx.fillStyle = "rgba(10,6,9,.35)";
+  ctx.beginPath();
+  ctx.ellipse(0, 5, 62, 11, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.rotate(happyTilt);
+  if (bixSprite.complete && bixSprite.naturalWidth > 0) {
+    ctx.drawImage(bixSprite, -spriteWidth / 2, -spriteHeight, spriteWidth, spriteHeight);
+  }
   ctx.restore();
 }
 
 function drawNix(x: number, y: number, t: number) {
-  const stride = player.walking ? Math.sin(t * 10) : 0;
-  const bob = player.walking ? Math.abs(Math.sin(t * 10)) * -3 : Math.sin(t * 1.6) * 1.2;
-  ctx.save(); ctx.translate(x, y + bob); ctx.scale(player.facing, 1);
-  ctx.fillStyle = "rgba(8,4,8,.42)"; ctx.beginPath(); ctx.ellipse(0, 7, 51, 11, 0, 0, Math.PI * 2); ctx.fill();
-  // long, deliberate legs
-  poly([[-25, -84], [-4, -84], [-7 + stride * 8, -5], [-30 + stride * 9, -4]], "#121217", "#08080b", 3);
-  poly([[1, -84], [24, -82], [31 - stride * 8, -5], [7 - stride * 9, -4]], "#1b1920", "#08080b", 3);
-  // angular coat/body
-  poly([[-38, -198], [-18, -222], [19, -220], [39, -194], [31, -87], [4, -70], [-31, -88]], "#121218", "#08080b", 4);
-  poly([[-34, -191], [-56, -125], [-44, -118], [-17, -174]], "#17171d", "#08080b", 3);
-  poly([[33, -190], [48, -127], [36, -119], [17, -173]], "#0d0e13", "#08080b", 3);
-  // coat facets
-  poly([[-18, -216], [1, -177], [19, -220], [29, -100], [2, -77]], "#1e1d24");
-  poly([[-34, -193], [1, -177], [-29, -91]], "#090b0f");
-  // pointed head and geometric mask
-  poly([[-22, -226], [-2, -284], [22, -226], [17, -193], [-17, -194]], "#111218", "#07080b", 4);
-  poly([[-16, -226], [0, -244], [17, -225], [8, -207], [-8, -207]], "#29262c");
-  poly([[-13, -225], [-4, -232], [-1, -223], [-7, -218]], "#e3964f");
-  poly([[3, -223], [7, -232], [14, -225], [8, -218]], "#e3964f");
-  line([[-4, -211], [4, -211]], "#8b664e", 2);
-  // L6 badge as one warm interruption
-  poly([[18, -173], [37, -168], [34, -148], [16, -153]], "#e89a4d");
-  ctx.save(); ctx.translate(22, -156); ctx.scale(player.facing, 1); ctx.fillStyle = "#20131b"; ctx.font = "600 9px 'DM Mono'"; ctx.fillText("L6", 0, 0); ctx.restore();
+  const walkCycle = player.walking ? Math.sin(t * 10) : 0;
+  const bob = player.walking ? Math.abs(walkCycle) * -4 : Math.sin(t * 1.6) * 1.2;
+  const lean = player.walking ? walkCycle * .012 : 0;
+  const spriteWidth = 138;
+  const spriteHeight = 383;
+
+  ctx.save();
+  ctx.translate(x, y + bob);
+  ctx.fillStyle = "rgba(8,4,8,.42)";
+  ctx.beginPath();
+  ctx.ellipse(0, 7, 45, 10, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.scale(player.facing, 1);
+  ctx.rotate(lean);
+  if (nixSprite.complete && nixSprite.naturalWidth > 0) {
+    ctx.drawImage(nixSprite, -spriteWidth / 2, -spriteHeight, spriteWidth, spriteHeight);
+  }
   ctx.restore();
 }
 
