@@ -88,9 +88,10 @@ const galleries: Gallery[] = [
     works: [
       { title: 'Ironing', artist: 'Edith Lark', year: 1910, medium: 'Oil on warm-toned linen', image: '/art/gods-1.webp' },
       { title: 'Watering, Third Floor', artist: 'Noor Bay', year: 1998, medium: 'Oil on canvas', image: '/art/gods-2.webp' },
-      { title: 'Roadside Assistance, 2:13 a.m.', artist: 'Cal Mercer', year: 1975, medium: 'Oil and wax on linen', image: '/art/gods-3.webp' },
+      { title: 'Roadside Assistance', artist: 'Cal Mercer', year: 1976, medium: 'Oil and wax on linen', image: '/art/gods-6.webp' },
       { title: 'Mending Basket (One Missing)', artist: 'Florence Pike', year: 1932, medium: 'Oil on burlap', image: '/art/gods-4.webp' },
-      { title: 'Before the First Loaf', artist: 'Kavi North', year: 1869, medium: 'Oil and gold ground on wood', image: '/art/gods-5.webp' }
+      { title: 'Before the First Loaf', artist: 'Kavi North', year: 1869, medium: 'Oil and gold ground on wood', image: '/art/gods-5.webp' },
+      { title: 'The Puncture, 2:13 a.m.', artist: 'Cal Mercer', year: 1975, medium: 'Oil and wax on linen', image: '/art/gods-3.webp' }
     ]
   },
   {
@@ -130,7 +131,7 @@ const storageAssignments: StorageAssignment[] = [
   { slot: 5, room: 2, work: 4 },
   { slot: 6, room: 2, work: 5 },
   { slot: 7, room: 3, work: 1 },
-  { slot: 8, room: 4, work: 2 },
+  { slot: 8, room: 4, work: 5 },
   { slot: 9, room: 5, work: 2 },
   { slot: 10, room: 5, work: 0 }
 ];

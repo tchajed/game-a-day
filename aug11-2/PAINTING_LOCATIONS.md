@@ -50,6 +50,7 @@ The **Current room** column records the museum layout as implemented. Update thi
 | --- | --- | --- |
 | Ironing | Edith Lark | The Working Day |
 | Watering, Third Floor | Noor Bay | The Working Day |
+| Roadside Assistance | Cal Mercer | The Working Day |
 | Mending Basket (One Missing) | Florence Pike | The Working Day |
 | Before the First Loaf | Kavi North | The Working Day |
 
@@ -74,6 +75,6 @@ The **Current room** column records the museum layout as implemented. Update thi
 | Permanent Way (Solar Study) | Arun West | Visible Storage, bay 06 |
 | Cobalt Archive | Mina Søl | Visible Storage, bay 07 |
 | Barometric Procession, 6:40 p.m. | Hugh Iver | Visible Storage, bay 08 |
-| Roadside Assistance, 2:13 a.m. | Cal Mercer | Visible Storage, bay 09 |
+| The Puncture, 2:13 a.m. | Cal Mercer | Visible Storage, bay 09 |
 | Blue Lotus / Tidal Clock | Sora Bell | Visible Storage, bay 10 |
 | Moonflower, 11:52 p.m. | Iris Okafor | Visible Storage, bay 11 |

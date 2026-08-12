@@ -1,9 +1,9 @@
 # The Museum of Ordinary Things
 
-An interactive PlayCanvas museum treating its unusual collection as the stuff of everyday life, with two ways to explore 41 paintings:
+An interactive PlayCanvas museum treating its unusual collection as the stuff of everyday life, with two ways to explore 42 paintings:
 
 - a six-gallery 3D museum arranged around a shared central concourse
-- a lower-level, evenly lit visible-storage room with 42 browsable painting bays (initially empty)
+- a lower-level, evenly lit visible-storage room with 42 browsable painting bays (11 currently occupied)
 - a responsive, filterable online collection grid
 
 ## Galleries

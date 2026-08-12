@@ -31,7 +31,7 @@ test('preserves every painting aspect ratio without cropping', async ({ page }) 
   const fits = await page.evaluate(() => (
     window as unknown as { museumArtworkFits: { room: number; work: number; imageAspect: number; displayAspect: number }[] }
   ).museumArtworkFits);
-  expect(fits).toHaveLength(41);
+  expect(fits).toHaveLength(42);
   expect(fits.every(fit => Math.abs(fit.imageAspect - fit.displayAspect) < 0.0001)).toBe(true);
 });
 
@@ -54,7 +54,7 @@ test('can teleport between all six galleries', async ({ page }) => {
   await page.locator('.gallery-nav button').nth(4).click();
   await expect(page.locator('.curator h1')).toContainText('Working');
   await expect(page.locator('#room-index')).toHaveText('05');
-  await expect(page.locator('.curator-footer span').first()).toHaveText('4 works');
+  await expect(page.locator('.curator-footer span').first()).toHaveText('5 works');
   await expect(page.locator('.gallery-nav button').nth(4)).toHaveClass(/active/);
 
   await page.locator('.gallery-nav button').nth(5).click();
@@ -76,8 +76,8 @@ test('collection view presents, filters, and opens directional painting explanat
   await page.goto('/');
   await page.locator('#collection-toggle').click();
   await expect(page.locator('#collection')).toHaveClass(/open/);
-  await expect(page.locator('#collection-grid .collection-card')).toHaveCount(41);
-  await expect(page.locator('#collection-total')).toHaveText('41');
+  await expect(page.locator('#collection-grid .collection-card')).toHaveCount(42);
+  await expect(page.locator('#collection-total')).toHaveText('42');
 
   await page.locator('#collection-filters button').nth(6).click();
   await expect(page.locator('#collection-grid .collection-card')).toHaveCount(6);
@@ -97,6 +97,20 @@ test('collection view presents, filters, and opens directional painting explanat
     window as unknown as { museumTurnAround: () => void }
   ).museumTurnAround());
   await expect(page.locator('#art-card')).not.toHaveClass(/visible/);
+});
+
+test('shows the new Roadside Assistance while keeping The Puncture in storage', async ({ page }) => {
+  await page.goto('/');
+  await page.locator('#collection-toggle').click();
+  await page.locator('#collection-filters button').nth(5).click();
+
+  const roadside = page.locator('.collection-card').filter({ has: page.getByRole('heading', { name: 'Roadside Assistance', exact: true }) });
+  await expect(roadside).toContainText('The Working Day');
+  await expect(roadside.locator('img')).toHaveAttribute('src', '/art/gods-6.webp');
+
+  const puncture = page.locator('.collection-card').filter({ has: page.getByRole('heading', { name: 'The Puncture, 2:13 a.m.', exact: true }) });
+  await expect(puncture).toContainText('Visible Storage');
+  await expect(puncture.locator('img')).toHaveAttribute('src', '/art/gods-3.webp');
 });
 
 test('room signs open an easy-to-read guide when viewed', async ({ page }) => {
