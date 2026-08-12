@@ -36,28 +36,39 @@ type Choice = {
   strong?: boolean
 }
 type PendingAudit = { choiceId: string; remaining: number; startedDay: number }
+type QuestDiscovery =
+  | { factId: string; source: 'message'; revealedBy: string }
+  | { factId: string; source: 'report'; rowId: string; revealedBy: string }
+type QuestPlan = {
+  discovery: QuestDiscovery
+  email: { requires: string[]; grants: string; label: string; text: string }
+  requests: { requires: string[]; availableAfter: 'email-sent' | 'staff-reply' }
+  openQuestion: string
+  journalOpening: string
+}
 
 type Stage = {
   id: StageId
   number: string
   kicker: string
-  question: string
-  replyLabel: string
-  replyText: string
+  quest: QuestPlan
   days: number
   columns: string[]
   rows: Array<{ id: string; label: string; values: string[]; change: string; tone?: 'good' | 'warn' | 'bad' }>
-  focus: string
   choices: Choice[]
 }
 
 const stages: Record<StageId, Stage> = {
   onboarding: {
     id: 'onboarding', number: 'TUTORIAL', kicker: 'A QUIET TUESDAY',
-    question: 'How full is the cargo deck, really?',
-    replyLabel: 'Question the extra sailing',
-    replyText: 'Not yet. Before we pay for another run, show me what Kestrel is carrying now. How full is the cargo deck, really?',
-    days: 1, columns: ['LAST MONTH', 'THIS MONTH'], focus: 'cargo',
+    quest: {
+      discovery: { factId: 'extra-sailing-proposed', source: 'message', revealedBy: 'Mara’s email proposes another sailing after two freight calls were turned away.' },
+      email: { requires: ['extra-sailing-proposed'], grants: 'capacity-question-open', label: 'Ask what to check first', text: 'Not yet. Before we pay for another run, Mira, what can we check to find out how full Kestrel’s cargo deck really is?' },
+      requests: { requires: ['capacity-question-open'], availableAfter: 'staff-reply' },
+      openQuestion: 'How full is the cargo deck, really?',
+      journalOpening: 'Before paying for another sailing, I need to know whether Kestrel is actually full.',
+    },
+    days: 1, columns: ['LAST MONTH', 'THIS MONTH'],
     rows: [
       { id: 'tickets', label: 'Passenger tickets', values: ['¤ 42,800', '¤ 45,200'], change: '+6%', tone: 'good' },
       { id: 'cargo', label: 'Cargo sales', values: ['¤ 18,400', '¤ 19,100'], change: '+4%', tone: 'good' },
@@ -69,10 +80,14 @@ const stages: Record<StageId, Stage> = {
   },
   level1: {
     id: 'level1', number: 'LEVEL 1', kicker: 'THE VANISHING BICYCLES',
-    question: 'Why are bicycle fees down 34%?',
-    replyLabel: 'Challenge the bicycle figure',
-    replyText: 'Cash is intact and passengers are up. So why are bicycle fees down 34%? Send me the route report before we blame the dock.',
-    days: 3, columns: ['EXPECTED', 'REPORTED'], focus: 'bikes',
+    quest: {
+      discovery: { factId: 'bicycle-fees-down-34', source: 'report', rowId: 'bikes', revealedBy: 'Route report · Bicycle fees · −34%' },
+      email: { requires: ['bicycle-fees-down-34'], grants: 'bicycle-question-open', label: 'Challenge the −34% bicycle figure', text: 'Cash is intact and passengers are up. So why are bicycle fees down 34%? Before we blame the dock, trace where those fees went.' },
+      requests: { requires: ['bicycle-question-open'], availableAfter: 'email-sent' },
+      openQuestion: 'Why are bicycle fees down 34%?',
+      journalOpening: 'The cash is present and passengers are up. The bicycle line is the thing that does not fit.',
+    },
+    days: 3, columns: ['EXPECTED', 'REPORTED'],
     rows: [
       { id: 'tickets', label: 'Passenger tickets', values: ['¤ 47,600', '¤ 51,200'], change: '+8%', tone: 'good' },
       { id: 'bikes', label: 'Bicycle fees', values: ['¤ 6,400', '¤ 4,200'], change: '−34%', tone: 'warn' },
@@ -90,10 +105,14 @@ const stages: Record<StageId, Stage> = {
   },
   level5: {
     id: 'level5', number: 'LEVEL 5', kicker: 'THE NORTH REEF VOTE',
-    question: 'What is Kestrel doing after Beacon 9?',
-    replyLabel: 'Ask where the fuel went',
-    replyText: 'A loss does not explain seventy-two percent more fuel. What is Kestrel doing after Beacon 9? Send me Finance’s report.',
-    days: 4, columns: ['OCTOBER', 'NOVEMBER'], focus: 'fuel',
+    quest: {
+      discovery: { factId: 'fuel-up-72', source: 'report', rowId: 'fuel', revealedBy: 'Finance route report · Fuel · +72%' },
+      email: { requires: ['fuel-up-72'], grants: 'north-reef-question-open', label: 'Ask about the +72% fuel jump', text: 'A loss does not explain seventy-two percent more fuel. What is Kestrel doing after Beacon 9? I want records from outside Finance.' },
+      requests: { requires: ['north-reef-question-open'], availableAfter: 'email-sent' },
+      openQuestion: 'What is Kestrel doing after Beacon 9?',
+      journalOpening: 'Finance sees a loss. Vale sees a reason for every extra litre. I need to find where the ship goes.',
+    },
+    days: 4, columns: ['OCTOBER', 'NOVEMBER'],
     rows: [
       { id: 'passengers', label: 'Passenger fares', values: ['¤ 151,800', '¤ 153,100'], change: '+1%' },
       { id: 'cargo', label: 'Cargo contracts', values: ['¤ 103,700', '¤ 119,600'], change: '+15%', tone: 'warn' },
@@ -111,6 +130,13 @@ const stages: Record<StageId, Stage> = {
         finding: 'Vale says Kestrel supplies sixty-two people on Lysa. She also alleges Finance sells spare hold space to smugglers.', evidence: 'Captain’s signed statement', noteFrom: 'Captain Vale', note: 'Lysa was struck from the map. Its people did not stop existing. Protect my crew, and I will testify.' },
     ],
   },
+}
+
+for (const stage of Object.values(stages)) {
+  const { discovery, email, requests } = stage.quest
+  if (!email.requires.includes(discovery.factId)) throw new Error(`${stage.id}: email must require its discovered fact`)
+  if (!requests.requires.includes(email.grants)) throw new Error(`${stage.id}: requests must require the email’s granted fact`)
+  if (discovery.source === 'report' && !stage.rows.some((row) => row.id === discovery.rowId)) throw new Error(`${stage.id}: report discovery row is missing`)
 }
 
 const order: StageId[] = ['onboarding', 'level1', 'level5']
@@ -172,7 +198,16 @@ function App() {
   const foundChoices = stage.choices.filter((choice) => done.includes(choice.id))
   const strongEvidence = foundChoices.filter((choice) => choice.strong).length
   const questionIsUnlocked = questionUnlocked[stageId]
-  const reportReviewed = questionIsUnlocked && (stageId === 'onboarding' || selectedRow === stage.focus)
+  const hasReportDiscovery = stage.quest.discovery.source === 'report'
+  const discoveryMade = stage.quest.discovery.source === 'message' || selectedRow === stage.quest.discovery.rowId
+  const knownFacts = new Set<string>()
+  if (discoveryMade) knownFacts.add(stage.quest.discovery.factId)
+  const emailCommitted = questionIsUnlocked && (stageId !== 'onboarding' || tutorialMailState !== 'draft')
+  if (emailCommitted) knownFacts.add(stage.quest.email.grants)
+  const emailRequirementsMet = stage.quest.email.requires.every((fact) => knownFacts.has(fact))
+  const requestRequirementsMet = stage.quest.requests.requires.every((fact) => knownFacts.has(fact))
+  const requestTimingMet = stage.quest.requests.availableAfter === 'email-sent' || tutorialMailState === 'reply'
+  const requestsUnlocked = requestRequirementsMet && requestTimingMet
   const requestedToday = stagePending.some((item) => item.startedDay === currentDay)
 
   useEffect(() => {
@@ -198,8 +233,8 @@ function App() {
     const latest = foundChoices.at(-1)
     if (latest) return { from: latest.noteFrom, body: latest.note, new: true }
     if (stageId === 'onboarding') return { from: 'Mira, dock clerk', body: 'Morning. The accounts are ready. Start with the cargo line—I think the boat has more room than we tell people.', new: false }
-    if (stageId === 'level1') return { from: 'Mara, route manager', body: 'The cash total looks normal, so I doubt anything was stolen. But bicycle fees should not fall this far in summer.', new: false }
-    return { from: 'Captain Vale', body: 'The board will call Kestrel wasteful. Before they close us, ask what the fuel was used for. Ask where we went.', new: false }
+    if (stageId === 'level1') return { from: 'Mara, route manager', body: 'The cash total reconciles and passenger volume is healthy. I attached the route report; one operating line does not fit. Find it before we write back.', new: false }
+    return { from: 'Captain Vale', body: 'The board sees only this month’s loss. Finance attached its route report. Find what changed before we answer them.', new: false }
   }, [foundChoices, stageId])
 
   function ensureAudio(kind: 'send' | 'received') {
@@ -219,6 +254,11 @@ function App() {
     setEnding(null)
   }
 
+  function unlockQuestion() {
+    if (stageId !== 'onboarding') ensureAudio('send')
+    setQuestionUnlocked((all) => ({ ...all, [stageId]: true }))
+  }
+
   function sendTutorialReply() {
     if (tutorialMailState !== 'draft') return
     ensureAudio('send')
@@ -227,7 +267,7 @@ function App() {
 
   function queueAudit(choice: Choice) {
     const alreadyPending = stagePending.some((item) => item.choiceId === choice.id)
-    if (!reportReviewed || requestedToday || done.includes(choice.id) || alreadyPending || choice.time > remaining) return
+    if (!requestsUnlocked || requestedToday || done.includes(choice.id) || alreadyPending || choice.time > remaining) return
     ensureAudio('send')
     setPending((all) => ({
       ...all,
@@ -273,20 +313,20 @@ function App() {
 
   const stageComplete = stageId === 'onboarding' ? done.length > 0 : stageId === 'level1' ? done.length > 0 : remaining === 0 || done.length >= 2
   const currentPrompt = !questionIsUnlocked
-    ? 'Choose your reply.'
+    ? hasReportDiscovery
+      ? emailRequirementsMet ? 'Send your question.' : 'Open the report.'
+      : 'Choose your reply.'
     : stageComplete
       ? 'Case solved.'
       : stageId === 'onboarding' && tutorialMailState === 'draft'
         ? 'Reply to Mara.'
         : stageId === 'onboarding' && tutorialMailState === 'sent'
           ? 'Waiting for Mira…'
-          : !reportReviewed
-            ? 'Open the report.'
-            : requestedToday
-              ? 'Request sent. End the day.'
-              : stagePending.length > 0
-                ? 'One reply is pending.'
-                : 'Choose today’s request.'
+          : requestedToday
+            ? 'Request sent. End the day.'
+            : stagePending.length > 0
+              ? 'One reply is pending.'
+              : 'Choose today’s request.'
 
   return (
     <main className={`game stage-${stageId}`}>
@@ -302,21 +342,21 @@ function App() {
       <section className={`chapter-intro ${questionIsUnlocked ? 'unlocked' : 'locked'}`}>
         <div className="chapter-marker"><span>{stage.number}</span><b>{stage.kicker}</b></div>
         {questionIsUnlocked
-          ? <div className="chapter-question"><Search /><span><small>OPEN QUESTION</small><b>{stage.question}</b></span></div>
+          ? <div className="chapter-question"><Search /><span><small>OPEN QUESTION</small><b>{stage.quest.openQuestion}</b></span></div>
           : <div className="question-lock" aria-label="Open question locked"><LockKeyhole /><span>LOCKED</span></div>}
       </section>
 
       <section className="play-area">
         <nav className="tools" aria-label="Investigation tools">
           <button className={tool === 'messages' ? 'active' : ''} onClick={() => setTool('messages')}><Mail /><span><b>MESSAGES</b></span>{(stageId === 'onboarding' && !tutorialThreadRead) || foundChoices.length > 0 ? <i /> : null}</button>
-          <button disabled={stage.id === 'onboarding' || !questionIsUnlocked} className={tool === 'report' ? 'active' : ''} onClick={() => setTool('report')}><BookOpen /><span><b>REPORT</b></span>{questionIsUnlocked && !reportReviewed && <i />}</button>
+          <button disabled={!hasReportDiscovery} className={tool === 'report' ? 'active' : ''} onClick={() => setTool('report')}><BookOpen /><span><b>REPORT</b></span>{hasReportDiscovery && !emailRequirementsMet && <i />}</button>
           <button disabled={!questionIsUnlocked} className={tool === 'journal' ? 'active' : ''} onClick={() => setTool('journal')}><NotebookPen /><span><b>JOURNAL</b></span>{foundChoices.length > 0 && <i />}</button>
         </nav>
 
         <div className="tool-screen" key={tool}>
           {tool === 'report' && <Report stage={stage} selectedRow={selectedRow} onSelect={setSelectedRow} onContinue={() => setTool('messages')} />}
           {tool === 'journal' && <Journal stage={stage} found={foundChoices} pending={stagePending} />}
-          {tool === 'messages' && <Messages message={message} stage={stage} found={foundChoices} pending={stagePending} remaining={remaining} requestedToday={requestedToday} questionUnlocked={questionIsUnlocked} reportReviewed={reportReviewed} tutorialMailState={tutorialMailState} onUnlockQuestion={() => setQuestionUnlocked((all) => ({ ...all, [stageId]: true }))} onTutorialSend={sendTutorialReply} onOpenReport={() => setTool('report')} onQueue={queueAudit} />}
+          {tool === 'messages' && <Messages message={message} stage={stage} found={foundChoices} pending={stagePending} remaining={remaining} requestedToday={requestedToday} questionUnlocked={questionIsUnlocked} discoveryMade={emailRequirementsMet} requestsUnlocked={requestsUnlocked} tutorialMailState={tutorialMailState} onUnlockQuestion={unlockQuestion} onTutorialSend={sendTutorialReply} onOpenReport={() => setTool('report')} onQueue={queueAudit} />}
         </div>
 
         <aside className="mission-card day-card">
@@ -347,12 +387,13 @@ function App() {
 
 function Report({ stage, selectedRow, onSelect, onContinue }: { stage: Stage; selectedRow: string; onSelect: (id: string) => void; onContinue: () => void }) {
   const selected = stage.rows.find((row) => row.id === selectedRow)
-  const focusSelected = selectedRow === stage.focus
-  return <section className="report-screen"><div className="tool-title"><div><span>ATTACHMENT</span><h2>Route report</h2></div><Search /></div><div className="report-table"><div className="report-head"><span>ACCOUNT</span>{stage.columns.map((col) => <span key={col}>{col}</span>)}<span>CHANGE</span></div>{stage.rows.map((row) => <button key={row.id} className={`${selectedRow === row.id ? 'selected' : ''} ${row.tone ?? ''}`} onClick={() => onSelect(row.id)}><b>{row.label}</b>{row.values.map((value) => <span key={value}>{value}</span>)}<em>{row.change}</em></button>)}</div><div className="report-tip"><span><b>{selected?.label ?? 'No account selected'}</b><small>{focusSelected ? 'This is the discrepancy the email points toward.' : selected ? 'Interesting, but it does not answer the current question.' : 'Look for the line that does not fit the rest of the report.'}</small></span><button disabled={!focusSelected} onClick={onContinue}>{focusSelected ? 'Reply with a request' : 'Find the unusual line'} {focusSelected && <ArrowRight />}</button></div></section>
+  const focusId = stage.quest.discovery.source === 'report' ? stage.quest.discovery.rowId : ''
+  const focusSelected = selectedRow === focusId
+  return <section className="report-screen"><div className="tool-title"><div><span>ATTACHMENT</span><h2>Route report</h2></div><Search /></div><div className="report-table"><div className="report-head"><span>ACCOUNT</span>{stage.columns.map((col) => <span key={col}>{col}</span>)}<span>CHANGE</span></div>{stage.rows.map((row) => <button key={row.id} className={`${selectedRow === row.id ? 'selected' : ''} ${row.tone ?? ''}`} onClick={() => onSelect(row.id)}><b>{row.label}</b>{row.values.map((value) => <span key={value}>{value}</span>)}<em>{row.change}</em></button>)}</div><div className="report-tip"><span><b>{selected?.label ?? 'No account selected'}</b><small>{focusSelected ? 'Discrepancy identified. You can now cite this figure in your email.' : selected ? 'Interesting, but this line moves with the rest of the report.' : 'Look for the line that does not fit the rest of the report.'}</small></span><button disabled={!focusSelected} onClick={onContinue}>{focusSelected ? 'Return to email' : 'Find the unusual line'} {focusSelected && <ArrowRight />}</button></div></section>
 }
 
 function Journal({ stage, found, pending }: { stage: Stage; found: Choice[]; pending: PendingAudit[] }) {
-  return <section className="journal-screen"><div className="tool-title"><div><span>PRIVATE JOURNAL</span><h2>{stage.question}</h2></div><NotebookPen /></div><div className="journal-pages"><article className="journal-opening"><small>OPEN QUESTION</small><p>{stage.id === 'onboarding' ? 'Before paying for another sailing, I need to know whether Kestrel is actually full.' : stage.id === 'level1' ? 'The cash is present and passengers are up. The bicycle line is the thing that does not fit.' : 'Finance sees a loss. Vale sees a reason for every extra litre. I need to find where the ship goes.'}</p></article>{found.map((choice, index) => <article className="journal-entry" key={choice.id}><header><span>FINDING {String(index + 1).padStart(2, '0')}</span><Stamp /></header><h3>{choice.evidence}</h3><p>{choice.finding}</p><small>From: {choice.noteFrom}</small></article>)}{pending.length > 0 && <div className="journal-pending"><Clock3 /><span><b>{pending.length} request{pending.length === 1 ? '' : 's'} in progress</b><small>The journal updates when replies arrive.</small></span></div>}</div></section>
+  return <section className="journal-screen"><div className="tool-title"><div><span>PRIVATE JOURNAL</span><h2>{stage.quest.openQuestion}</h2></div><NotebookPen /></div><div className="journal-pages"><article className="journal-opening"><small>OPEN QUESTION</small><p>{stage.quest.journalOpening}</p></article>{found.map((choice, index) => <article className="journal-entry" key={choice.id}><header><span>FINDING {String(index + 1).padStart(2, '0')}</span><Stamp /></header><h3>{choice.evidence}</h3><p>{choice.finding}</p><small>Source: reply from {choice.noteFrom}</small></article>)}{pending.length > 0 && <div className="journal-pending"><Clock3 /><span><b>{pending.length} request{pending.length === 1 ? '' : 's'} in progress</b><small>The journal updates only when a reply supplies new evidence.</small></span></div>}</div></section>
 }
 
 function RequestDesk({ stage, found, pending, remaining, requestedToday, onQueue }: { stage: Stage; found: Choice[]; pending: PendingAudit[]; remaining: number; requestedToday: boolean; onQueue: (choice: Choice) => void }) {
@@ -366,17 +407,19 @@ function RequestDesk({ stage, found, pending, remaining, requestedToday, onQueue
 }
 
 function DialogueChoice({ stage, onChoose }: { stage: Stage; onChoose: () => void }) {
-  return <div className="dialogue-choice"><span>YOUR REPLY</span><button onClick={onChoose}><MessageSquareText /><b>{stage.replyLabel}</b><ChevronRight /></button></div>
+  return <div className="dialogue-choice"><span>YOUR REPLY</span><button onClick={onChoose}><MessageSquareText /><b>{stage.quest.email.label}</b><ChevronRight /></button></div>
 }
 
-function Messages({ message, stage, found, pending, remaining, requestedToday, questionUnlocked, reportReviewed, tutorialMailState, onUnlockQuestion, onTutorialSend, onOpenReport, onQueue }: { message: { from: string; body: string; new: boolean }; stage: Stage; found: Choice[]; pending: PendingAudit[]; remaining: number; requestedToday: boolean; questionUnlocked: boolean; reportReviewed: boolean; tutorialMailState: TutorialMailState; onUnlockQuestion: () => void; onTutorialSend: () => void; onOpenReport: () => void; onQueue: (choice: Choice) => void }) {
+function Messages({ message, stage, found, pending, remaining, requestedToday, questionUnlocked, discoveryMade, requestsUnlocked, tutorialMailState, onUnlockQuestion, onTutorialSend, onOpenReport, onQueue }: { message: { from: string; body: string; new: boolean }; stage: Stage; found: Choice[]; pending: PendingAudit[]; remaining: number; requestedToday: boolean; questionUnlocked: boolean; discoveryMade: boolean; requestsUnlocked: boolean; tutorialMailState: TutorialMailState; onUnlockQuestion: () => void; onTutorialSend: () => void; onOpenReport: () => void; onQueue: (choice: Choice) => void }) {
   if (stage.id === 'onboarding' && found.length === 0) {
     const sent = tutorialMailState !== 'draft'
     const replied = tutorialMailState === 'reply'
-    const reply = stage.replyText
-    return <section className="messages-screen tutorial-mail"><div className="tool-title"><div><span>INBOX</span><h2>Morning mail</h2></div><Mail /></div><div className="thread-subject"><h3>Add another sailing?</h3><small>{replied ? '3' : sent ? '2' : '1'} message{!sent ? '' : 's'}</small></div><div className="email-thread" aria-live="polite"><article className="thread-message"><div className="portrait">MR</div><div><header><span><b>Mara Rinne</b> · Route manager</span><time>08:12</time></header><p>We turned away two freight calls last week. Should I ask the harbor for a price on an extra Wednesday sailing?</p>{!questionUnlocked && <DialogueChoice stage={stage} onChoose={onUnlockQuestion} />}</div></article>{questionUnlocked && !sent && <article className="thread-message reply-composer"><div className="portrait">YOU</div><div><header><span><b>Reply all</b> · Mara, Mira</span><time>DRAFT</time></header><p>{reply}</p><button className="send-mail" onClick={onTutorialSend}><Send /> Send</button></div></article>}{sent && <article className="thread-message player-message sent-message"><div className="portrait">YOU</div><div><header><span><b>You</b> · Owner</span><time>08:19</time></header><p>{reply}</p></div></article>}{tutorialMailState === 'sent' && <div className="mail-waiting" role="status"><i /><span><b>Sent</b><small>Waiting for Mira…</small></span></div>}{replied && <article className="thread-message incoming-message"><div className="portrait">MK</div><div><header><span><b>Mira Koski</b> · Dock clerk</span><time>08:22</time></header><p>I’ll check the freight slips against Kestrel’s loading limit.</p></div></article>}</div>{replied && <RequestDesk stage={stage} found={found} pending={pending} remaining={remaining} requestedToday={requestedToday} onQueue={onQueue} />}</section>
+    const reply = stage.quest.email.text
+    return <section className="messages-screen tutorial-mail"><div className="tool-title"><div><span>INBOX</span><h2>Morning mail</h2></div><Mail /></div><div className="thread-subject"><h3>Add another sailing?</h3><small>{replied ? '3' : sent ? '2' : '1'} message{!sent ? '' : 's'}</small></div><div className="email-thread" aria-live="polite"><article className="thread-message"><div className="portrait">MR</div><div><header><span><b>Mara Rinne</b> · Route manager</span><time>08:12</time></header><p>We turned away two freight calls last week. Should I ask the harbor for a price on an extra Wednesday sailing?</p>{!questionUnlocked && <DialogueChoice stage={stage} onChoose={onUnlockQuestion} />}</div></article>{questionUnlocked && !sent && <article className="thread-message reply-composer"><div className="portrait">YOU</div><div><header><span><b>Reply all</b> · Mara, Mira</span><time>DRAFT</time></header><p>{reply}</p><button className="send-mail" onClick={onTutorialSend}><Send /> Send</button></div></article>}{sent && <article className="thread-message player-message sent-message"><div className="portrait">YOU</div><div><header><span><b>You</b> · Owner</span><time>08:19</time></header><p>{reply}</p></div></article>}{tutorialMailState === 'sent' && <div className="mail-waiting" role="status"><i /><span><b>Sent</b><small>Waiting for Mira…</small></span></div>}{replied && <article className="thread-message incoming-message"><div className="portrait">MK</div><div><header><span><b>Mira Koski</b> · Dock clerk</span><time>08:22</time></header><p>I’ll check the freight slips against Kestrel’s loading limit.</p></div></article>}</div>{requestsUnlocked && <RequestDesk stage={stage} found={found} pending={pending} remaining={remaining} requestedToday={requestedToday} onQueue={onQueue} />}</section>
   }
-  return <section className="messages-screen"><div className="tool-title"><div><span>INBOX</span><h2>{found.length > 0 ? 'Latest reply' : 'New mail'}</h2></div><Mail /></div><article className={message.new ? 'new' : ''}><div className="portrait">{message.from.split(/[ ,]/).map((part) => part[0]).slice(0, 2).join('')}</div><div><span>{message.new ? 'NEW REPLY' : 'NEW MESSAGE'}</span><h3>{message.from}</h3><p>{message.body}</p>{!questionUnlocked && <DialogueChoice stage={stage} onChoose={onUnlockQuestion} />}</div></article>{questionUnlocked && !message.new && <article className="player-dialogue"><div className="portrait">YOU</div><div><span>YOUR EMAIL · SENT</span><p>{stage.replyText}</p>{!reportReviewed && <button className="attachment-button" onClick={onOpenReport}><BookOpen /><span><b>Open route report</b></span><ArrowRight /></button>}</div></article>}{reportReviewed && <RequestDesk stage={stage} found={found} pending={pending} remaining={remaining} requestedToday={requestedToday} onQueue={onQueue} />}{found.length > 1 && <div className="older-messages"><span>EARLIER REPLIES</span>{found.slice(0, -1).reverse().map((choice) => <div key={choice.id}><Check /><span><b>{choice.noteFrom}</b><small>{choice.evidence}</small></span></div>)}</div>}</section>
+
+  const discovery = stage.quest.discovery
+  return <section className="messages-screen"><div className="tool-title"><div><span>INBOX</span><h2>{found.length > 0 ? 'Latest reply' : 'New mail'}</h2></div><Mail /></div><article className={message.new ? 'new' : ''}><div className="portrait">{message.from.split(/[ ,]/).map((part) => part[0]).slice(0, 2).join('')}</div><div><span>{message.new ? 'NEW REPLY' : 'NEW MESSAGE'}</span><h3>{message.from}</h3><p>{message.body}</p>{!questionUnlocked && !discoveryMade && discovery.source === 'report' && <button className="attachment-button" onClick={onOpenReport}><BookOpen /><span><b>Open route report</b><small>Identify the line that does not fit before replying.</small></span><ArrowRight /></button>}{!questionUnlocked && discoveryMade && <><div className="discovery-source"><Check /><span><small>OBSERVED</small><b>{discovery.revealedBy}</b></span></div><DialogueChoice stage={stage} onChoose={onUnlockQuestion} /></>}</div></article>{questionUnlocked && !message.new && <article className="player-dialogue"><div className="portrait">YOU</div><div><span>YOUR EMAIL · SENT</span><p>{stage.quest.email.text}</p></div></article>}{requestsUnlocked && <RequestDesk stage={stage} found={found} pending={pending} remaining={remaining} requestedToday={requestedToday} onQueue={onQueue} />}{found.length > 1 && <div className="older-messages"><span>EARLIER REPLIES</span>{found.slice(0, -1).reverse().map((choice) => <div key={choice.id}><Check /><span><b>{choice.noteFrom}</b><small>{choice.evidence}</small></span></div>)}</div>}</section>
 }
 
 export default App
