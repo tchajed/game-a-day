@@ -1,0 +1,7 @@
+node_modules/
+dist/
+test-results/
+playwright-report/
+.pi/
+.pi-agent-browser/
+.DS_Store

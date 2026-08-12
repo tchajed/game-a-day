@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#12110f" />
+    <meta name="description" content="The Impossible Collection — a virtual museum of AI-generated oil paintings." />
+    <title>The Impossible Collection</title>
+  </head>
+  <body>
+    <canvas id="museum" aria-label="Interactive 3D museum"></canvas>
+    <div id="loading"><div class="loader-mark">IC</div><p>Preparing the galleries</p><span></span></div>
+    <header class="topbar">
+      <a class="brand" href="#" aria-label="The Impossible Collection home">
+        <span class="brand-mark">IC</span><span><b>The Impossible</b><em>Collection</em></span>
+      </a>
+      <div class="room-progress" aria-live="polite"><span id="room-index">01</span><i></i><span>03</span></div>
+      <button id="sound" class="icon-button" aria-label="Toggle ambience"><span>◌</span></button>
+    </header>
+    <nav class="gallery-nav" aria-label="Choose gallery">
+      <button data-room="0" class="active"><span>01</span><b>The Court of Beasts</b></button>
+      <button data-room="1"><span>02</span><b>Objects, Elsewhere</b></button>
+      <button data-room="2"><span>03</span><b>Worlds Without Us</b></button>
+    </nav>
+    <aside class="curator" id="curator">
+      <div class="eyebrow">Gallery 01 · Curator's note</div>
+      <h1>The Court<br>of <em>Beasts</em></h1>
+      <p id="curator-copy"></p>
+      <div class="curator-footer"><span>3 works</span><span>Oil on canvas · 2025</span></div>
+      <button id="enter-gallery">Enter the gallery <span>→</span></button>
+    </aside>
+    <section class="art-card" id="art-card" aria-live="polite">
+      <span class="art-number"></span><div><h2></h2><p></p></div>
+    </section>
+    <div class="controls"><span class="key">W</span><span class="key">A</span><span class="key">S</span><span class="key">D</span><b>Move</b><i></i><span class="mouse">⌁</span><b>Look</b></div>
+    <div class="crosshair" aria-hidden="true"></div>
+    <div class="grain" aria-hidden="true"></div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

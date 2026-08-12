@@ -1,0 +1,20 @@
+{
+  "name": "the-impossible-collection",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "test": "playwright test"
+  },
+  "dependencies": {
+    "playcanvas": "^2.6.1"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.54.2",
+    "typescript": "^5.8.3",
+    "vite": "^7.1.1"
+  }
+}
