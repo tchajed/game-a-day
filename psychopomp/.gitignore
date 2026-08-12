@@ -1,4 +1,6 @@
 node_modules/
 dist/
+.pi/
+.pi-agent-browser/
 qa-*.png
 .DS_Store

@@ -1,62 +1,64 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 280" role="img" aria-labelledby="title desc">
   <title id="title">Bix, psychopomp level two</title>
-  <desc id="desc">A cheerful pointy-eared supernatural dog wearing a burgundy onboarding vest.</desc>
+  <desc id="desc">A compact round orange dog with one upright ear, one floppy ear, a huge smile, and a burgundy onboarding vest.</desc>
   <defs>
     <linearGradient id="fur" x1="0" y1="0" x2="1" y2="1">
-      <stop stop-color="#efa259"/>
-      <stop offset=".48" stop-color="#c66a43"/>
-      <stop offset="1" stop-color="#82403d"/>
+      <stop stop-color="#f0a04e"/><stop offset=".52" stop-color="#c66841"/><stop offset="1" stop-color="#803a39"/>
     </linearGradient>
-    <linearGradient id="muzzle" x1="0" y1="0" x2="0" y2="1">
-      <stop stop-color="#f5c77b"/>
-      <stop offset="1" stop-color="#d89453"/>
+    <linearGradient id="cream" x1="0" y1="0" x2="0" y2="1">
+      <stop stop-color="#f4c679"/><stop offset="1" stop-color="#d58a4d"/>
     </linearGradient>
     <linearGradient id="vest" x1="0" y1="0" x2="1" y2="1">
-      <stop stop-color="#98484b"/>
-      <stop offset="1" stop-color="#552c3b"/>
+      <stop stop-color="#98454b"/><stop offset="1" stop-color="#482638"/>
     </linearGradient>
   </defs>
 
-  <!-- exuberant tail -->
-  <path d="M232 176q38-8 48-48l14 19q-10 49-58 61Z" fill="url(#fur)" stroke="#26151d" stroke-width="7" stroke-linejoin="round"/>
-  <path d="M272 147q7 7 15 9" fill="none" stroke="#f0a15d" stroke-width="4" stroke-linecap="round"/>
+  <!-- tail mid-wag -->
+  <path d="M235 185q40-8 45-42l15 17q-10 42-58 53Z" fill="url(#fur)" stroke="#26151d" stroke-width="7" stroke-linejoin="round"/>
+  <path d="m278 154 9 9" stroke="#f0a159" stroke-width="4" stroke-linecap="round"/>
 
   <!-- short sturdy legs -->
-  <path d="m73 206 42 1-5 63-43 1Z" fill="#a65340" stroke="#25151d" stroke-width="6"/>
-  <path d="m181 207 42-3 9 66-44 1Z" fill="#bf6843" stroke="#25151d" stroke-width="6"/>
-  <path d="M60 265h55l7 11H54Z" fill="#3a2330"/>
-  <path d="m185 264 49-1 13 13h-60Z" fill="#3a2330"/>
+  <path d="m73 212 45 1-6 58-47 1Z" fill="#a6503e" stroke="#24141c" stroke-width="6"/>
+  <path d="m184 212 43-2 8 61-47 1Z" fill="#bd6240" stroke="#24141c" stroke-width="6"/>
+  <path d="M58 266h59l8 10H51ZM185 265h52l15 11h-66Z" fill="#35212d"/>
 
-  <!-- round dog body and smart little vest -->
-  <path d="M51 138q34-34 92-27 69-14 111 37l-12 72-178 3-25-45Z" fill="url(#fur)" stroke="#26151d" stroke-width="7" stroke-linejoin="round"/>
-  <path d="m95 119 92-5 56 38-17 56-143 2-24-45Z" fill="url(#vest)" stroke="#26151d" stroke-width="6"/>
-  <path d="m105 119 36 43 40-48 19 95H91Z" fill="#773640"/>
-  <path d="m142 162-13 47M142 162l23 47" stroke="#c07156" stroke-opacity=".55" stroke-width="4"/>
+  <!-- compact round body -->
+  <path d="M44 146q24-39 99-39 80-2 114 45l-15 76-180 2-29-45Z" fill="url(#fur)" stroke="#26151d" stroke-width="7" stroke-linejoin="round"/>
+  <path d="m79 128 125-8 47 38-17 65-166 1-29-50Z" fill="url(#vest)" stroke="#26151d" stroke-width="6"/>
+  <path d="m89 128 60 53 54-60 22 101H70Z" fill="#6f323f"/>
+  <path d="m149 181-20 42M149 181l23 42" stroke="#ba6751" stroke-opacity=".65" stroke-width="4"/>
 
-  <!-- level badge -->
-  <g transform="translate(99 166) rotate(-2)">
-    <path d="M0 0h42v27H0Z" fill="#edba63" stroke="#452632" stroke-width="3"/>
-    <text x="10" y="19" fill="#34202a" font-family="monospace" font-size="14" font-weight="700">L2</text>
+  <!-- one monumental upright ear -->
+  <path d="m63 103 14-95 75 79Z" fill="url(#fur)" stroke="#26151d" stroke-width="7" stroke-linejoin="round"/>
+  <path d="m79 77 5-48 40 50Z" fill="#713540"/>
+  <!-- one selected-B floppy ear -->
+  <path d="M175 78q53-36 91 4l-20 54-53-24Z" fill="url(#fur)" stroke="#26151d" stroke-width="7" stroke-linejoin="round"/>
+  <path d="m207 83q31-14 44 7l-12 27-36-16Z" fill="#713540"/>
+
+  <!-- very round head -->
+  <path d="M54 94q28-42 95-40 67-2 103 43l-6 66-45 47-103 1-48-43Z" fill="url(#fur)" stroke="#26151d" stroke-width="7" stroke-linejoin="round"/>
+  <path d="m72 106 25-31 48-11 59 13 29 31-21 22-125-2Z" fill="#e88a45" opacity=".6"/>
+
+  <!-- hopeful eyebrows and enormous eyes -->
+  <path d="m88 105 28-15 22 14-31 9ZM163 101l25-11 23 17-28 7Z" fill="#41222d"/>
+  <ellipse cx="118" cy="119" rx="19" ry="22" fill="#f5d59b" stroke="#35202a" stroke-width="4"/>
+  <ellipse cx="187" cy="119" rx="19" ry="22" fill="#f5d59b" stroke="#35202a" stroke-width="4"/>
+  <circle cx="122" cy="122" r="8" fill="#d38437"/>
+  <circle cx="183" cy="122" r="8" fill="#d38437"/>
+  <circle cx="124" cy="123" r="4" fill="#21151b"/>
+  <circle cx="181" cy="123" r="4" fill="#21151b"/>
+
+  <!-- cream cheeks, giant nose, closed goofy grin -->
+  <path d="M72 144q27-25 69-17 43-10 91 17l9 29-42 39-99-1-43-38Z" fill="url(#cream)" stroke="#26151d" stroke-width="6" stroke-linejoin="round"/>
+  <path d="m113 143 37-19 42 19-12 29-31 10-31-11Z" fill="#3a2228" stroke="#25151c" stroke-width="5"/>
+  <ellipse cx="151" cy="145" rx="31" ry="22" fill="#382126"/>
+  <path d="m127 164 23 9 25-10" fill="none" stroke="#6e3035" stroke-width="4" stroke-linecap="round"/>
+  <path d="M91 175q58 38 119-2" fill="none" stroke="#6f3037" stroke-width="6" stroke-linecap="round"/>
+  <path d="M108 184q42 17 82-2" fill="none" stroke="#f0c47f" stroke-width="4" stroke-linecap="round"/>
+
+  <!-- tiny level badge -->
+  <g transform="translate(194 189) rotate(6)">
+    <path d="m0 9 12-9 13 9-4 21H4Z" fill="#e5a650" stroke="#442631" stroke-width="3"/>
+    <path d="m8 10 5-4 5 5-5 8Z" fill="#633039"/>
   </g>
-
-  <!-- enormous alert ears -->
-  <path d="m73 99 5-90 65 69Z" fill="#bd6043" stroke="#26151d" stroke-width="7" stroke-linejoin="round"/>
-  <path d="m172 73 59-65-8 101Z" fill="#cd7046" stroke="#26151d" stroke-width="7" stroke-linejoin="round"/>
-  <path d="m86 72-2-43 34 43Z" fill="#713941"/>
-  <path d="m193 72 25-39-3 55Z" fill="#713941"/>
-
-  <!-- friendly head -->
-  <path d="M69 91 109 55l73 6 48 45-12 66-55 30-72-20-35-47Z" fill="url(#fur)" stroke="#26151d" stroke-width="7" stroke-linejoin="round"/>
-  <path d="m84 100 30-29 58 3 40 35-26 16-89-3Z" fill="#e38a4e" opacity=".7"/>
-  <!-- eyebrows and bright eyes -->
-  <path d="m94 104 25-11 17 12-25 10ZM163 100l21-6 17 15-23 8Z" fill="#39212c"/>
-  <circle cx="118" cy="106" r="5" fill="#f7d58e"/>
-  <circle cx="184" cy="106" r="5" fill="#f7d58e"/>
-  <circle cx="119" cy="107" r="2.5" fill="#25151d"/>
-  <circle cx="183" cy="107" r="2.5" fill="#25151d"/>
-  <!-- big cream muzzle and delighted grin -->
-  <path d="m91 133 49-24 65 22 17 31-48 34-68-15-23-27Z" fill="url(#muzzle)" stroke="#26151d" stroke-width="6" stroke-linejoin="round"/>
-  <path d="m137 127 25-10 25 13-22 18-25-5Z" fill="#2b1921"/>
-  <path d="M163 148q-4 24-31 18M164 148q13 22 37 8" fill="none" stroke="#713137" stroke-width="5" stroke-linecap="round"/>
-  <path d="m145 174 18 10 17-9q-18 29-35-1Z" fill="#a44f55"/>
 </svg>

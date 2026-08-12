@@ -1,64 +1,72 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 360" role="img" aria-labelledby="title desc">
   <title id="title">Maribel Voss, onboarding facilitator</title>
-  <desc id="desc">A cheerful human facilitator in a warm orange jacket, carrying an overfilled clipboard.</desc>
+  <desc id="desc">A round, relentlessly cheerful human facilitator with a plum updo, orange coat, overstuffed clipboard, and welcoming hand.</desc>
   <defs>
-    <linearGradient id="jacket" x1="0" y1="0" x2="1" y2="1">
-      <stop stop-color="#f19a56"/>
-      <stop offset=".5" stop-color="#ca6042"/>
-      <stop offset="1" stop-color="#863c3d"/>
+    <linearGradient id="coat" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#f18d4e"/><stop offset=".55" stop-color="#b84d40"/><stop offset="1" stop-color="#71313b"/>
     </linearGradient>
     <linearGradient id="skin" x1="0" y1="0" x2="1" y2="1">
-      <stop stop-color="#d98a69"/>
-      <stop offset="1" stop-color="#9d4f47"/>
+      <stop stop-color="#dc875e"/><stop offset="1" stop-color="#8e413f"/>
     </linearGradient>
-    <linearGradient id="paper" x1="0" y1="0" x2="0" y2="1">
-      <stop stop-color="#f7dda7"/>
-      <stop offset="1" stop-color="#cba96e"/>
+    <linearGradient id="hair" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#583047"/><stop offset=".5" stop-color="#2d1b2d"/><stop offset="1" stop-color="#17121d"/>
     </linearGradient>
   </defs>
 
-  <!-- grounded, practical legs -->
-  <path d="m73 243 33 1-7 98-34 1Z" fill="#342432" stroke="#171018" stroke-width="5"/>
-  <path d="m110 243 32-3 13 101-35 1Z" fill="#49303b" stroke="#171018" stroke-width="5"/>
-  <path d="m63 337 39-2 8 14H53Z" fill="#171219"/>
-  <path d="m120 336 38-2 15 15h-53Z" fill="#191319"/>
-  <path d="M87 251 79 333M130 250l12 82" stroke="#795044" stroke-opacity=".5" stroke-width="2"/>
+  <!-- practical legs -->
+  <path d="m71 257 34-3 2 86-38 2Z" fill="#2e2230" stroke="#161018" stroke-width="5"/>
+  <path d="m111 254 35 1 12 86-40 1Z" fill="#3e2937" stroke="#161018" stroke-width="5"/>
+  <path d="m65 335 43-1 7 15H54Z" fill="#171218"/>
+  <path d="m117 335 42-1 15 15h-57Z" fill="#171218"/>
 
-  <!-- warm, rounded jacket -->
-  <path d="M53 132 81 111l58 3 31 31-20 108-90-2-19-82Z" fill="url(#jacket)" stroke="#26151d" stroke-width="6" stroke-linejoin="round"/>
-  <path d="m82 113 27 43 30-42-8 87H91Z" fill="#f5a55e"/>
-  <path d="m109 156-18 45 36 1Z" fill="#7f3840" opacity=".85"/>
-  <path d="M59 139 45 215l22 8 23-73Z" fill="#d36a48" stroke="#26151d" stroke-width="5"/>
-  <path d="m151 136 34 65-20 13-42-65Z" fill="#b84f40" stroke="#26151d" stroke-width="5"/>
-  <path d="M61 249h87" stroke="#ef9d59" stroke-opacity=".55" stroke-width="3"/>
+  <!-- broad dark outfit -->
+  <path d="M73 143q35-20 74 2l17 113-102 2Z" fill="#241923" stroke="#21141c" stroke-width="5"/>
+  <path d="m84 151 26 32 29-34 8 103H70Z" fill="#382335"/>
 
-  <!-- HR badge -->
-  <g transform="translate(60 162) rotate(-3)">
-    <path d="M0 0h35v23H2Z" fill="#f5c975" stroke="#8c4939" stroke-width="2"/>
-    <text x="7" y="16" fill="#301b22" font-family="monospace" font-size="12" font-weight="700">HR</text>
+  <!-- flowing orange onboarding coat -->
+  <path d="M69 138 37 164l13 101 28-2 13-91 19 17 23-20 15 94 30-3 8-98-39-25-30 42Z" fill="url(#coat)" stroke="#25151d" stroke-width="6" stroke-linejoin="round"/>
+  <path d="m69 138 40 45-24 19-26-52Z" fill="#f0a153" stroke="#9a483d" stroke-width="3"/>
+  <path d="m147 137-37 46 23 18 27-50Z" fill="#f6ad5a" stroke="#9a483d" stroke-width="3"/>
+  <path d="M48 184 39 262l29 3 9-75M177 181l9 79-27 4-10-74" fill="none" stroke="#ef8a4b" stroke-opacity=".65" stroke-width="3"/>
+
+  <!-- comically overstuffed clipboard -->
+  <g transform="translate(24 178) rotate(-7)">
+    <path d="M0 5h55v93H0Z" fill="#211721" stroke="#130e14" stroke-width="5"/>
+    <path d="M7 1h40v85H7Z" fill="#e4c07f" stroke="#4c3033" stroke-width="3"/>
+    <path d="M14-7h25V7H14Z" fill="#663442" stroke="#261820" stroke-width="3"/>
+    <path d="M4 7v-14h8V7M20 5v-21h8V5M35 6v-12h8V6M46 11V-3h7v14" fill="#d26c54"/>
+    <path d="M14 26h25M14 39h20M14 52h27M14 65h18" stroke="#8d6b58" stroke-width="3" stroke-linecap="round"/>
   </g>
+  <path d="m70 218-18 27" stroke="#b65747" stroke-width="16" stroke-linecap="round"/>
+  <path d="m55 241-12 3" stroke="#d98360" stroke-width="10" stroke-linecap="round"/>
 
-  <!-- clipboard tucked into a perpetually busy arm -->
-  <g transform="translate(164 191) rotate(-8)">
-    <path d="M0 0h49v73H0Z" fill="url(#paper)" stroke="#32202a" stroke-width="5"/>
-    <path d="M14-6h21v12H14Z" fill="#794247" stroke="#32202a" stroke-width="3"/>
-    <path d="M10 21h29M10 34h25M10 47h30M10 60h20" stroke="#82665a" stroke-width="3" stroke-linecap="round"/>
-    <path d="m36 16 4 4 8-10" fill="none" stroke="#b85b42" stroke-width="3"/>
+  <!-- open welcoming arm and hand -->
+  <path d="m168 176 13 45 18-11" fill="none" stroke="#b65345" stroke-width="17" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="m197 210 13-10M198 211l16-2M198 213l14 7" fill="none" stroke="#d88762" stroke-width="7" stroke-linecap="round"/>
+  <circle cx="196" cy="211" r="8" fill="#d88762"/>
+
+  <!-- neck and round friendly head -->
+  <path d="m94 145 2-25 35-2 5 27Z" fill="#a64d43"/>
+  <path d="M67 57q11-38 56-37 45 1 56 43l-9 53-38 30-48-13-27-42Z" fill="url(#skin)" stroke="#281720" stroke-width="6" stroke-linejoin="round"/>
+
+  <!-- selected B hair: big forelock, loose bun, curls -->
+  <path d="M62 74Q56 31 92 13q45-20 67 13 27 1 31 25 5 25-22 35l-11-22-12-30q-29 26-67 27l1 42-18-5Z" fill="url(#hair)"/>
+  <path d="M76 56Q93 5 142 17q-8 30-36 40Z" fill="#49283e"/>
+  <path d="M150 25q28-17 42 5 13 22-12 37-19 9-33-3Z" fill="#3c2235" stroke="#281724" stroke-width="4"/>
+  <path d="M168 74q20 18 1 36 15 14-1 29" fill="none" stroke="#49263b" stroke-width="8" stroke-linecap="round"/>
+  <path d="M71 39q27-27 59-22" fill="none" stroke="#75405a" stroke-width="4" stroke-linecap="round"/>
+
+  <!-- bright, readable face -->
+  <path d="m81 79 17-7 13 9-19 5ZM127 76l15-3 11 9-18 4Z" fill="#2b1822"/>
+  <circle cx="99" cy="80" r="3" fill="#f0b05e"/>
+  <circle cx="141" cy="80" r="3" fill="#f0b05e"/>
+  <path d="m116 82-6 15 10 2" fill="none" stroke="#8f403d" stroke-width="3" stroke-linecap="round"/>
+  <path d="M91 109q29 27 55-4-27 13-55 4Z" fill="#662b35" stroke="#4e242d" stroke-width="2"/>
+  <path d="m100 112q18 9 35-2" stroke="#f2c794" stroke-width="5" stroke-linecap="round"/>
+
+  <!-- small bureaucratic badge -->
+  <g transform="translate(139 167) rotate(4)">
+    <path d="M0 0h27v22H2Z" fill="#e8b55e" stroke="#6c3836" stroke-width="2"/>
+    <path d="m8 7 5-3 6 4-5 7Z" fill="#5b3135"/>
   </g>
-  <path d="m158 197 19 29" stroke="#a34d42" stroke-width="13" stroke-linecap="round"/>
-  <path d="m174 224 10 9" stroke="#d48364" stroke-width="10" stroke-linecap="round"/>
-
-  <!-- expressive head and excellent hair -->
-  <path d="m91 115 3-23 36-2 5 29Z" fill="#a65148"/>
-  <path d="M74 39 103 20l39 14 16 32-12 47-36 19-41-28-5-40Z" fill="url(#skin)" stroke="#281720" stroke-width="6" stroke-linejoin="round"/>
-  <path d="M68 73 63 48l29-33 42 2 28 25-9 25-19-8-8-24-33 19-5 34Z" fill="#382330"/>
-  <path d="M139 24q31-18 44 6 8 20-13 31l-18-1-12-21Z" fill="#3a2431"/>
-  <path d="m74 47 23-27 39 1" fill="none" stroke="#5b3540" stroke-width="5" stroke-linecap="round"/>
-  <!-- bright, slightly over-enthusiastic face -->
-  <path d="m89 70 10-4 8 7-11 5Z" fill="#2a1821"/>
-  <path d="m122 67 10 1 4 8-12-1Z" fill="#2a1821"/>
-  <circle cx="100" cy="71" r="2" fill="#efb56f"/>
-  <circle cx="129" cy="72" r="2" fill="#efb56f"/>
-  <path d="M102 101q18 13 31-5" fill="none" stroke="#6c3034" stroke-width="4" stroke-linecap="round"/>
-  <path d="m111 79-5 11 10 2" fill="none" stroke="#9b4b45" stroke-width="3" stroke-linejoin="round"/>
 </svg>

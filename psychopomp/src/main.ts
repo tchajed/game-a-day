@@ -2,6 +2,9 @@ import "./styles.css";
 import bixSpriteUrl from "./assets/bix.svg";
 import maribelSpriteUrl from "./assets/maribel-voss.svg";
 import nixSpriteUrl from "./assets/nix-hollow-cowl.svg";
+import bixPortraitUrl from "./assets/portraits/bix.webp";
+import maribelPortraitUrl from "./assets/portraits/maribel.webp";
+import nixPortraitUrl from "./assets/portraits/nix.webp";
 
 type NpcId = "maribel" | "bix";
 type DialogueLine = { speaker: string; text: string; option: string };
@@ -27,6 +30,9 @@ app.innerHTML = `
     </header>
     <div class="interact-prompt" hidden><kbd>E</kbd><span>Speak</span></div>
     <aside class="dialogue" role="dialog" aria-live="polite" hidden>
+      <figure class="dialogue__portrait-wrap" aria-hidden="true">
+        <img class="dialogue__portrait" alt="" />
+      </figure>
       <div class="dialogue__copy">
         <h2 class="dialogue__speaker"></h2>
         <p class="dialogue__text"></p>
@@ -49,6 +55,7 @@ const ctx = canvas.getContext("2d")!;
 const prompt = document.querySelector<HTMLElement>(".interact-prompt")!;
 const promptText = prompt.querySelector<HTMLElement>("span")!;
 const dialogueEl = document.querySelector<HTMLElement>(".dialogue")!;
+const portraitEl = document.querySelector<HTMLImageElement>(".dialogue__portrait")!;
 const speakerEl = document.querySelector<HTMLElement>(".dialogue__speaker")!;
 const textEl = document.querySelector<HTMLElement>(".dialogue__text")!;
 const optionEl = document.querySelector<HTMLButtonElement>(".dialogue__option")!;
@@ -405,6 +412,12 @@ function talk() {
 function showDialogueLine() {
   if (!activeNpc) return;
   const line = activeNpc.dialogue[lineIndex];
+  const portrait = line.speaker.startsWith("NIX")
+    ? nixPortraitUrl
+    : line.speaker.startsWith("BIX")
+      ? bixPortraitUrl
+      : maribelPortraitUrl;
+  portraitEl.src = portrait;
   speakerEl.textContent = line.speaker;
   textEl.textContent = line.text;
   optionEl.textContent = line.option;
