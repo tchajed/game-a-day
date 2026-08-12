@@ -53,10 +53,10 @@ type Stage = {
 
 const stages: Record<StageId, Stage> = {
   onboarding: {
-    id: 'onboarding', number: 'TUTORIAL', kicker: 'A QUIET TUESDAY', title: 'There is room on the boat.',
-    brief: 'A routine question about adding another sailing has made you wonder how much room the ferry is leaving unused.',
+    id: 'onboarding', number: 'TUTORIAL', kicker: 'A QUIET TUESDAY', title: 'The morning run.',
+    brief: 'Mira can compare the freight slips with Kestrel’s loading limit.',
     question: 'How full is the cargo deck, really?', days: 1, columns: ['LAST MONTH', 'THIS MONTH'], focus: 'cargo',
-    guide: 'Start here. Capacity tells you whether higher sales need another boat—or just better use of this one.',
+    guide: 'Mira is waiting for the go-ahead.',
     rows: [
       { id: 'tickets', label: 'Passenger tickets', values: ['¤ 42,800', '¤ 45,200'], change: '+6%', tone: 'good' },
       { id: 'cargo', label: 'Cargo sales', values: ['¤ 18,400', '¤ 19,100'], change: '+4%', tone: 'good' },
@@ -183,14 +183,14 @@ function App() {
       <header className="game-header">
         <div className="brand"><span><Anchor /></span><div><b>NORTHSTAR</b><small>THE LEDGER GAME</small></div></div>
         <nav className="voyage-progress" aria-label="Demo chapters">
-          {order.map((id, index) => <button key={id} className={`${id === stageId ? 'current' : ''} ${index < stageIndex ? 'past' : ''}`} onClick={() => jumpTo(id)}><i>{index < stageIndex ? <Check /> : index + 1}</i><span>{stages[id].number}<small>{id === 'onboarding' ? 'Find an opportunity' : id === 'level1' ? 'Fix a mistake' : 'Follow the mystery'}</small></span></button>)}
+          {order.map((id, index) => <button key={id} className={`${id === stageId ? 'current' : ''} ${index < stageIndex ? 'past' : ''}`} onClick={() => jumpTo(id)}><i>{index < stageIndex ? <Check /> : index + 1}</i><span>{stages[id].number}<small>{id === 'onboarding' ? 'Follow a hunch' : id === 'level1' ? 'Fix a mistake' : 'Follow the mystery'}</small></span></button>)}
         </nav>
         <div className="day-counter"><Clock3 /><span><b>{remaining}</b><small>{stageId === 'onboarding' ? 'GUIDED STEP' : 'DAYS LEFT'}</small></span></div>
       </header>
 
       <section className="chapter-intro">
-        <div><span>{stage.number} · {stage.kicker}</span><h1>{stage.title}</h1><p>{stage.brief}</p></div>
-        <div className="chapter-question"><CircleAlert /><span><small>YOUR QUESTION</small><b>{stage.question}</b></span></div>
+        <div><span>{stage.number} · {stage.kicker}</span><h1>{stageId === 'onboarding' && !tutorialThreadRead ? 'Tuesday, 08:12.' : stage.title}</h1><p>{stageId === 'onboarding' && !tutorialThreadRead ? 'There is one new message in your inbox.' : stage.brief}</p></div>
+        <div className="chapter-question"><CircleAlert /><span><small>{stageId === 'onboarding' && !tutorialThreadRead ? 'THIS MORNING' : 'YOUR QUESTION'}</small><b>{stageId === 'onboarding' && !tutorialThreadRead ? 'Open your inbox.' : stage.question}</b></span></div>
       </section>
 
       <section className="play-area">
@@ -208,8 +208,8 @@ function App() {
 
         <aside className="mission-card">
           <span className="mission-label">{stageId === 'onboarding' ? 'YOUR FIRST AUDIT' : 'CURRENT OBJECTIVE'}</span>
-          <h2>{stage.question}</h2>
-          {stageId === 'onboarding' && !tutorialThreadRead ? <div className="guide-box"><Mail /><p>Read the morning thread. Your reply will turn a hunch into a question you can check.</p></div> : stageId === 'level1' && selectedRow !== stage.focus && done.length === 0 ? <div className="guide-box"><BookOpen /><p>Start with the report. Find the line that does not fit, then audit from there.</p></div> : stage.guide && done.length === 0 ? <div className="guide-box"><Sparkles /><p>{stage.guide}</p></div> : (
+          <h2>{stageId === 'onboarding' && !tutorialThreadRead ? 'Read the new message.' : stage.question}</h2>
+          {stageId === 'onboarding' && !tutorialThreadRead ? <div className="guide-box"><Mail /><p>Mara Rinne · Route manager</p></div> : stageId === 'level1' && selectedRow !== stage.focus && done.length === 0 ? <div className="guide-box"><BookOpen /><p>Start with the report. Find the line that does not fit, then audit from there.</p></div> : stage.guide && done.length === 0 ? <div className="guide-box"><Sparkles /><p>{stage.guide}</p></div> : (
             <div className="evidence-stack">
               <span>EVIDENCE FOUND</span>
               {foundChoices.length === 0 ? <p className="empty-evidence">Nothing yet. A useful check connects a number to the real world.</p> : foundChoices.map((choice) => <div key={choice.id}><Stamp /><span><b>{choice.evidence}</b><small>{choice.title}</small></span></div>)}
@@ -224,7 +224,7 @@ function App() {
         </aside>
       </section>
 
-      {showTutorialIntro && stageId === 'onboarding' && <div className="overlay tutorial-overlay"><article className="tutorial-context"><div className="context-mark"><Anchor /></div><span>TUTORIAL · BEFORE WE BEGIN</span><h2>Welcome aboard Northstar.</h2><p>You have just taken over a small ferry company serving an island chain where every route matters. The books are healthy, the crew knows the waters, and today’s work begins with an ordinary email—exactly the sort of question that can reveal what a business is capable of when you follow it past the easy answer.</p><button onClick={() => { setShowTutorialIntro(false); setTool('messages') }}>Open the morning mail <ArrowRight /></button></article></div>}
+      {showTutorialIntro && stageId === 'onboarding' && <div className="overlay tutorial-overlay"><article className="tutorial-context"><div className="context-mark"><Anchor /></div><span>TUTORIAL · BEFORE WE BEGIN</span><h2>Welcome aboard Northstar.</h2><p>Northstar Ferries carries passengers and freight between the islands of the Vela Archipelago. You run the company from a small office above the harbor, where each morning begins with the overnight route notes and whatever has arrived in your inbox.</p><button onClick={() => { setShowTutorialIntro(false); setTool('messages') }}>Open the morning mail <ArrowRight /></button></article></div>}
 
       {running && <div className="overlay"><div className="running-card"><div className="sonar"><Waves /></div><span>AUDIT IN PROGRESS</span><h2>{running.title}</h2><p>Following the paper trail…</p><div className="loader"><i /></div></div></div>}
 
@@ -247,7 +247,7 @@ function AuditDesk({ stage, done, remaining, onRun }: { stage: Stage; done: stri
 }
 
 function Messages({ message, stage, found, tutorialThreadRead, onTutorialContinue }: { message: { from: string; body: string; new: boolean }; stage: Stage; found: Choice[]; tutorialThreadRead: boolean; onTutorialContinue: () => void }) {
-  if (stage.id === 'onboarding' && found.length === 0) return <section className="messages-screen tutorial-mail"><div className="tool-title"><div><span>TOOL 03 · MESSAGES</span><h2>A question from the morning run.</h2></div><Mail /></div><div className="thread-subject"><span>SUBJECT</span><h3>Morning run — add another sailing?</h3><small>3 messages · Today</small></div><div className="email-thread"><article className="thread-message"><div className="portrait">MR</div><div><header><span><b>Mara Rinne</b> · Route manager</span><time>08:12</time></header><p>Morning route profit is up again, and we turned away two freight calls last week. Should I price an extra Wednesday sailing?</p></div></article><article className="thread-message player-message"><div className="portrait">YOU</div><div><header><span><b>You</b> · Owner</span><time>08:19</time></header><p>Not yet. The run is profitable, but my instinct says it could do more. Before we add a boat: how full is the cargo deck, really?</p></div></article><article className="thread-message"><div className="portrait">MK</div><div><header><span><b>Mira Koski</b> · Dock clerk</span><time>08:26</time></header><p>I can answer that. We record sold freight weight and Kestrel’s safe deck capacity for every departure. Give me an hour and I’ll compare them.</p></div></article></div><div className="thread-action"><div><b>Your hunch is now a testable question.</b><small>Ask Mira to compare the records.</small></div><button disabled={tutorialThreadRead} onClick={onTutorialContinue}>{tutorialThreadRead ? 'Audit started' : 'Check deck capacity'} {!tutorialThreadRead && <ArrowRight />}</button></div></section>
+  if (stage.id === 'onboarding' && found.length === 0) return <section className="messages-screen tutorial-mail"><div className="tool-title"><div><span>TOOL 03 · MESSAGES</span><h2>A question from the morning run.</h2></div><Mail /></div><div className="thread-subject"><span>SUBJECT</span><h3>Morning run — add another sailing?</h3><small>3 messages · Today</small></div><div className="email-thread"><article className="thread-message"><div className="portrait">MR</div><div><header><span><b>Mara Rinne</b> · Route manager</span><time>08:12</time></header><p>We turned away two freight calls last week. Should I ask the harbor for a price on an extra Wednesday sailing?</p></div></article><article className="thread-message player-message"><div className="portrait">YOU</div><div><header><span><b>You</b> · Owner</span><time>08:19</time></header><p>Not yet. My instinct says Kestrel could be doing more on the runs we already make. How full is the cargo deck, really?</p></div></article><article className="thread-message"><div className="portrait">MK</div><div><header><span><b>Mira Koski</b> · Dock clerk</span><time>08:26</time></header><p>I can pull the freight slips and check them against her loading limit. I’ll send you what I find.</p></div></article></div><div className="thread-action"><div><b>Reply to Mira</b><small>Ask her to check the morning run.</small></div><button disabled={tutorialThreadRead} onClick={onTutorialContinue}>{tutorialThreadRead ? 'Sent' : 'Go ahead'} {!tutorialThreadRead && <ArrowRight />}</button></div></section>
   return <section className="messages-screen"><div className="tool-title"><div><span>TOOL 03 · MESSAGES</span><h2>People know what cells don’t.</h2></div><Mail /></div><article className={message.new ? 'new' : ''}><div className="portrait">{message.from.split(/[ ,]/).map((part) => part[0]).slice(0, 2).join('')}</div><div><span>{message.new ? 'NEW MESSAGE' : 'MESSAGE'}</span><h3>{message.from}</h3><p>{message.body}</p></div></article>{found.length > 1 && <div className="older-messages"><span>EARLIER FINDINGS</span>{found.slice(0, -1).reverse().map((choice) => <div key={choice.id}><Check /><span><b>{choice.noteFrom}</b><small>{choice.evidence}</small></span></div>)}</div>}<div className="message-foot"><Anchor /><p>{stage.id === 'onboarding' ? 'Good audits do not only find problems. They can find room to grow.' : stage.id === 'level1' ? 'An odd number is a clue, not a conviction.' : 'When the records and people agree, you have a case.'}</p></div></section>
 }
 
