@@ -16,6 +16,7 @@ test('can move between all three galleries', async ({ page }) => {
   await page.locator('.gallery-nav button').nth(1).click();
   await expect(page.locator('.curator h1')).toContainText('Objects');
   await expect(page.locator('#room-index')).toHaveText('02');
+  await expect(page.locator('.curator-footer span').first()).toHaveText('7 works');
 
   await page.locator('.gallery-nav button').nth(2).click();
   await expect(page.locator('.curator h1')).toContainText('Worlds');

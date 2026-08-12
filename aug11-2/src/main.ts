@@ -36,11 +36,9 @@ const galleries: Gallery[] = [
     accent: '#75d6df', wall: '#667477',
     works: [
       { title: 'A Call from the Bathypelagic', subtitle: 'Glazed oil · Submerged study', image: '/art/objects-1.webp' },
-      { title: 'Tea at Apogee', subtitle: 'Contemporary oil · Fine canvas', image: '/art/objects-2.webp' },
       { title: 'The Last Chair Before Spring', subtitle: 'Tonal oil · Scraped ground', image: '/art/objects-3.webp' },
       { title: 'Forecast: Perpetual Blue', subtitle: 'Naïve oil · Linen texture', image: '/art/objects-4.webp' },
       { title: 'Breakfast for the Old Gods', subtitle: 'Still-life glazing · Moss impasto', image: '/art/objects-5.webp' },
-      { title: 'Final Curtain, Yellow', subtitle: 'Expressionist oil · Raw canvas', image: '/art/objects-6.webp' },
       { title: 'The Long Crossing', subtitle: 'Color-field oil · Thin scumble', image: '/art/objects-7.webp' },
       { title: 'Cold Storage, Water Garden', subtitle: 'Post-Impressionist oil · Open weave', image: '/art/objects-8.webp' },
       { title: 'Reliquary for a Right Foot', subtitle: 'Surrealist oil · Red ground', image: '/art/objects-9.webp' }
@@ -198,13 +196,11 @@ const hangingPlans: Hanging[][] = [
   ],
   [
     { wall: 'north', along: -3.65, centerY: 3.15, width: 1.45, height: 3.8, frame: 4 },
-    { wall: 'north', along: -.8, centerY: 3.48, width: 1.75, height: 4.35, frame: 3 },
     { wall: 'north', along: 2.65, centerY: 2.95, width: 1.65, height: 3.55, frame: 2 },
     { wall: 'south', along: -3.25, centerY: 3.35, width: 1.55, height: 3.9, frame: 3 },
     { wall: 'south', along: -.2, centerY: 2.85, width: 1.35, height: 3.45, frame: 1 },
-    { wall: 'south', along: 3.05, centerY: 3.3, width: 1.9, height: 4.3, frame: 4 },
     { wall: 'east', along: -5.25, centerY: 3.45, width: 3.35, height: 1.75, frame: 3 },
-    { wall: 'east', along: -.55, centerY: 3.05, width: 3.75, height: 2.05, frame: 2 },
+    { wall: 'north', along: -.45, centerY: 3.05, width: 3.75, height: 2.05, frame: 2 },
     { wall: 'east', along: 4.7, centerY: 2.72, width: 2.9, height: 1.6, frame: 4 }
   ],
   [
