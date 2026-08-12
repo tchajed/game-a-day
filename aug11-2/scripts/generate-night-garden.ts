@@ -12,11 +12,11 @@ mkdirSync(sourceDir, { recursive: true });
 mkdirSync(buildDir, { recursive: true });
 mkdirSync(outputDir, { recursive: true });
 
-const petalRing = (count, path, fill, cx, cy) => Array.from({ length: count }, (_, i) =>
+const petalRing = (count: number, path: string, fill: string, cx: number, cy: number): string => Array.from({ length: count }, (_, i) =>
   `<path d="${path}" fill="${fill}" transform="rotate(${i * 360 / count} ${cx} ${cy})"/>`
 ).join('');
 
-const stars = (seed, color = '#f6d98d', count = 44) => {
+const stars = (seed: number, color = '#f6d98d', count = 44): string => {
   let state = seed;
   const random = () => ((state = (state * 1664525 + 1013904223) >>> 0) / 4294967296);
   return Array.from({ length: count }, () => {
@@ -27,7 +27,7 @@ const stars = (seed, color = '#f6d98d', count = 44) => {
   }).join('');
 };
 
-const svg = (id, defs, scene) => `<?xml version="1.0" encoding="UTF-8"?>
+const svg = (id: string, defs: string, scene: string): string => `<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 1200" width="900" height="1200" role="img" aria-labelledby="title desc">
   <title id="title">${id}</title>
   <desc id="desc">A clean vector study for the Night Garden collection.</desc>
@@ -40,7 +40,7 @@ const svg = (id, defs, scene) => `<?xml version="1.0" encoding="UTF-8"?>
   <rect x="38" y="38" width="824" height="1124" rx="4" fill="none" stroke="#e8d8ad" stroke-width="1.5" opacity=".35"/>
 </svg>`;
 
-const fern = (x, y, scale, flip = 1) => {
+const fern = (x: number, y: number, scale: number, flip = 1): string => {
   const leaves = Array.from({ length: 10 }, (_, i) => {
     const yy = y - i * 54 * scale;
     const xx = x + flip * (i * i * 1.75 * scale);
@@ -56,7 +56,14 @@ const fern = (x, y, scale, flip = 1) => {
 // retains the brighter “graphic-impasto” recipe for future experiments.
 // Both draw on the material qualities in the supplied Thiebaud and Peto references,
 // without sampling or shipping either reference image.
-const works = [
+interface Work {
+  file: string;
+  title: string;
+  strategy: 'velatura' | 'graphic-impasto';
+  svg: string;
+}
+
+const works: Work[] = [
   {
     file: 'night-garden-1', title: 'Moonflower Keeps the Hours', strategy: 'velatura',
     svg: svg('Moonflower Keeps the Hours', `
@@ -148,11 +155,11 @@ const works = [
   }
 ];
 
-function run(command, args) {
+function run(command: string, args: string[]): void {
   execFileSync(command, args, { stdio: 'inherit' });
 }
 
-function renderSources() {
+function renderSources(): void {
   for (const work of works) {
     const source = join(sourceDir, `${work.file}.svg`);
     const render = join(buildDir, `${work.file}-source.png`);
@@ -168,7 +175,7 @@ function renderSources() {
   console.log(`Review clean vectors before transformation: ${join(buildDir, 'source-contact-sheet.png')}`);
 }
 
-function transformSources() {
+function transformSources(): void {
   const available = new Set(readdirSync(buildDir));
   for (const [index, work] of works.entries()) {
     const sourceName = `${work.file}-source.png`;
