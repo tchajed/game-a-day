@@ -11,6 +11,8 @@ A collection of games each built in one day, with AI assistance. Each game focus
 | [Visa Form](aug10/) | `aug10` | Race against a bad government website to complete a visa application. |
 | [Little Peak Coffee](aug11/) | `aug11` | Dial in a balanced espresso shot as a meticulous mouse barista. |
 | [Museum of Ordinary Things](aug11-2/) | `aug11-2` | Wander an uncanny collection where impossible subjects are treated as ordinary. |
+| [Northstar Ledger](aug12/) | `aug12` | Follow emails and audit ferry-company accounts to uncover a hidden route. |
+| [Psychopomps](psychopomp/) | `psychopomp` | Navigate the afterlife’s least prepared department as an overqualified new hire. |
 
 Each game is a standalone Bun project. To run one locally:
 
