@@ -5,13 +5,13 @@ import {
   BookOpen,
   Check,
   ChevronRight,
-  CircleAlert,
   Clock3,
   FileCheck2,
   FileSearch,
   Mail,
   MapPinned,
   MessageSquareText,
+  NotebookPen,
   RotateCcw,
   Search,
   Send,
@@ -146,12 +146,12 @@ function App() {
   const [stageId, setStageId] = useState<StageId>('onboarding')
   const [tool, setTool] = useState<Tool>('messages')
   const [selectedRow, setSelectedRow] = useState('')
-  const [showTutorialIntro, setShowTutorialIntro] = useState(true)
   const [tutorialMailState, setTutorialMailState] = useState<TutorialMailState>('draft')
   const audioContext = useRef<AudioContext | null>(null)
   const [completed, setCompleted] = useState<Record<StageId, string[]>>({ onboarding: [], level1: [], level5: [] })
   const [daysSpent, setDaysSpent] = useState<Record<StageId, number>>({ onboarding: 0, level1: 0, level5: 0 })
   const [result, setResult] = useState<Choice | null>(null)
+  const [journalVisible, setJournalVisible] = useState(false)
   const [running, setRunning] = useState<Choice | null>(null)
   const [showDecision, setShowDecision] = useState(false)
   const [ending, setEnding] = useState<'protect' | 'close' | null>(null)
@@ -179,6 +179,15 @@ function App() {
 
   useEffect(() => () => { void audioContext.current?.close() }, [])
 
+  useEffect(() => {
+    if (!result) {
+      setJournalVisible(false)
+      return
+    }
+    const journalTimer = window.setTimeout(() => setJournalVisible(true), 700)
+    return () => window.clearTimeout(journalTimer)
+  }, [result])
+
   const message = useMemo(() => {
     const latest = foundChoices.at(-1)
     if (latest) return { from: latest.noteFrom, body: latest.note, new: true }
@@ -189,7 +198,7 @@ function App() {
 
   function jumpTo(id: StageId) {
     setStageId(id)
-    setTool(id === 'onboarding' ? 'messages' : 'report')
+    setTool('messages')
     setSelectedRow(id === 'level1' ? '' : stages[id].focus)
     setResult(null)
     setShowDecision(false)
@@ -225,11 +234,19 @@ function App() {
     setCompleted({ onboarding: [], level1: [], level5: [] })
     setDaysSpent({ onboarding: 0, level1: 0, level5: 0 })
     setTutorialMailState('draft')
-    setShowTutorialIntro(true)
     jumpTo('onboarding')
   }
 
   const stageComplete = stageId === 'onboarding' ? done.length > 0 : stageId === 'level1' ? done.length > 0 : remaining === 0 || done.length >= 2
+  const journalIntro = stageId === 'onboarding'
+    ? tutorialMailState === 'draft'
+      ? 'Mara wants to add another sailing. Before I spend the money, I should ask the question that keeps nagging me: are the runs we already make actually full?'
+      : tutorialMailState === 'sent'
+        ? 'I asked Mira to check the deck. Now I wait. The numbers can wait a minute; the person beside them usually knows where to look.'
+        : 'Mira knows which records will answer this. Time to follow her lead.'
+    : stageId === 'level1'
+      ? 'Mara says the cash is all there. Passenger traffic is up, too. So why did bicycle fees fall by a third? One line in the report should tell me where to begin.'
+      : 'Finance wants North Reef gone. Vale’s note says the fuel bought something more important than profit. I need enough proof to make the board listen.'
 
   return (
     <main className={`game stage-${stageId}`}>
@@ -242,16 +259,16 @@ function App() {
         <div className="day-counter"><Clock3 /><span><b>{remaining}</b><small>{stageId === 'onboarding' ? 'GUIDED STEP' : 'DAYS LEFT'}</small></span></div>
       </header>
 
-      <section className="chapter-intro">
-        <div><span>{stage.number} · {stage.kicker}</span><h1>{stageId === 'onboarding' && tutorialMailState === 'draft' ? 'Tuesday, 08:12.' : stageId === 'onboarding' && tutorialMailState === 'sent' ? 'Tuesday, 08:19.' : stage.title}</h1><p>{stageId === 'onboarding' && tutorialMailState === 'draft' ? 'There is one new message in your inbox.' : stageId === 'onboarding' && tutorialMailState === 'sent' ? 'Your reply has been sent.' : stage.brief}</p></div>
-        <div className="chapter-question"><CircleAlert /><span><small>{stageId === 'onboarding' && !tutorialThreadRead ? 'THIS MORNING' : 'YOUR QUESTION'}</small><b>{stageId === 'onboarding' && tutorialMailState === 'draft' ? 'Open your inbox.' : stageId === 'onboarding' && tutorialMailState === 'sent' ? 'Wait for Mira’s reply.' : stage.question}</b></span></div>
+      <section className="chapter-intro journal-intro">
+        <div><span>{stage.number} · {stage.kicker}</span><h1>{stageId === 'onboarding' ? 'Tuesday, 08:12.' : stage.title}</h1><p key={`${stageId}-${tutorialMailState}`} className="journal-line">{journalIntro}</p></div>
+        <div className="chapter-question"><NotebookPen /><span><small>OWNER’S JOURNAL</small><b>{stageId === 'onboarding' && tutorialMailState === 'draft' ? 'Start with Mara’s email.' : stageId === 'onboarding' && tutorialMailState === 'sent' ? 'Wait for Mira to write back.' : stage.question}</b></span></div>
       </section>
 
       <section className="play-area">
         <nav className="tools" aria-label="Investigation tools">
+          <button className={tool === 'messages' ? 'active' : ''} onClick={() => setTool('messages')}><Mail /><span><b>MESSAGES</b><small>Start with people</small></span>{(stageId === 'onboarding' && !tutorialThreadRead) || foundChoices.length > 0 ? <i /> : null}</button>
           <button disabled={stageId === 'onboarding'} className={tool === 'report' ? 'active' : ''} onClick={() => setTool('report')}><BookOpen /><span><b>REPORT</b><small>{stageId === 'onboarding' ? 'Introduced next' : 'See the numbers'}</small></span>{stageId === 'level1' && selectedRow !== stage.focus && <i />}</button>
           <button disabled={auditLocked} className={tool === 'audit' ? 'active' : ''} onClick={() => setTool('audit')}><FileCheck2 /><span><b>AUDIT</b><small>{auditLocked ? 'Follow the prompt first' : 'Choose a check'}</small></span>{done.length === 0 && !auditLocked && <i />}</button>
-          <button className={tool === 'messages' ? 'active' : ''} onClick={() => setTool('messages')}><Mail /><span><b>MESSAGES</b><small>Hear from people</small></span>{(stageId === 'onboarding' && !tutorialThreadRead) || foundChoices.length > 0 ? <i /> : null}</button>
         </nav>
 
         <div className="tool-screen">
@@ -260,8 +277,8 @@ function App() {
           {tool === 'messages' && <Messages message={message} stage={stage} found={foundChoices} tutorialMailState={tutorialMailState} onTutorialSend={sendTutorialReply} onTutorialContinue={() => setTool('audit')} />}
         </div>
 
-        <aside className="mission-card">
-          <span className="mission-label">{stageId === 'onboarding' ? 'YOUR FIRST AUDIT' : 'CURRENT OBJECTIVE'}</span>
+        <aside className="mission-card journal-card">
+          <span className="mission-label">CASE NOTES · PRIVATE</span>
           <h2>{stageId === 'onboarding' && tutorialMailState === 'draft' ? 'Send your reply.' : stageId === 'onboarding' && tutorialMailState === 'sent' ? 'Wait for Mira.' : stage.question}</h2>
           {stageId === 'onboarding' && tutorialMailState === 'draft' ? <div className="guide-box"><Mail /><p>Mara Rinne · Route manager</p></div> : stageId === 'onboarding' && tutorialMailState === 'sent' ? <div className="guide-box waiting-guide"><Mail /><p>Message sent · Waiting for reply</p></div> : stageId === 'level1' && selectedRow !== stage.focus && done.length === 0 ? <div className="guide-box"><BookOpen /><p>Start with the report. Find the line that does not fit, then audit from there.</p></div> : stage.guide && done.length === 0 ? <div className="guide-box"><Sparkles /><p>{stage.guide}</p></div> : (
             <div className="evidence-stack">
@@ -278,11 +295,9 @@ function App() {
         </aside>
       </section>
 
-      {showTutorialIntro && stageId === 'onboarding' && <div className="overlay tutorial-overlay"><article className="tutorial-context"><div className="context-mark"><Anchor /></div><span>TUTORIAL · BEFORE WE BEGIN</span><h2>Welcome aboard Northstar.</h2><p>Northstar Ferries carries passengers and freight between the islands of the Vela Archipelago. You run the company from a small office above the harbor, where each morning begins with the overnight route notes and whatever has arrived in your inbox.</p><button onClick={() => { setShowTutorialIntro(false); setTool('messages') }}>Open the morning mail <ArrowRight /></button></article></div>}
-
       {running && <div className="overlay"><div className="running-card"><div className="sonar"><Waves /></div><span>AUDIT IN PROGRESS</span><h2>{running.title}</h2><p>Following the paper trail…</p><div className="loader"><i /></div></div></div>}
 
-      {result && <div className="overlay"><article className="result-card"><button className="close" onClick={() => setResult(null)}><X /></button><div className="result-icon"><Check /></div><span>AUDIT COMPLETE</span><h2>{result.finding}</h2><div className="evidence-ticket"><Stamp /><span><small>EVIDENCE ADDED</small><b>{result.evidence}</b></span></div><div className="message-preview"><MessageSquareText /><p><b>{result.noteFrom}</b> “{result.note}”</p></div><button onClick={() => { setResult(null); setTool('messages') }}>Read the message <ArrowRight /></button></article></div>}
+      {result && <div className="overlay"><article className="result-card mail-result"><button className="close" onClick={() => setResult(null)}><X /></button><div className="mail-result-heading"><div className="result-icon"><Mail /></div><div><span>NEW EMAIL · AUDIT REPLY</span><h2>{result.noteFrom}</h2></div></div><div className="result-email"><header><b>{result.noteFrom}</b><time>JUST NOW</time></header><p>{result.note}</p></div><div className={`journal-response ${journalVisible ? 'writing' : ''}`} aria-live="polite"><div><NotebookPen /><span><small>OWNER’S JOURNAL</small><b>{journalVisible ? 'Thinking it through…' : 'Reading…'}</b></span></div>{journalVisible && <p>I know now: {result.finding}</p>}</div>{journalVisible && <div className="evidence-ticket"><Stamp /><span><small>NOTED FOR THE CASE</small><b>{result.evidence}</b></span></div>}<button disabled={!journalVisible} onClick={() => setResult(null)}>Continue investigating <ArrowRight /></button></article></div>}
 
       {showDecision && !ending && <div className="overlay dark"><article className="decision-card"><button className="close" onClick={() => setShowDecision(false)}><X /></button><span>BOARD VOTE · FINAL DECISION</span><h2>What do you tell them?</h2><p>You found <b>{strongEvidence} strong lead{strongEvidence === 1 ? '' : 's'}</b>. Finance is asking for an immediate vote.</p><div className="decision-options"><button onClick={() => setEnding('close')}><i>A</i><span><b>Close North Reef</b><small>Accept the reported loss and end the route.</small></span><ChevronRight /></button><button className={strongEvidence >= 2 ? 'supported' : ''} onClick={() => setEnding('protect')}><i>B</i><span><b>Protect the route and disclose Lysa</b><small>Freeze Aster cargo, protect the islanders, and investigate Finance.</small></span>{strongEvidence >= 2 && <em>SUPPORTED</em>}<ChevronRight /></button></div></article></div>}
 
@@ -293,20 +308,20 @@ function App() {
 
 function Report({ stage, selectedRow, onSelect, onAudit, auditLocked }: { stage: Stage; selectedRow: string; onSelect: (id: string) => void; onAudit: () => void; auditLocked: boolean }) {
   const selected = stage.rows.find((row) => row.id === selectedRow)
-  return <section className="report-screen"><div className="tool-title"><div><span>TOOL 01 · REPORT</span><h2>Route snapshot</h2><p>Select the account that best matches your question.</p></div><Search /></div><div className="report-table"><div className="report-head"><span>ACCOUNT</span>{stage.columns.map((col) => <span key={col}>{col}</span>)}<span>CHANGE</span></div>{stage.rows.map((row) => <button key={row.id} className={`${selectedRow === row.id ? 'selected' : ''} ${row.tone ?? ''}`} onClick={() => onSelect(row.id)}><b>{row.label}</b>{row.values.map((value) => <span key={value}>{value}</span>)}<em>{row.change}</em></button>)}</div><div className="report-tip"><span><b>{selected?.label ?? 'No account selected'}</b><small>{selectedRow === stage.focus ? 'This is the number your question points toward.' : selected ? 'Interesting, but it does not answer the current question.' : 'Look for the line that does not fit the rest of the report.'}</small></span><button disabled={auditLocked} onClick={onAudit}>{auditLocked ? 'Find the unusual line' : 'Audit this story'} {!auditLocked && <ArrowRight />}</button></div></section>
+  return <section className="report-screen"><div className="tool-title"><div><span>TOOL 02 · REPORT</span><h2>Route snapshot</h2><p>Select the account that best matches your question.</p></div><Search /></div><div className="report-table"><div className="report-head"><span>ACCOUNT</span>{stage.columns.map((col) => <span key={col}>{col}</span>)}<span>CHANGE</span></div>{stage.rows.map((row) => <button key={row.id} className={`${selectedRow === row.id ? 'selected' : ''} ${row.tone ?? ''}`} onClick={() => onSelect(row.id)}><b>{row.label}</b>{row.values.map((value) => <span key={value}>{value}</span>)}<em>{row.change}</em></button>)}</div><div className="report-tip"><span><b>{selected?.label ?? 'No account selected'}</b><small>{selectedRow === stage.focus ? 'This is the number your question points toward.' : selected ? 'Interesting, but it does not answer the current question.' : 'Look for the line that does not fit the rest of the report.'}</small></span><button disabled={auditLocked} onClick={onAudit}>{auditLocked ? 'Find the unusual line' : 'Audit this story'} {!auditLocked && <ArrowRight />}</button></div></section>
 }
 
 function AuditDesk({ stage, done, remaining, onRun }: { stage: Stage; done: string[]; remaining: number; onRun: (choice: Choice) => void }) {
-  return <section className="audit-screen"><div className="tool-title"><div><span>TOOL 02 · AUDIT</span><h2>Choose how to check.</h2><p>{stage.id === 'onboarding' ? 'I’ll guide this one.' : `You have ${remaining} day${remaining === 1 ? '' : 's'} left. Different checks reveal different parts of the story.`}</p></div><FileCheck2 /></div><div className="audit-cards">{stage.choices.map((choice, index) => { const isDone = done.includes(choice.id); const unavailable = choice.time > remaining; return <button key={choice.id} className={`${choice.strong ? 'strong' : ''} ${isDone ? 'done' : ''}`} onClick={() => onRun(choice)} disabled={isDone || unavailable}><div className="choice-top"><span>{stage.id === 'onboarding' ? <Sparkles /> : <AuditIcon kind={choice.icon} />}</span><em>{choice.time === 0 ? 'GUIDED' : `${choice.time} DAY${choice.time === 1 ? '' : 'S'}`}</em></div><h3>{choice.title}</h3><p>{choice.detail}</p><div>{isDone ? <><Check /> COMPLETE</> : unavailable ? 'NOT ENOUGH TIME' : <>RUN AUDIT <ArrowRight /></>}</div>{stage.id === 'onboarding' && index === 0 && !isDone && <i className="pick-me">START HERE</i>}</button> })}</div></section>
+  return <section className="audit-screen"><div className="tool-title"><div><span>TOOL 03 · AUDIT</span><h2>Choose how to check.</h2><p>{stage.id === 'onboarding' ? 'I’ll guide this one.' : `You have ${remaining} day${remaining === 1 ? '' : 's'} left. Different checks reveal different parts of the story.`}</p></div><FileCheck2 /></div><div className="audit-cards">{stage.choices.map((choice, index) => { const isDone = done.includes(choice.id); const unavailable = choice.time > remaining; return <button key={choice.id} className={`${choice.strong ? 'strong' : ''} ${isDone ? 'done' : ''}`} onClick={() => onRun(choice)} disabled={isDone || unavailable}><div className="choice-top"><span>{stage.id === 'onboarding' ? <Sparkles /> : <AuditIcon kind={choice.icon} />}</span><em>{choice.time === 0 ? 'GUIDED' : `${choice.time} DAY${choice.time === 1 ? '' : 'S'}`}</em></div><h3>{choice.title}</h3><p>{choice.detail}</p><div>{isDone ? <><Check /> COMPLETE</> : unavailable ? 'NOT ENOUGH TIME' : <>RUN AUDIT <ArrowRight /></>}</div>{stage.id === 'onboarding' && index === 0 && !isDone && <i className="pick-me">START HERE</i>}</button> })}</div></section>
 }
 
 function Messages({ message, stage, found, tutorialMailState, onTutorialSend, onTutorialContinue }: { message: { from: string; body: string; new: boolean }; stage: Stage; found: Choice[]; tutorialMailState: TutorialMailState; onTutorialSend: () => void; onTutorialContinue: () => void }) {
   if (stage.id === 'onboarding' && found.length === 0) {
     const sent = tutorialMailState !== 'draft'
     const replied = tutorialMailState === 'reply'
-    return <section className="messages-screen tutorial-mail"><div className="tool-title"><div><span>TOOL 03 · MESSAGES</span><h2>A question from the morning run.</h2></div><Mail /></div><div className="thread-subject"><span>SUBJECT</span><h3>Morning run — add another sailing?</h3><small>{replied ? '3' : sent ? '2' : '1'} message{!sent ? '' : 's'} · Today</small></div><div className="email-thread" aria-live="polite"><article className="thread-message"><div className="portrait">MR</div><div><header><span><b>Mara Rinne</b> · Route manager</span><time>08:12</time></header><p>We turned away two freight calls last week. Should I ask the harbor for a price on an extra Wednesday sailing?</p></div></article>{!sent && <article className="thread-message reply-composer"><div className="portrait">YOU</div><div><header><span><b>Reply all</b> · Mara, Mira</span><time>DRAFT</time></header><p>Not yet. My instinct says Kestrel could be doing more on the runs we already make. How full is the cargo deck, really?</p><button className="send-mail" onClick={onTutorialSend}><Send /> Send email</button></div></article>}{sent && <article className="thread-message player-message sent-message"><div className="portrait">YOU</div><div><header><span><b>You</b> · Owner</span><time>08:19</time></header><p>Not yet. My instinct says Kestrel could be doing more on the runs we already make. How full is the cargo deck, really?</p></div></article>}{tutorialMailState === 'sent' && <div className="mail-waiting" role="status"><i /><span><b>Message sent</b><small>Waiting for Mira’s reply…</small></span></div>}{replied && <article className="thread-message incoming-message"><div className="portrait">MK</div><div><header><span><b>Mira Koski</b> · Dock clerk</span><time>08:22</time></header><p>I can pull the freight slips and check them against her loading limit. I’ll send you what I find.</p></div></article>}</div>{replied && <div className="thread-action incoming-action"><div><b>Mira can check it now.</b><small>Open the audit desk to start the comparison.</small></div><button onClick={onTutorialContinue}>Start the check <ArrowRight /></button></div>}</section>
+    return <section className="messages-screen tutorial-mail"><div className="tool-title"><div><span>TOOL 01 · MESSAGES</span><h2>A question from the morning run.</h2></div><Mail /></div><div className="thread-subject"><span>SUBJECT</span><h3>Morning run — add another sailing?</h3><small>{replied ? '3' : sent ? '2' : '1'} message{!sent ? '' : 's'} · Today</small></div><div className="email-thread" aria-live="polite"><article className="thread-message"><div className="portrait">MR</div><div><header><span><b>Mara Rinne</b> · Route manager</span><time>08:12</time></header><p>We turned away two freight calls last week. Should I ask the harbor for a price on an extra Wednesday sailing?</p></div></article>{!sent && <article className="thread-message reply-composer"><div className="portrait">YOU</div><div><header><span><b>Reply all</b> · Mara, Mira</span><time>DRAFT</time></header><p>Not yet. My instinct says Kestrel could be doing more on the runs we already make. How full is the cargo deck, really?</p><button className="send-mail" onClick={onTutorialSend}><Send /> Send email</button></div></article>}{sent && <article className="thread-message player-message sent-message"><div className="portrait">YOU</div><div><header><span><b>You</b> · Owner</span><time>08:19</time></header><p>Not yet. My instinct says Kestrel could be doing more on the runs we already make. How full is the cargo deck, really?</p></div></article>}{tutorialMailState === 'sent' && <div className="mail-waiting" role="status"><i /><span><b>Message sent</b><small>Waiting for Mira’s reply…</small></span></div>}{replied && <article className="thread-message incoming-message"><div className="portrait">MK</div><div><header><span><b>Mira Koski</b> · Dock clerk</span><time>08:22</time></header><p>I can pull the freight slips and check them against her loading limit. I’ll send you what I find.</p></div></article>}</div>{replied && <div className="thread-action incoming-action"><div><b>Mira can check it now.</b><small>Open the audit desk to start the comparison.</small></div><button onClick={onTutorialContinue}>Start the check <ArrowRight /></button></div>}</section>
   }
-  return <section className="messages-screen"><div className="tool-title"><div><span>TOOL 03 · MESSAGES</span><h2>People know what cells don’t.</h2></div><Mail /></div><article className={message.new ? 'new' : ''}><div className="portrait">{message.from.split(/[ ,]/).map((part) => part[0]).slice(0, 2).join('')}</div><div><span>{message.new ? 'NEW MESSAGE' : 'MESSAGE'}</span><h3>{message.from}</h3><p>{message.body}</p></div></article>{found.length > 1 && <div className="older-messages"><span>EARLIER FINDINGS</span>{found.slice(0, -1).reverse().map((choice) => <div key={choice.id}><Check /><span><b>{choice.noteFrom}</b><small>{choice.evidence}</small></span></div>)}</div>}<div className="message-foot"><Anchor /><p>{stage.id === 'onboarding' ? 'Good audits do not only find problems. They can find room to grow.' : stage.id === 'level1' ? 'An odd number is a clue, not a conviction.' : 'When the records and people agree, you have a case.'}</p></div></section>
+  return <section className="messages-screen"><div className="tool-title"><div><span>TOOL 01 · MESSAGES</span><h2>Inbox.</h2></div><Mail /></div><article className={message.new ? 'new' : ''}><div className="portrait">{message.from.split(/[ ,]/).map((part) => part[0]).slice(0, 2).join('')}</div><div><span>{message.new ? 'NEW MESSAGE' : 'MESSAGE'}</span><h3>{message.from}</h3><p>{message.body}</p></div></article>{found.length > 1 && <div className="older-messages"><span>EARLIER FINDINGS</span>{found.slice(0, -1).reverse().map((choice) => <div key={choice.id}><Check /><span><b>{choice.noteFrom}</b><small>{choice.evidence}</small></span></div>)}</div>}<div className="message-foot"><Anchor /><p>{stage.id === 'onboarding' ? 'Good audits do not only find problems. They can find room to grow.' : stage.id === 'level1' ? 'An odd number is a clue, not a conviction.' : 'When the records and people agree, you have a case.'}</p></div></section>
 }
 
 export default App
