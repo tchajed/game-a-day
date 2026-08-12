@@ -1,7 +1,7 @@
 import * as pc from 'playcanvas';
 import './style.css';
 
-type Work = { title: string; subtitle: string; image: string; x?: number };
+type Work = { title: string; subtitle: string; image: string };
 type Gallery = {
   title: string;
   heading: string;
@@ -18,9 +18,15 @@ const galleries: Gallery[] = [
     note: 'In this imagined court, rank is worn in velvet, silk and fur. These portraits borrow the visual language of eighteenth-century power while quietly asking what, exactly, separates a sitter from a subject.',
     accent: '#d7ff43', wall: '#827d6f',
     works: [
-      { title: 'Her Grace, the White Marchioness', subtitle: 'Generative oil study · Court archive I', image: '/art/portraits-1.webp' },
-      { title: 'Admiral Blackhorn at Rest', subtitle: 'Generative oil study · Court archive II', image: '/art/portraits-2.webp' },
-      { title: 'Lady Sighthound in Saffron', subtitle: 'Generative oil study · Court archive III', image: '/art/portraits-3.webp' }
+      { title: 'Her Grace, the White Marchioness', subtitle: 'Old-master glazing · Fine linen', image: '/art/portraits-1.webp' },
+      { title: 'Admiral Blackhorn at Rest', subtitle: 'Court portrait · Layered impasto', image: '/art/portraits-2.webp' },
+      { title: 'Lady Sighthound in Saffron', subtitle: 'Court portrait · Silk and oil', image: '/art/portraits-3.webp' },
+      { title: 'The Fox Envoy', subtitle: 'Northern manner · Smooth canvas', image: '/art/portraits-4.webp' },
+      { title: 'Prince Capybara at the Harbour', subtitle: 'Sunlit study · Linen weave', image: '/art/portraits-5.webp' },
+      { title: 'The Midnight Justice', subtitle: 'Tonal oil · Dry-brush featherwork', image: '/art/portraits-6.webp' },
+      { title: 'The Pale Heir', subtitle: 'Rococo oil · Prepared gesso', image: '/art/portraits-7.webp' },
+      { title: 'Sisters of the Azure Salon', subtitle: 'Modernist oil · Simple canvas', image: '/art/portraits-8.webp' },
+      { title: 'The Highland Crown', subtitle: 'Romantic oil · Coarse weave', image: '/art/portraits-9.webp' }
     ]
   },
   {
@@ -29,9 +35,15 @@ const galleries: Gallery[] = [
     note: 'A telephone, a teacup, a chair: each has been removed from the room that taught us how to see it. In their new surroundings these familiar things become monuments, witnesses and lonely travellers.',
     accent: '#75d6df', wall: '#667477',
     works: [
-      { title: 'A Call from the Bathypelagic', subtitle: 'Oil on simulated canvas · 2025', image: '/art/objects-1.webp' },
-      { title: 'Tea at Apogee', subtitle: 'Oil on simulated canvas · 2025', image: '/art/objects-2.webp' },
-      { title: 'The Last Chair Before Spring', subtitle: 'Oil on simulated canvas · 2025', image: '/art/objects-3.webp' }
+      { title: 'A Call from the Bathypelagic', subtitle: 'Glazed oil · Submerged study', image: '/art/objects-1.webp' },
+      { title: 'Tea at Apogee', subtitle: 'Contemporary oil · Fine canvas', image: '/art/objects-2.webp' },
+      { title: 'The Last Chair Before Spring', subtitle: 'Tonal oil · Scraped ground', image: '/art/objects-3.webp' },
+      { title: 'Forecast: Perpetual Blue', subtitle: 'Naïve oil · Linen texture', image: '/art/objects-4.webp' },
+      { title: 'Breakfast for the Old Gods', subtitle: 'Still-life glazing · Moss impasto', image: '/art/objects-5.webp' },
+      { title: 'Final Curtain, Yellow', subtitle: 'Expressionist oil · Raw canvas', image: '/art/objects-6.webp' },
+      { title: 'The Long Crossing', subtitle: 'Color-field oil · Thin scumble', image: '/art/objects-7.webp' },
+      { title: 'Cold Storage, Water Garden', subtitle: 'Post-Impressionist oil · Open weave', image: '/art/objects-8.webp' },
+      { title: 'Reliquary for a Right Foot', subtitle: 'Surrealist oil · Red ground', image: '/art/objects-9.webp' }
     ]
   },
   {
@@ -40,9 +52,15 @@ const galleries: Gallery[] = [
     note: 'These invented vistas treat the alien not as threat, but as landscape. Crystal, root and machine share the same deep time. Technology appears less like an arrival than another form of weather.',
     accent: '#ff8b63', wall: '#75695f',
     works: [
-      { title: 'Salt Moon, Periapsis', subtitle: 'Large-format generative landscape I', image: '/art/worlds-1.webp' },
-      { title: 'Machines in the Mangrove', subtitle: 'Large-format generative landscape II', image: '/art/worlds-2.webp' },
-      { title: 'The City That Climbed', subtitle: 'Large-format generative landscape III', image: '/art/worlds-3.webp' }
+      { title: 'Salt Moon, Periapsis', subtitle: 'Romantic landscape · Luminous oil', image: '/art/worlds-1.webp' },
+      { title: 'Machines in the Mangrove', subtitle: 'Layered oil · Botanical impasto', image: '/art/worlds-2.webp' },
+      { title: 'The City That Climbed', subtitle: 'Large-format oil · Copper ground', image: '/art/worlds-3.webp' },
+      { title: 'White Towers at Black Tide', subtitle: 'Minimal oil · Fine canvas grain', image: '/art/worlds-4.webp' },
+      { title: 'The Solar Permanent Way', subtitle: 'Regionalist oil · Rhythmic stroke', image: '/art/worlds-5.webp' },
+      { title: 'Archive in Cobalt Ice', subtitle: 'Scraped oil · Palette-knife ground', image: '/art/worlds-6.webp' },
+      { title: 'Sails upon the Rosewater', subtitle: 'Fauvist oil · Direct color', image: '/art/worlds-7.webp' },
+      { title: 'Obsidian Weather', subtitle: 'Sublime oil · Dark velatura', image: '/art/worlds-8.webp' },
+      { title: 'The Seed Observatory', subtitle: 'Tonal oil · Rough linen', image: '/art/worlds-9.webp' }
     ]
   }
 ];
@@ -95,8 +113,12 @@ const floorMat = material('Dark polished terrazzo', '#292722', { gloss: .72 });
 const ceilingMat = material('Ceiling', '#292722', { gloss: .08 });
 const brassMat = material('Aged brass', '#7f6840', { metal: .85, gloss: .66 });
 const darkMat = material('Frame shadow', '#17140f', { gloss: .25 });
+const oakMat = material('Dark oak frame', '#4c3524', { gloss: .42 });
+const paleWoodMat = material('Pale maple frame', '#b59b72', { gloss: .3 });
+const blackFrameMat = material('Museum black frame', '#242321', { gloss: .2 });
 const plaqueMat = material('Wall label', '#d8d1c1', { gloss: .12 });
 const benchMat = material('Bench', '#4b3028', { gloss: .48 });
+const frameMaterials = [brassMat, darkMat, oakMat, paleWoodMat, blackFrameMat];
 
 function box(name: string, position: pc.Vec3, scale: pc.Vec3, mat: pc.Material, parent?: pc.Entity) {
   const e = new pc.Entity(name);
@@ -119,14 +141,16 @@ centers.forEach((cx, index) => {
   box('Bench seat', new pc.Vec3(cx, .63, 1.1), new pc.Vec3(3.2, .25, .72), benchMat);
   box('Bench leg L', new pc.Vec3(cx - 1.25, .28, 1.1), new pc.Vec3(.18, .55, .58), brassMat);
   box('Bench leg R', new pc.Vec3(cx + 1.25, .28, 1.1), new pc.Vec3(.18, .55, .58), brassMat);
-  // Ceiling track and warm gallery pools.
-  box('Lighting track', new pc.Vec3(cx, 5.82, -4.2), new pc.Vec3(8, .06, .06), darkMat);
-  [-3, 0, 3].forEach(offset => {
-    const light = new pc.Entity('Gallery spotlight');
-    light.addComponent('light', { type: 'omni', color: new pc.Color(1, .74, .48), intensity: index === 2 ? 1.15 : .95, range: 6.5, castShadows: false });
-    light.setPosition(cx + offset, 4.65, -4.8);
-    app.root.addChild(light);
-    box('Spot housing', new pc.Vec3(cx + offset, 5.7, -4.2), new pc.Vec3(.18, .24, .18), darkMat);
+  // Two lighting tracks wash all four walls without making the room feel staged.
+  [-4.2, 4.2].forEach(trackZ => {
+    box('Lighting track', new pc.Vec3(cx, 5.82, trackZ), new pc.Vec3(8, .06, .06), darkMat);
+    [-3.5, 0, 3.5].forEach(offset => {
+      const light = new pc.Entity('Gallery spotlight');
+      light.addComponent('light', { type: 'omni', color: new pc.Color(1, .76, .52), intensity: index === 2 ? .82 : .72, range: 5.8, castShadows: false });
+      light.setPosition(cx + offset, 4.7, trackZ * .9);
+      app.root.addChild(light);
+      box('Spot housing', new pc.Vec3(cx + offset, 5.7, trackZ), new pc.Vec3(.18, .24, .18), darkMat);
+    });
   });
 });
 
@@ -156,26 +180,83 @@ function loadTexture(url: string): Promise<pc.Texture> {
   });
 }
 
+type Wall = 'north' | 'south' | 'west' | 'east';
+type Hanging = { wall: Wall; along: number; centerY: number; width: number; height: number; frame: number };
+
+// Every room uses a salon-like rhythm: asymmetric scales, mixed orientations and all available walls.
+const hangingPlans: Hanging[][] = [
+  [
+    { wall: 'north', along: -3.55, centerY: 3.22, width: 1.7, height: 4.2, frame: 0 },
+    { wall: 'north', along: -.85, centerY: 3.05, width: 1.45, height: 3.65, frame: 2 },
+    { wall: 'north', along: 2.5, centerY: 3.3, width: 2.05, height: 4.55, frame: 0 },
+    { wall: 'south', along: -3.45, centerY: 3.08, width: 1.6, height: 4.0, frame: 1 },
+    { wall: 'south', along: -.45, centerY: 3.4, width: 1.35, height: 3.4, frame: 3 },
+    { wall: 'south', along: 2.8, centerY: 3.05, width: 1.85, height: 4.25, frame: 2 },
+    { wall: 'west', along: -5.35, centerY: 3.0, width: 3.0, height: 2.05, frame: 3 },
+    { wall: 'west', along: -.75, centerY: 3.55, width: 3.7, height: 2.4, frame: 4 },
+    { wall: 'west', along: 4.75, centerY: 2.75, width: 2.8, height: 1.85, frame: 2 }
+  ],
+  [
+    { wall: 'north', along: -3.65, centerY: 3.15, width: 1.45, height: 3.8, frame: 4 },
+    { wall: 'north', along: -.8, centerY: 3.48, width: 1.75, height: 4.35, frame: 3 },
+    { wall: 'north', along: 2.65, centerY: 2.95, width: 1.65, height: 3.55, frame: 2 },
+    { wall: 'south', along: -3.25, centerY: 3.35, width: 1.55, height: 3.9, frame: 3 },
+    { wall: 'south', along: -.2, centerY: 2.85, width: 1.35, height: 3.45, frame: 1 },
+    { wall: 'south', along: 3.05, centerY: 3.3, width: 1.9, height: 4.3, frame: 4 },
+    { wall: 'east', along: -5.25, centerY: 3.45, width: 3.35, height: 1.75, frame: 3 },
+    { wall: 'east', along: -.55, centerY: 3.05, width: 3.75, height: 2.05, frame: 2 },
+    { wall: 'east', along: 4.7, centerY: 2.72, width: 2.9, height: 1.6, frame: 4 }
+  ],
+  [
+    { wall: 'north', along: -3.6, centerY: 3.3, width: 1.8, height: 4.35, frame: 1 },
+    { wall: 'north', along: -.5, centerY: 2.92, width: 1.35, height: 3.5, frame: 3 },
+    { wall: 'north', along: 2.7, centerY: 3.38, width: 2.0, height: 4.55, frame: 0 },
+    { wall: 'south', along: -3.45, centerY: 2.95, width: 1.45, height: 3.65, frame: 4 },
+    { wall: 'south', along: -.55, centerY: 3.38, width: 1.7, height: 4.2, frame: 2 },
+    { wall: 'south', along: 2.9, centerY: 3.12, width: 1.75, height: 3.85, frame: 1 },
+    { wall: 'east', along: -5.15, centerY: 3.3, width: 3.8, height: 1.9, frame: 4 },
+    { wall: 'east', along: -.35, centerY: 3.42, width: 4.05, height: 2.2, frame: 0 },
+    { wall: 'east', along: 4.75, centerY: 2.7, width: 3.0, height: 1.7, frame: 3 }
+  ]
+];
+
 const artworkPositions: { room: number; work: number; position: pc.Vec3 }[] = [];
+
+function wallTransform(cx: number, hanging: Hanging, depth: number) {
+  if (hanging.wall === 'north') return { position: new pc.Vec3(cx + hanging.along, hanging.centerY, -8 + depth), rotation: 0 };
+  if (hanging.wall === 'south') return { position: new pc.Vec3(cx + hanging.along, hanging.centerY, 8 - depth), rotation: 180 };
+  if (hanging.wall === 'west') return { position: new pc.Vec3(cx - 6 + depth, hanging.centerY, hanging.along), rotation: 90 };
+  return { position: new pc.Vec3(cx + 6 - depth, hanging.centerY, hanging.along), rotation: -90 };
+}
+
+function wallBox(name: string, cx: number, hanging: Hanging, depth: number, width: number, height: number, thickness: number, mat: pc.Material) {
+  const transform = wallTransform(cx, hanging, depth);
+  const entity = box(name, transform.position, new pc.Vec3(width, height, thickness), mat);
+  entity.setEulerAngles(0, transform.rotation, 0);
+  return entity;
+}
 
 async function hangArtwork(room: number, work: number, texture: pc.Texture) {
   const cx = centers[room];
-  const x = cx + [-3.25, 0, 3.25][work];
-  const isLandscapeRoom = room === 2;
-  const width = isLandscapeRoom ? 2.45 : 2.18;
-  const height = isLandscapeRoom ? 5.15 : 4.75;
+  const hanging = hangingPlans[room][work];
   const canvasMat = new pc.StandardMaterial();
   canvasMat.name = galleries[room].works[work].title;
   canvasMat.diffuse = new pc.Color(1, 1, 1);
   canvasMat.diffuseMap = texture;
-  canvasMat.gloss = .18;
+  canvasMat.gloss = work % 3 === 0 ? .1 : .2;
   canvasMat.metalness = 0;
   canvasMat.update();
-  box('Ornate outer frame', new pc.Vec3(x, 3.15, -7.72), new pc.Vec3(width + .24, height + .24, .18), brassMat);
-  box('Black frame inset', new pc.Vec3(x, 3.15, -7.59), new pc.Vec3(width + .08, height + .08, .12), darkMat);
-  box(galleries[room].works[work].title, new pc.Vec3(x, 3.15, -7.49), new pc.Vec3(width, height, .08), canvasMat);
-  box('Artwork label', new pc.Vec3(x, .46, -7.54), new pc.Vec3(.76, .28, .07), plaqueMat);
-  artworkPositions.push({ room, work, position: new pc.Vec3(x, 1.7, -7.4) });
+
+  const border = hanging.frame === 1 ? .11 : hanging.frame === 4 ? .16 : .2;
+  wallBox('Artwork outer frame', cx, hanging, .27, hanging.width + border, hanging.height + border, .17, frameMaterials[hanging.frame]);
+  wallBox('Frame inset', cx, hanging, .39, hanging.width + .055, hanging.height + .055, .1, darkMat);
+  wallBox(galleries[room].works[work].title, cx, hanging, .47, hanging.width, hanging.height, .065, canvasMat);
+
+  const labelHanging = { ...hanging, centerY: Math.max(.38, hanging.centerY - hanging.height / 2 - .23) };
+  wallBox('Artwork label', cx, labelHanging, .45, Math.min(.7, hanging.width * .45), .16, .055, plaqueMat);
+
+  const viewPoint = wallTransform(cx, { ...hanging, centerY: 1.68 }, 1.35).position;
+  artworkPositions.push({ room, work, position: viewPoint });
 }
 
 const textureJobs = galleries.flatMap((gallery, room) => gallery.works.map((work, index) =>
@@ -224,6 +305,9 @@ function setRoom(index: number, teleport = false) {
   document.querySelector<HTMLElement>('.eyebrow')!.textContent = `Gallery 0${index + 1} · Curator's note`;
   document.querySelector<HTMLElement>('.curator h1')!.innerHTML = gallery.heading;
   curatorCopy.textContent = gallery.note;
+  const footerCounts = document.querySelectorAll<HTMLElement>('.curator-footer span');
+  footerCounts[0].textContent = `${gallery.works.length} works`;
+  footerCounts[1].textContent = 'Oil on canvas · 2025';
   roomIndex.textContent = `0${index + 1}`;
   progressLine.style.background = `linear-gradient(90deg, ${gallery.accent} ${(index + 1) * 33.333}%, #777 ${(index + 1) * 33.333}%)`;
   root.style.setProperty('--acid', gallery.accent);
@@ -270,14 +354,14 @@ document.querySelector('#sound')!.addEventListener('click', () => {
 
 function updateCard() {
   const p = camera.getPosition();
-  if (p.z > -2.8 || panelOpen) { artCard.classList.remove('visible'); return; }
+  if (panelOpen) { artCard.classList.remove('visible'); return; }
   let nearest: typeof artworkPositions[number] | undefined;
   let distance = Infinity;
   artworkPositions.filter(a => a.room === currentRoom).forEach(a => {
     const d = Math.hypot(p.x - a.position.x, p.z - a.position.z);
     if (d < distance) { distance = d; nearest = a; }
   });
-  if (!nearest || distance > 4.6) { artCard.classList.remove('visible'); return; }
+  if (!nearest || distance > 3.15) { artCard.classList.remove('visible'); return; }
   const key = `${nearest.room}-${nearest.work}`;
   if (key !== lastCard) {
     const work = galleries[nearest.room].works[nearest.work];

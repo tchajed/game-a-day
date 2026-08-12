@@ -6,6 +6,7 @@ test('loads the 3D museum and curatorial interface', async ({ page }) => {
   await expect(page.locator('#museum')).toBeVisible();
   await expect(page.locator('.curator h1')).toContainText('The Court');
   await expect(page.locator('.gallery-nav button')).toHaveCount(3);
+  await expect(page.locator('.curator-footer span').first()).toHaveText('9 works');
   await expect.poll(() => page.evaluate(() => (window as unknown as { museumReady?: boolean }).museumReady)).toBe(true);
   await expect(page.locator('#loading')).toHaveClass(/done/, { timeout: 15_000 });
 });
