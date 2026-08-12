@@ -54,7 +54,7 @@ type Stage = {
 const stages: Record<StageId, Stage> = {
   onboarding: {
     id: 'onboarding', number: 'TUTORIAL', kicker: 'A QUIET TUESDAY', title: 'There is room on the boat.',
-    brief: 'The morning ferry is profitable, but your instinct says it could do more. Let’s follow one number together.',
+    brief: 'A routine question about adding another sailing has made you wonder how much room the ferry is leaving unused.',
     question: 'How full is the cargo deck, really?', days: 1, columns: ['LAST MONTH', 'THIS MONTH'], focus: 'cargo',
     guide: 'Start here. Capacity tells you whether higher sales need another boat—or just better use of this one.',
     rows: [
@@ -116,8 +116,10 @@ function AuditIcon({ kind }: { kind: Choice['icon'] }) {
 
 function App() {
   const [stageId, setStageId] = useState<StageId>('onboarding')
-  const [tool, setTool] = useState<Tool>('report')
-  const [selectedRow, setSelectedRow] = useState('cargo')
+  const [tool, setTool] = useState<Tool>('messages')
+  const [selectedRow, setSelectedRow] = useState('')
+  const [showTutorialIntro, setShowTutorialIntro] = useState(true)
+  const [tutorialThreadRead, setTutorialThreadRead] = useState(false)
   const [completed, setCompleted] = useState<Record<StageId, string[]>>({ onboarding: [], level1: [], level5: [] })
   const [daysSpent, setDaysSpent] = useState<Record<StageId, number>>({ onboarding: 0, level1: 0, level5: 0 })
   const [result, setResult] = useState<Choice | null>(null)
@@ -131,6 +133,7 @@ function App() {
   const remaining = stage.days - daysSpent[stageId]
   const foundChoices = stage.choices.filter((choice) => done.includes(choice.id))
   const strongEvidence = foundChoices.filter((choice) => choice.strong).length
+  const auditLocked = stageId === 'onboarding' ? !tutorialThreadRead : stageId === 'level1' ? selectedRow !== stage.focus : false
 
   const message = useMemo(() => {
     const latest = foundChoices.at(-1)
@@ -142,15 +145,15 @@ function App() {
 
   function jumpTo(id: StageId) {
     setStageId(id)
-    setTool('report')
-    setSelectedRow(stages[id].focus)
+    setTool(id === 'onboarding' ? 'messages' : 'report')
+    setSelectedRow(id === 'level1' ? '' : stages[id].focus)
     setResult(null)
     setShowDecision(false)
     setEnding(null)
   }
 
   function runAudit(choice: Choice) {
-    if (done.includes(choice.id) || choice.time > remaining || running) return
+    if (auditLocked || done.includes(choice.id) || choice.time > remaining || running) return
     setRunning(choice)
     window.setTimeout(() => {
       setCompleted((all) => ({ ...all, [stageId]: [...all[stageId], choice.id] }))
@@ -167,6 +170,8 @@ function App() {
   function reset() {
     setCompleted({ onboarding: [], level1: [], level5: [] })
     setDaysSpent({ onboarding: 0, level1: 0, level5: 0 })
+    setTutorialThreadRead(false)
+    setShowTutorialIntro(true)
     jumpTo('onboarding')
   }
 
@@ -190,32 +195,36 @@ function App() {
 
       <section className="play-area">
         <nav className="tools" aria-label="Investigation tools">
-          <button className={tool === 'report' ? 'active' : ''} onClick={() => setTool('report')}><BookOpen /><span><b>REPORT</b><small>See the numbers</small></span>{stage.guide && tool !== 'report' && <i />}</button>
-          <button className={tool === 'audit' ? 'active' : ''} onClick={() => setTool('audit')}><FileCheck2 /><span><b>AUDIT</b><small>Choose a check</small></span>{done.length === 0 && <i />}</button>
-          <button className={tool === 'messages' ? 'active' : ''} onClick={() => setTool('messages')}><Mail /><span><b>MESSAGES</b><small>Hear from people</small></span>{foundChoices.length > 0 && <i />}</button>
+          <button disabled={stageId === 'onboarding'} className={tool === 'report' ? 'active' : ''} onClick={() => setTool('report')}><BookOpen /><span><b>REPORT</b><small>{stageId === 'onboarding' ? 'Introduced next' : 'See the numbers'}</small></span>{stageId === 'level1' && selectedRow !== stage.focus && <i />}</button>
+          <button disabled={auditLocked} className={tool === 'audit' ? 'active' : ''} onClick={() => setTool('audit')}><FileCheck2 /><span><b>AUDIT</b><small>{auditLocked ? 'Follow the prompt first' : 'Choose a check'}</small></span>{done.length === 0 && !auditLocked && <i />}</button>
+          <button className={tool === 'messages' ? 'active' : ''} onClick={() => setTool('messages')}><Mail /><span><b>MESSAGES</b><small>Hear from people</small></span>{(stageId === 'onboarding' && !tutorialThreadRead) || foundChoices.length > 0 ? <i /> : null}</button>
         </nav>
 
         <div className="tool-screen">
-          {tool === 'report' && <Report stage={stage} selectedRow={selectedRow} onSelect={setSelectedRow} onAudit={() => setTool('audit')} />}
+          {tool === 'report' && <Report stage={stage} selectedRow={selectedRow} onSelect={setSelectedRow} onAudit={() => setTool('audit')} auditLocked={auditLocked} />}
           {tool === 'audit' && <AuditDesk stage={stage} done={done} remaining={remaining} onRun={runAudit} />}
-          {tool === 'messages' && <Messages message={message} stage={stage} found={foundChoices} />}
+          {tool === 'messages' && <Messages message={message} stage={stage} found={foundChoices} tutorialThreadRead={tutorialThreadRead} onTutorialContinue={() => { setTutorialThreadRead(true); setTool('audit') }} />}
         </div>
 
         <aside className="mission-card">
           <span className="mission-label">{stageId === 'onboarding' ? 'YOUR FIRST AUDIT' : 'CURRENT OBJECTIVE'}</span>
           <h2>{stage.question}</h2>
-          {stage.guide && done.length === 0 ? <div className="guide-box"><Sparkles /><p>{stage.guide}</p></div> : (
+          {stageId === 'onboarding' && !tutorialThreadRead ? <div className="guide-box"><Mail /><p>Read the morning thread. Your reply will turn a hunch into a question you can check.</p></div> : stageId === 'level1' && selectedRow !== stage.focus && done.length === 0 ? <div className="guide-box"><BookOpen /><p>Start with the report. Find the line that does not fit, then audit from there.</p></div> : stage.guide && done.length === 0 ? <div className="guide-box"><Sparkles /><p>{stage.guide}</p></div> : (
             <div className="evidence-stack">
               <span>EVIDENCE FOUND</span>
               {foundChoices.length === 0 ? <p className="empty-evidence">Nothing yet. A useful check connects a number to the real world.</p> : foundChoices.map((choice) => <div key={choice.id}><Stamp /><span><b>{choice.evidence}</b><small>{choice.title}</small></span></div>)}
             </div>
           )}
-          {done.length === 0 && <button className="big-action" onClick={() => setTool('audit')}>Choose an audit <ArrowRight /></button>}
+          {done.length === 0 && stageId === 'onboarding' && !tutorialThreadRead && <button className="big-action" onClick={() => setTool('messages')}>Read the thread <ArrowRight /></button>}
+          {done.length === 0 && stageId === 'level1' && selectedRow !== stage.focus && <button className="big-action" onClick={() => setTool('report')}>Review the report <ArrowRight /></button>}
+          {done.length === 0 && !auditLocked && <button className="big-action" onClick={() => setTool('audit')}>Choose an audit <ArrowRight /></button>}
           {stageId !== 'level5' && stageComplete && <button className="big-action success" onClick={nextStage}>Continue to {stageId === 'onboarding' ? 'Level 1' : 'Level 5'} <ArrowRight /></button>}
           {stageId === 'level5' && (stageComplete || debug) && <button className="big-action danger" onClick={() => setShowDecision(true)}>Face the board <ArrowRight /></button>}
           {debug && <button className="debug-reset" onClick={reset}><RotateCcw /> Reset demo</button>}
         </aside>
       </section>
+
+      {showTutorialIntro && stageId === 'onboarding' && <div className="overlay tutorial-overlay"><article className="tutorial-context"><div className="context-mark"><Anchor /></div><span>TUTORIAL · BEFORE WE BEGIN</span><h2>Welcome aboard Northstar.</h2><p>You have just taken over a small ferry company serving an island chain where every route matters. The books are healthy, the crew knows the waters, and today’s work begins with an ordinary email—exactly the sort of question that can reveal what a business is capable of when you follow it past the easy answer.</p><button onClick={() => { setShowTutorialIntro(false); setTool('messages') }}>Open the morning mail <ArrowRight /></button></article></div>}
 
       {running && <div className="overlay"><div className="running-card"><div className="sonar"><Waves /></div><span>AUDIT IN PROGRESS</span><h2>{running.title}</h2><p>Following the paper trail…</p><div className="loader"><i /></div></div></div>}
 
@@ -228,15 +237,17 @@ function App() {
   )
 }
 
-function Report({ stage, selectedRow, onSelect, onAudit }: { stage: Stage; selectedRow: string; onSelect: (id: string) => void; onAudit: () => void }) {
-  return <section className="report-screen"><div className="tool-title"><div><span>TOOL 01 · REPORT</span><h2>Route snapshot</h2></div><Search /></div><div className="report-table"><div className="report-head"><span>ACCOUNT</span>{stage.columns.map((col) => <span key={col}>{col}</span>)}<span>CHANGE</span></div>{stage.rows.map((row) => <button key={row.id} className={`${selectedRow === row.id ? 'selected' : ''} ${row.tone ?? ''}`} onClick={() => onSelect(row.id)}><b>{row.label}</b>{row.values.map((value) => <span key={value}>{value}</span>)}<em>{row.change}</em></button>)}</div><div className="report-tip"><span><b>{stage.rows.find((row) => row.id === selectedRow)?.label}</b><small>{selectedRow === stage.focus ? 'This is the number your question points toward.' : 'Selected account'}</small></span><button onClick={onAudit}>Audit this story <ArrowRight /></button></div></section>
+function Report({ stage, selectedRow, onSelect, onAudit, auditLocked }: { stage: Stage; selectedRow: string; onSelect: (id: string) => void; onAudit: () => void; auditLocked: boolean }) {
+  const selected = stage.rows.find((row) => row.id === selectedRow)
+  return <section className="report-screen"><div className="tool-title"><div><span>TOOL 01 · REPORT</span><h2>Route snapshot</h2><p>Select the account that best matches your question.</p></div><Search /></div><div className="report-table"><div className="report-head"><span>ACCOUNT</span>{stage.columns.map((col) => <span key={col}>{col}</span>)}<span>CHANGE</span></div>{stage.rows.map((row) => <button key={row.id} className={`${selectedRow === row.id ? 'selected' : ''} ${row.tone ?? ''}`} onClick={() => onSelect(row.id)}><b>{row.label}</b>{row.values.map((value) => <span key={value}>{value}</span>)}<em>{row.change}</em></button>)}</div><div className="report-tip"><span><b>{selected?.label ?? 'No account selected'}</b><small>{selectedRow === stage.focus ? 'This is the number your question points toward.' : selected ? 'Interesting, but it does not answer the current question.' : 'Look for the line that does not fit the rest of the report.'}</small></span><button disabled={auditLocked} onClick={onAudit}>{auditLocked ? 'Find the unusual line' : 'Audit this story'} {!auditLocked && <ArrowRight />}</button></div></section>
 }
 
 function AuditDesk({ stage, done, remaining, onRun }: { stage: Stage; done: string[]; remaining: number; onRun: (choice: Choice) => void }) {
   return <section className="audit-screen"><div className="tool-title"><div><span>TOOL 02 · AUDIT</span><h2>Choose how to check.</h2><p>{stage.id === 'onboarding' ? 'I’ll guide this one.' : `You have ${remaining} day${remaining === 1 ? '' : 's'} left. Different checks reveal different parts of the story.`}</p></div><FileCheck2 /></div><div className="audit-cards">{stage.choices.map((choice, index) => { const isDone = done.includes(choice.id); const unavailable = choice.time > remaining; return <button key={choice.id} className={`${choice.strong ? 'strong' : ''} ${isDone ? 'done' : ''}`} onClick={() => onRun(choice)} disabled={isDone || unavailable}><div className="choice-top"><span>{stage.id === 'onboarding' ? <Sparkles /> : <AuditIcon kind={choice.icon} />}</span><em>{choice.time === 0 ? 'GUIDED' : `${choice.time} DAY${choice.time === 1 ? '' : 'S'}`}</em></div><h3>{choice.title}</h3><p>{choice.detail}</p><div>{isDone ? <><Check /> COMPLETE</> : unavailable ? 'NOT ENOUGH TIME' : <>RUN AUDIT <ArrowRight /></>}</div>{stage.id === 'onboarding' && index === 0 && !isDone && <i className="pick-me">START HERE</i>}</button> })}</div></section>
 }
 
-function Messages({ message, stage, found }: { message: { from: string; body: string; new: boolean }; stage: Stage; found: Choice[] }) {
+function Messages({ message, stage, found, tutorialThreadRead, onTutorialContinue }: { message: { from: string; body: string; new: boolean }; stage: Stage; found: Choice[]; tutorialThreadRead: boolean; onTutorialContinue: () => void }) {
+  if (stage.id === 'onboarding' && found.length === 0) return <section className="messages-screen tutorial-mail"><div className="tool-title"><div><span>TOOL 03 · MESSAGES</span><h2>A question from the morning run.</h2></div><Mail /></div><div className="thread-subject"><span>SUBJECT</span><h3>Morning run — add another sailing?</h3><small>3 messages · Today</small></div><div className="email-thread"><article className="thread-message"><div className="portrait">MR</div><div><header><span><b>Mara Rinne</b> · Route manager</span><time>08:12</time></header><p>Morning route profit is up again, and we turned away two freight calls last week. Should I price an extra Wednesday sailing?</p></div></article><article className="thread-message player-message"><div className="portrait">YOU</div><div><header><span><b>You</b> · Owner</span><time>08:19</time></header><p>Not yet. The run is profitable, but my instinct says it could do more. Before we add a boat: how full is the cargo deck, really?</p></div></article><article className="thread-message"><div className="portrait">MK</div><div><header><span><b>Mira Koski</b> · Dock clerk</span><time>08:26</time></header><p>I can answer that. We record sold freight weight and Kestrel’s safe deck capacity for every departure. Give me an hour and I’ll compare them.</p></div></article></div><div className="thread-action"><div><b>Your hunch is now a testable question.</b><small>Ask Mira to compare the records.</small></div><button disabled={tutorialThreadRead} onClick={onTutorialContinue}>{tutorialThreadRead ? 'Audit started' : 'Check deck capacity'} {!tutorialThreadRead && <ArrowRight />}</button></div></section>
   return <section className="messages-screen"><div className="tool-title"><div><span>TOOL 03 · MESSAGES</span><h2>People know what cells don’t.</h2></div><Mail /></div><article className={message.new ? 'new' : ''}><div className="portrait">{message.from.split(/[ ,]/).map((part) => part[0]).slice(0, 2).join('')}</div><div><span>{message.new ? 'NEW MESSAGE' : 'MESSAGE'}</span><h3>{message.from}</h3><p>{message.body}</p></div></article>{found.length > 1 && <div className="older-messages"><span>EARLIER FINDINGS</span>{found.slice(0, -1).reverse().map((choice) => <div key={choice.id}><Check /><span><b>{choice.noteFrom}</b><small>{choice.evidence}</small></span></div>)}</div>}<div className="message-foot"><Anchor /><p>{stage.id === 'onboarding' ? 'Good audits do not only find problems. They can find room to grow.' : stage.id === 'level1' ? 'An odd number is a clue, not a conviction.' : 'When the records and people agree, you have a case.'}</p></div></section>
 }
 
