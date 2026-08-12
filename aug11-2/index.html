@@ -15,7 +15,10 @@
         <span class="brand-mark">IC</span><span><b>The Impossible</b><em>Collection</em></span>
       </a>
       <div class="room-progress" aria-live="polite"><span id="room-index">01</span><i></i><span>06</span></div>
-      <button id="sound" class="icon-button" aria-label="Toggle ambience"><span>◌</span></button>
+      <div class="view-actions">
+        <button id="collection-toggle" class="collection-toggle" aria-expanded="false" aria-controls="collection"><span class="grid-icon" aria-hidden="true">▦</span><b>Collection</b></button>
+        <button id="sound" class="icon-button" aria-label="Toggle ambience"><span>◌</span></button>
+      </div>
     </header>
     <nav class="gallery-nav" aria-label="Choose gallery">
       <button data-room="0" class="active"><span>01</span><b>The Court of Beasts</b></button>
@@ -25,6 +28,14 @@
       <button data-room="4"><span>05</span><b>Minor Gods at Work</b></button>
       <button data-room="5"><span>06</span><b>The Night Garden</b></button>
     </nav>
+    <main id="collection" class="collection" aria-hidden="true">
+      <header class="collection-header">
+        <div><p class="collection-kicker">Online collection · <span id="collection-total">41</span> works</p><h1>Every room,<br><em>at a glance.</em></h1></div>
+        <p>Browse the complete collection without walking every corridor. Each work remains connected to its room in the museum.</p>
+      </header>
+      <nav id="collection-filters" class="collection-filters" aria-label="Filter the collection"></nav>
+      <section id="collection-grid" class="collection-grid" aria-live="polite"></section>
+    </main>
     <aside class="curator" id="curator">
       <div class="eyebrow">Gallery 01 · Curator's note</div>
       <h1>The Court<br>of <em>Beasts</em></h1>

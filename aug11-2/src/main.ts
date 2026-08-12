@@ -366,12 +366,16 @@ let yaw = 0;
 let pitch = -2;
 let currentRoom = 0;
 let panelOpen = true;
+let collectionOpen = false;
 let lastCard = '';
 const held = new Set<string>();
 
-window.addEventListener('keydown', e => held.add(e.code));
+window.addEventListener('keydown', e => {
+  held.add(e.code);
+  if (e.code === 'Escape' && collectionOpen) setCollectionOpen(false);
+});
 window.addEventListener('keyup', e => held.delete(e.code));
-canvas.addEventListener('click', () => { if (!panelOpen && document.pointerLockElement !== canvas) canvas.requestPointerLock(); });
+canvas.addEventListener('click', () => { if (!panelOpen && !collectionOpen && document.pointerLockElement !== canvas) canvas.requestPointerLock(); });
 document.addEventListener('mousemove', e => {
   if (document.pointerLockElement !== canvas) return;
   yaw -= e.movementX * .09;
@@ -384,7 +388,58 @@ const curatorCopy = document.querySelector<HTMLElement>('#curator-copy')!;
 const roomIndex = document.querySelector<HTMLElement>('#room-index')!;
 const progressLine = document.querySelector<HTMLElement>('.room-progress i')!;
 const artCard = document.querySelector<HTMLElement>('#art-card')!;
+const collection = document.querySelector<HTMLElement>('#collection')!;
+const collectionGrid = document.querySelector<HTMLElement>('#collection-grid')!;
+const collectionFilters = document.querySelector<HTMLElement>('#collection-filters')!;
+const collectionToggle = document.querySelector<HTMLButtonElement>('#collection-toggle')!;
+const collectionTotal = document.querySelector<HTMLElement>('#collection-total')!;
 const root = document.documentElement;
+
+const collectionWorks = galleries.flatMap((gallery, room) => gallery.works.map((work, workIndex) => ({ gallery, room, work, workIndex })));
+let collectionFilter = -1;
+
+function renderCollection() {
+  const visible = collectionWorks.filter(entry => collectionFilter < 0 || entry.room === collectionFilter);
+  collectionTotal.textContent = String(visible.length);
+  collectionGrid.innerHTML = visible.map(({ gallery, room, work, workIndex }) => `
+    <article class="collection-card" style="--card-accent:${gallery.accent}">
+      <div class="collection-art"><img src="${work.image}" alt="${work.title}" loading="lazy"></div>
+      <div class="collection-meta"><span>0${room + 1} · ${String(workIndex + 1).padStart(2, '0')}</span><span>${gallery.title}</span></div>
+      <h2>${work.title}</h2><p>${work.subtitle}</p>
+      <button data-visit-room="${room}">View in room <span>→</span></button>
+    </article>`).join('');
+  collectionGrid.querySelectorAll<HTMLButtonElement>('[data-visit-room]').forEach(button => button.addEventListener('click', () => {
+    setCollectionOpen(false);
+    setRoom(Number(button.dataset.visitRoom), true);
+  }));
+}
+
+collectionFilters.innerHTML = [
+  '<button class="active" data-filter="-1">All galleries</button>',
+  ...galleries.map((gallery, room) => `<button data-filter="${room}"><span>0${room + 1}</span>${gallery.title}</button>`)
+].join('');
+collectionFilters.querySelectorAll<HTMLButtonElement>('button').forEach(button => button.addEventListener('click', () => {
+  collectionFilter = Number(button.dataset.filter);
+  collectionFilters.querySelectorAll('button').forEach(candidate => candidate.classList.toggle('active', candidate === button));
+  renderCollection();
+  collection.scrollTo({ top: 0, behavior: 'smooth' });
+}));
+
+function setCollectionOpen(open: boolean) {
+  collectionOpen = open;
+  collection.classList.toggle('open', open);
+  collection.setAttribute('aria-hidden', String(!open));
+  document.body.classList.toggle('collection-open', open);
+  collectionToggle.setAttribute('aria-expanded', String(open));
+  collectionToggle.querySelector('b')!.textContent = open ? 'Museum' : 'Collection';
+  collectionToggle.querySelector('.grid-icon')!.textContent = open ? '◫' : '▦';
+  if (open) {
+    artCard.classList.remove('visible');
+    document.exitPointerLock?.();
+  }
+}
+collectionToggle.addEventListener('click', () => setCollectionOpen(!collectionOpen));
+renderCollection();
 
 function setRoom(index: number, teleport = false) {
   if (teleport) {
@@ -450,7 +505,7 @@ document.querySelector('#sound')!.addEventListener('click', () => {
 
 function updateCard() {
   const p = camera.getPosition();
-  if (panelOpen) { artCard.classList.remove('visible'); return; }
+  if (panelOpen || collectionOpen) { artCard.classList.remove('visible'); return; }
   let nearest: typeof artworkPositions[number] | undefined;
   let distance = Infinity;
   artworkPositions.filter(a => a.room === currentRoom).forEach(a => {
@@ -478,7 +533,7 @@ function isWalkable(x: number, z: number) {
 
 app.on('update', (dt: number) => {
   camera.setEulerAngles(pitch, yaw, 0);
-  if (!panelOpen) {
+  if (!panelOpen && !collectionOpen) {
     const forward = new pc.Vec3(-Math.sin(yaw * Math.PI / 180), 0, -Math.cos(yaw * Math.PI / 180));
     const right = new pc.Vec3(Math.cos(yaw * Math.PI / 180), 0, -Math.sin(yaw * Math.PI / 180));
     const move = new pc.Vec3();

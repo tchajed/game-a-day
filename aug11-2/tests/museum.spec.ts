@@ -47,6 +47,23 @@ test('can teleport between all six galleries', async ({ page }) => {
   await expect(page.locator('.curator-footer span').first()).toHaveText('6 works');
 });
 
+test('collection view presents and filters the full painting grid', async ({ page }) => {
+  await page.goto('/');
+  await page.locator('#collection-toggle').click();
+  await expect(page.locator('#collection')).toHaveClass(/open/);
+  await expect(page.locator('#collection-grid .collection-card')).toHaveCount(41);
+  await expect(page.locator('#collection-total')).toHaveText('41');
+
+  await page.locator('#collection-filters button').nth(6).click();
+  await expect(page.locator('#collection-grid .collection-card')).toHaveCount(6);
+  await expect(page.locator('#collection-total')).toHaveText('6');
+  await expect(page.locator('#collection-grid h2').first()).toHaveText('Moonflower Keeps the Hours');
+
+  await page.locator('#collection-grid [data-visit-room]').first().click();
+  await expect(page.locator('#collection')).not.toHaveClass(/open/);
+  await expect(page.locator('#room-index')).toHaveText('06');
+});
+
 test('enter control dismisses the curator note', async ({ page }) => {
   await page.goto('/');
   await page.locator('#enter-gallery').click();
