@@ -10,6 +10,7 @@ A collection of games each built in one day, with AI assistance. Each game focus
 | [Parking Simulator](aug9/) | `aug9` | Wrestle with the controls of a top-down parallel-parking challenge. |
 | [Visa Form](aug10/) | `aug10` | Race against a bad government website to complete a visa application. |
 | [Little Peak Coffee](aug11/) | `aug11` | Dial in a balanced espresso shot as a meticulous mouse barista. |
+| [Museum of Ordinary Things](aug11-2/) | `aug11-2` | Wander an uncanny collection where impossible subjects are treated as ordinary. |
 
 Each game is a standalone Bun project. To run one locally:
 

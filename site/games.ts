@@ -9,6 +9,13 @@ export type GameConfig = {
 // Slugs, release dates, artwork, and card accents live here rather than in the games.
 export const games: GameConfig[] = [
   {
+    directory: "aug11-2",
+    slug: "museum",
+    date: "2026-08-11",
+    cover: "screenshots/museum-entry.png",
+    crop: { left: 430, top: 20, width: 810, height: 540 },
+  },
+  {
     directory: "aug11",
     slug: "espresso",
     date: "2026-08-11",
