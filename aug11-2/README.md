@@ -27,3 +27,5 @@ bun run test
 bun run test:wall-snapshots    # compare 18 wall elevations and the wide storage bay
 bun run update:wall-snapshots  # intentionally accept a rehanging
 ```
+
+Add `?debug=true` for compact fast-travel and collection controls used during playtesting. Add `music=off` to hard-disable the optional procedural ambience during automated runs.

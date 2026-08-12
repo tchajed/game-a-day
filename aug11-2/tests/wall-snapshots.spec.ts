@@ -26,10 +26,10 @@ const displayWalls: { room: number; wall: Wall; name: string }[] = [
 test.describe('low-resolution wall elevations', () => {
   test.beforeEach(async ({ page }) => {
     await page.setViewportSize({ width: 480, height: 300 });
-    await page.goto('/');
+    await page.goto('/?debug=true&music=off');
     await expect(page.locator('#loading')).toHaveClass(/done/, { timeout: 15_000 });
     await page.addStyleTag({
-      content: '.topbar,.gallery-nav,.controls,.crosshair,.grain,.curator,.gallery-guide,.art-card{display:none!important}'
+      content: '.topbar,.gallery-nav,.controls,.crosshair,.grain,.curator,.gallery-guide,.art-card,#debug-tools{display:none!important}'
     });
   });
 

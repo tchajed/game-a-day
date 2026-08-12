@@ -1,7 +1,10 @@
 import { expect, test } from '@playwright/test';
 
+test.beforeEach(async ({ page }) => {
+  await page.goto('/?debug=true&music=off');
+});
+
 test('loads the 3D museum and curatorial interface', async ({ page }) => {
-  await page.goto('/');
   await expect(page).toHaveTitle(/Museum of Ordinary Things/);
   await expect(page.locator('#museum')).toBeVisible();
   await expect(page.locator('.curator h1')).toContainText('Portraits');
@@ -12,7 +15,6 @@ test('loads the 3D museum and curatorial interface', async ({ page }) => {
 });
 
 test('uses a six-gallery concourse with a separate lower-level room', async ({ page }) => {
-  await page.goto('/');
   const layout = await page.evaluate(() => (
     window as unknown as { museumLayout: { doorwayViolations: unknown[]; hangingPlanViolations: unknown[]; topology: string; roomCount: number; galleryCount: number; guideCount: number; concourseFeatureGroups: number; storage: { level: number; capacity: number; occupied: number; lightCount: number; largeFormatCapacity: number } } }
   ).museumLayout);
@@ -27,7 +29,6 @@ test('uses a six-gallery concourse with a separate lower-level room', async ({ p
 });
 
 test('preserves every painting aspect ratio without cropping', async ({ page }) => {
-  await page.goto('/');
   await expect(page.locator('#loading')).toHaveClass(/done/, { timeout: 15_000 });
   const fits = await page.evaluate(() => (
     window as unknown as { museumArtworkFits: { room: number; work: number; imageAspect: number; displayAspect: number }[] }
@@ -41,7 +42,6 @@ test('preserves every painting aspect ratio without cropping', async ({ page }) 
 });
 
 test('balances correctly scaled paintings across every display wall', async ({ page }) => {
-  await page.goto('/');
   await expect(page.locator('#loading')).toHaveClass(/done/, { timeout: 15_000 });
   const review = await page.evaluate(() => {
     const museum = window as unknown as {
@@ -59,7 +59,6 @@ test('balances correctly scaled paintings across every display wall', async ({ p
 });
 
 test('can teleport between all six galleries', async ({ page }) => {
-  await page.goto('/');
   await page.locator('.gallery-nav button').nth(1).click();
   await expect(page.locator('.curator h1')).toContainText('Domestic');
   await expect(page.locator('#room-index')).toHaveText('02');
@@ -87,7 +86,6 @@ test('can teleport between all six galleries', async ({ page }) => {
 });
 
 test('visible storage holds the reorganized paintings on lower level B1', async ({ page }) => {
-  await page.goto('/');
   await page.locator('.gallery-nav button').nth(6).click();
   await expect(page.locator('.curator h1')).toContainText('Visible');
   await expect(page.locator('#room-index')).toHaveText('B1');
@@ -96,7 +94,6 @@ test('visible storage holds the reorganized paintings on lower level B1', async 
 });
 
 test('collection view gives visible storage its own category and opens stored works', async ({ page }) => {
-  await page.goto('/');
   await page.locator('#collection-toggle').click();
   await expect(page.locator('#collection')).toHaveClass(/open/);
   await expect(page.locator('#collection-grid .collection-card')).toHaveCount(42);
@@ -130,7 +127,6 @@ test('collection view gives visible storage its own category and opens stored wo
 });
 
 test('shows Roadside Assistance in its gallery and The Puncture only in storage', async ({ page }) => {
-  await page.goto('/');
   await page.locator('#collection-toggle').click();
   await page.locator('#collection-filters [data-filter="4"]').click();
 
@@ -147,7 +143,6 @@ test('shows Roadside Assistance in its gallery and The Puncture only in storage'
 });
 
 test('room signs open an easy-to-read guide when viewed', async ({ page }) => {
-  await page.goto('/');
   await page.evaluate(() => (
     window as unknown as { museumViewGuide: (room: number) => void }
   ).museumViewGuide(2));
@@ -157,8 +152,16 @@ test('room signs open an easy-to-read guide when viewed', async ({ page }) => {
 });
 
 test('enter control dismisses the curator note', async ({ page }) => {
-  await page.goto('/');
   await page.locator('#enter-gallery').click();
   await expect(page.locator('#curator')).toHaveClass(/hidden/);
-  await expect(page.locator('#sound')).toHaveAttribute('aria-label', 'Toggle ambience');
+  await expect(page.locator('#sound')).toHaveAttribute('aria-label', 'Ambience disabled by URL');
+  await expect(page.locator('#sound')).toBeDisabled();
+});
+
+test('debug mode exposes fast travel and collection controls', async ({ page }) => {
+  await expect(page.locator('#debug-tools')).toBeVisible();
+  await page.locator('#debug-tools [data-debug-room="6"]').click();
+  await expect(page.locator('#room-index')).toHaveText('B1');
+  await page.locator('#debug-tools [data-debug-collection]').click();
+  await expect(page.locator('#collection')).toHaveClass(/open/);
 });

@@ -1,6 +1,10 @@
 import * as pc from 'playcanvas';
 import './style.css';
 
+const query = new URLSearchParams(window.location.search);
+const debugEnabled = query.get('debug') === 'true';
+const musicDisabled = query.get('music') === 'off';
+
 type Work = { title: string; artist: string; year: number; medium: string; image: string };
 type Gallery = {
   title: string;
@@ -110,6 +114,11 @@ const galleries: Gallery[] = [
     ]
   }
 ];
+
+// Vite serves public assets from the configured base path in portfolio builds.
+galleries.forEach(gallery => gallery.works.forEach(work => {
+  work.image = `${import.meta.env.BASE_URL}${work.image.slice(1)}`;
+}));
 
 const STORAGE_ROOM_INDEX = galleries.length;
 const STORAGE_ACCENT = '#bdefff';
@@ -943,10 +952,16 @@ document.querySelector('#enter-gallery')!.addEventListener('click', () => {
   canvas.requestPointerLock?.();
 });
 
-// A tiny procedural room tone, opt-in only.
+// A tiny procedural room tone, opt-in only. `music=off` hard-disables it for automation.
 let audio: { ctx: AudioContext; gain: GainNode; oscillators: OscillatorNode[] } | null = null;
-document.querySelector('#sound')!.addEventListener('click', () => {
-  const button = document.querySelector<HTMLButtonElement>('#sound')!;
+const soundButton = document.querySelector<HTMLButtonElement>('#sound')!;
+if (musicDisabled) {
+  soundButton.disabled = true;
+  soundButton.setAttribute('aria-label', 'Ambience disabled by URL');
+}
+soundButton.addEventListener('click', () => {
+  if (musicDisabled) return;
+  const button = soundButton;
   if (!audio) {
     const ctx = new AudioContext();
     const gain = ctx.createGain(); gain.gain.value = .018; gain.connect(ctx.destination);
@@ -1065,6 +1080,23 @@ app.on('update', (dt: number) => {
 });
 
 setRoom(0, true);
+if (debugEnabled) {
+  document.body.classList.add('debug-enabled');
+  const debugTools = document.createElement('aside');
+  debugTools.id = 'debug-tools';
+  debugTools.setAttribute('aria-label', 'Debug tour controls');
+  debugTools.innerHTML = `
+    <strong>Debug tour</strong>
+    ${galleries.map((_, room) => `<button data-debug-room="${room}">0${room + 1}</button>`).join('')}
+    <button data-debug-room="${STORAGE_ROOM_INDEX}">B1</button>
+    <button data-debug-collection>All works</button>`;
+  document.body.appendChild(debugTools);
+  debugTools.querySelectorAll<HTMLButtonElement>('[data-debug-room]').forEach(button => button.addEventListener('click', () => {
+    setCollectionOpen(false);
+    setRoom(Number(button.dataset.debugRoom), true);
+  }));
+  debugTools.querySelector<HTMLButtonElement>('[data-debug-collection]')!.addEventListener('click', () => setCollectionOpen(true));
+}
 Promise.all(textureJobs).finally(() => {
   setTimeout(() => document.querySelector('#loading')?.classList.add('done'), 350);
 });
@@ -1135,10 +1167,10 @@ const testWindow = window as unknown as {
   museumLayout: { doorwayViolations: ReturnType<typeof findDoorwayViolations>; hangingPlanViolations: ReturnType<typeof findHangingPlanViolations>; topology: 'concourse'; roomCount: number; galleryCount: number; guideCount: number; concourseFeatureGroups: number; storage: { level: number; capacity: number; occupied: number; lightCount: number; largeFormatCapacity: number } };
   museumArtworkFits: ArtworkFit[];
   museumWallLayouts: typeof wallSnapshotLayouts;
-  museumViewWall: (room: number, wall: Wall) => void;
-  museumViewStorageSlot: (slot: number) => void;
-  museumViewGuide: (room: number) => void;
-  museumTurnAround: () => void;
+  museumViewWall?: (room: number, wall: Wall) => void;
+  museumViewStorageSlot?: (slot: number) => void;
+  museumViewGuide?: (room: number) => void;
+  museumTurnAround?: () => void;
 };
 testWindow.museumReady = true;
 testWindow.museumLayout = {
@@ -1159,16 +1191,18 @@ testWindow.museumLayout = {
 };
 testWindow.museumArtworkFits = artworkFits;
 testWindow.museumWallLayouts = wallSnapshotLayouts;
-testWindow.museumViewWall = viewWallForSnapshot;
-testWindow.museumViewStorageSlot = viewStorageSlotForSnapshot;
-testWindow.museumViewGuide = (roomIndex: number) => {
-  const target = guideTargets[roomIndex];
-  const placement = rooms[roomIndex];
-  setRoom(roomIndex);
-  panelOpen = false;
-  curator.classList.add('hidden');
-  camera.setPosition(target.position.x, EYE_HEIGHT, target.position.z + (placement.row === 'north' ? -2.6 : 2.6));
-  yaw = placement.row === 'north' ? 180 : 0;
-  pitch = 3;
-};
-testWindow.museumTurnAround = () => { yaw += 180; };
+if (debugEnabled) {
+  testWindow.museumViewWall = viewWallForSnapshot;
+  testWindow.museumViewStorageSlot = viewStorageSlotForSnapshot;
+  testWindow.museumViewGuide = (roomIndex: number) => {
+    const target = guideTargets[roomIndex];
+    const placement = rooms[roomIndex];
+    setRoom(roomIndex);
+    panelOpen = false;
+    curator.classList.add('hidden');
+    camera.setPosition(target.position.x, EYE_HEIGHT, target.position.z + (placement.row === 'north' ? -2.6 : 2.6));
+    yaw = placement.row === 'north' ? 180 : 0;
+    pitch = 3;
+  };
+  testWindow.museumTurnAround = () => { yaw += 180; };
+}
