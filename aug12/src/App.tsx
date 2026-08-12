@@ -70,8 +70,8 @@ const stages: Record<StageId, Stage> = {
   },
   level1: {
     id: 'level1', number: 'LEVEL 1', kicker: 'THE VANISHING BICYCLES', title: 'A small number is out of place.',
-    brief: 'Bicycle fees fell sharply, but passenger traffic did not. You have time for one check before the weekly close.',
-    question: 'Why are bicycle fees down 34%?', days: 1, columns: ['EXPECTED', 'REPORTED'], focus: 'bikes',
+    brief: 'Bicycle fees fell sharply, but passenger traffic did not. You have three days before the weekly close.',
+    question: 'Why are bicycle fees down 34%?', days: 3, columns: ['EXPECTED', 'REPORTED'], focus: 'bikes',
     rows: [
       { id: 'tickets', label: 'Passenger tickets', values: ['¤ 47,600', '¤ 51,200'], change: '+8%', tone: 'good' },
       { id: 'bikes', label: 'Bicycle fees', values: ['¤ 6,400', '¤ 4,200'], change: '−34%', tone: 'warn' },
