@@ -74,8 +74,8 @@ const app = new pc.Application(canvas, {
 });
 app.setCanvasFillMode(pc.FILLMODE_FILL_WINDOW);
 app.setCanvasResolution(pc.RESOLUTION_AUTO);
-app.scene.ambientLight = new pc.Color(0.23, 0.22, 0.19);
-app.scene.exposure = 1.15;
+app.scene.ambientLight = new pc.Color(0.38, 0.36, 0.32);
+app.scene.exposure = 1.32;
 // These renderer settings are runtime Scene properties in PlayCanvas.
 const renderScene = app.scene as pc.Scene & { toneMapping: number; gammaCorrection: number };
 renderScene.toneMapping = pc.TONEMAP_ACES;
@@ -146,8 +146,8 @@ centers.forEach((cx, index) => {
     box('Lighting track', new pc.Vec3(cx, 5.82, trackZ), new pc.Vec3(8, .06, .06), darkMat);
     [-3.5, 0, 3.5].forEach(offset => {
       const light = new pc.Entity('Gallery spotlight');
-      light.addComponent('light', { type: 'omni', color: new pc.Color(1, .76, .52), intensity: index === 2 ? .82 : .72, range: 5.8, castShadows: false });
-      light.setPosition(cx + offset, 4.7, trackZ * .9);
+      light.addComponent('light', { type: 'omni', color: new pc.Color(1, .86, .68), intensity: index === 2 ? 1.25 : 1.12, range: 7.4, castShadows: false });
+      light.setPosition(cx + offset, 4.55, trackZ * .82);
       app.root.addChild(light);
       box('Spot housing', new pc.Vec3(cx + offset, 5.7, trackZ), new pc.Vec3(.18, .24, .18), darkMat);
     });
