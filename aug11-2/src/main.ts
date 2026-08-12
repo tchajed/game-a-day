@@ -88,9 +88,10 @@ const galleries: Gallery[] = [
     works: [
       { title: 'Ironing', artist: 'Edith Lark', year: 1910, medium: 'Oil on warm-toned linen', image: '/art/gods-1.webp' },
       { title: 'Watering, Third Floor', artist: 'Noor Bay', year: 1998, medium: 'Oil on canvas', image: '/art/gods-2.webp' },
-      { title: 'Roadside Assistance, 2:13 a.m.', artist: 'Cal Mercer', year: 1975, medium: 'Oil and wax on linen', image: '/art/gods-3.webp' },
+      { title: 'Roadside Assistance', artist: 'Cal Mercer', year: 1976, medium: 'Oil and wax on linen', image: '/art/gods-6.webp' },
       { title: 'Mending Basket (One Missing)', artist: 'Florence Pike', year: 1932, medium: 'Oil on burlap', image: '/art/gods-4.webp' },
-      { title: 'Before the First Loaf', artist: 'Kavi North', year: 1869, medium: 'Oil and gold ground on wood', image: '/art/gods-5.webp' }
+      { title: 'Before the First Loaf', artist: 'Kavi North', year: 1869, medium: 'Oil and gold ground on wood', image: '/art/gods-5.webp' },
+      { title: 'The Puncture, 2:13 a.m.', artist: 'Cal Mercer', year: 1975, medium: 'Oil and wax on linen', image: '/art/gods-3.webp' }
     ]
   },
   {
@@ -130,7 +131,7 @@ const storageAssignments: StorageAssignment[] = [
   { slot: 5, room: 2, work: 4 },
   { slot: 6, room: 2, work: 5 },
   { slot: 7, room: 3, work: 1 },
-  { slot: 8, room: 4, work: 2 },
+  { slot: 8, room: 4, work: 5 },
   { slot: 9, room: 5, work: 2 },
   { slot: 10, room: 5, work: 0 }
 ];
@@ -570,8 +571,9 @@ const hangingPlans: Hanging[][] = [
     { work: 4, wall: 'east', along: 0, centerY: 3.05, width: 6, height: 3, frame: 1 }
   ],
   [
-    { work: 0, wall: 'south', along: -2.2, centerY: 3.05, width: 1.45, height: 4.35, frame: 0 },
-    { work: 1, wall: 'south', along: 2.2, centerY: 3.05, width: 1.45, height: 4.35, frame: 3 },
+    { work: 0, wall: 'south', along: -4, centerY: 3.05, width: 1.45, height: 4.35, frame: 0 },
+    { work: 2, wall: 'south', along: 0, centerY: 3.05, width: 4.2, height: 2.8, frame: 1 },
+    { work: 1, wall: 'south', along: 4, centerY: 3.05, width: 1.45, height: 4.35, frame: 3 },
     { work: 3, wall: 'west', along: 0, centerY: 3.05, width: 6, height: 3, frame: 2 },
     { work: 4, wall: 'east', along: 0, centerY: 3.05, width: 6, height: 3, frame: 4 }
   ],
@@ -796,7 +798,11 @@ const collectionWorks = galleries.flatMap((gallery, room) => gallery.works.map((
 let collectionFilter = -1;
 
 function renderCollection() {
-  const visible = collectionWorks.filter(entry => collectionFilter < 0 || entry.room === collectionFilter);
+  const visible = collectionWorks.filter(entry => {
+    if (collectionFilter < 0) return true;
+    const isStored = storageAssignmentByWork.has(`${entry.room}-${entry.workIndex}`);
+    return collectionFilter === STORAGE_ROOM_INDEX ? isStored : entry.room === collectionFilter && !isStored;
+  });
   collectionTotal.textContent = String(visible.length);
   collectionGrid.innerHTML = visible.map(({ gallery, room, work, workIndex }) => {
     const storageAssignment = storageAssignmentByWork.get(`${room}-${workIndex}`);
@@ -818,8 +824,9 @@ function renderCollection() {
 }
 
 collectionFilters.innerHTML = [
-  '<button class="active" data-filter="-1">All galleries</button>',
-  ...galleries.map((gallery, room) => `<button data-filter="${room}"><span>0${room + 1}</span>${gallery.title}</button>`)
+  '<button class="active" data-filter="-1">All works</button>',
+  ...galleries.map((gallery, room) => `<button data-filter="${room}"><span>0${room + 1}</span>${gallery.title}</button>`),
+  `<button data-filter="${STORAGE_ROOM_INDEX}"><span>B1</span>Visible Storage</button>`
 ].join('');
 collectionFilters.querySelectorAll<HTMLButtonElement>('button').forEach(button => button.addEventListener('click', () => {
   collectionFilter = Number(button.dataset.filter);

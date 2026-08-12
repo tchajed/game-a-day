@@ -1,9 +1,9 @@
 # The Museum of Ordinary Things
 
-An interactive PlayCanvas museum treating its unusual collection as the stuff of everyday life, with two ways to explore 41 paintings:
+An interactive PlayCanvas museum treating its unusual collection as the stuff of everyday life, with two ways to explore 42 paintings:
 
 - a six-gallery 3D museum arranged around a shared central concourse
-- a lower-level, evenly lit visible-storage room with 42 browsable painting bays, including four wide-format bays
+- a lower-level, evenly lit visible-storage room with 42 browsable painting bays (11 occupied), including four wide-format bays
 - a responsive, filterable online collection grid
 
 ## Galleries
@@ -15,7 +15,7 @@ An interactive PlayCanvas museum treating its unusual collection as the stuff of
 5. The Working Day
 6. The Garden at Night
 
-Lower level B1 contains Visible Storage. Add `{ slot, room, work }` entries to `storageAssignments` in `src/main.ts` when moving paintings into one of its 42 numbered bays. Current gallery locations are listed in `PAINTING_LOCATIONS.md` for rehanging plans.
+Lower level B1 contains Visible Storage. Add `{ slot, room, work }` entries to `storageAssignments` in `src/main.ts` when moving paintings into one of its 42 numbered bays. The online collection automatically groups those works under its Visible Storage category.
 
 The Night Garden is generated entirely offline. Clean SVG source studies in `artwork-src/night-garden/` are rasterized and passed through two deterministic oil-paint recipes: bright graphic impasto and dark velatura. The pipeline adds clustered pigment, directional brush drag, canvas weave, and illuminated edge relief.
 
