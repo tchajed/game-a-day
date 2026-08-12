@@ -29,8 +29,8 @@ Start a new game directory with:
 ./new-game <directory>
 ```
 
-Use React if it makes sense, otherwise Phaser or Excalibur.js; ask the user if it's unclear.
+Use React if it makes sense, otherwise Phaser or Excalibur.js, or PlayCanvas if the game requires 3D; ask the user if it's unclear.
 
 Create procedural SVG and Canvas art usually. If needed, use GPT Images and then post-process with Sharp to integrate into the game engine.
 
-For audio use Web Audio and Tone.js. Always provide a music on/off button for background music. Disable music during your own programmatic testing using a URL parameter - otherwise it plays in the background.
+For audio use Web Audio and Tone.js. Always provide a music on/off button for background music. Disable music during your own programmatic testing using a URL parameter `music=off` - otherwise it plays in the background.
