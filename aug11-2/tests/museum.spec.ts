@@ -61,9 +61,14 @@ test('collection view presents and filters the full painting grid', async ({ pag
   await expect(page.locator('#collection-total')).toHaveText('6');
   await expect(page.locator('#collection-grid h2').first()).toHaveText('Moonflower, 11:52 p.m.');
 
-  await page.locator('#collection-grid [data-visit-room]').first().click();
+  const visitButton = page.locator('#collection-grid [data-visit-room]').first();
+  await expect(visitButton).toHaveAttribute('data-visit-work', '0');
+  await visitButton.click();
   await expect(page.locator('#collection')).not.toHaveClass(/open/);
   await expect(page.locator('#room-index')).toHaveText('06');
+  await expect(page.locator('#curator')).toHaveClass(/hidden/);
+  await expect(page.locator('#art-card')).toHaveClass(/visible/);
+  await expect(page.locator('#art-card h2')).toHaveText('Moonflower, 11:52 p.m.');
 });
 
 test('room signs open an easy-to-read guide when viewed', async ({ page }) => {

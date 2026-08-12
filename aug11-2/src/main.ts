@@ -536,11 +536,10 @@ function renderCollection() {
       <h2>${work.title}</h2>
       <p class="collection-artist">${work.artist}, ${work.year}</p>
       <p class="collection-medium">${work.medium}</p>
-      <button data-visit-room="${room}">View in room <span>→</span></button>
+      <button data-visit-room="${room}" data-visit-work="${workIndex}">View in room <span>→</span></button>
     </article>`).join('');
-  collectionGrid.querySelectorAll<HTMLButtonElement>('[data-visit-room]').forEach(button => button.addEventListener('click', () => {
-    setCollectionOpen(false);
-    setRoom(Number(button.dataset.visitRoom), true);
+  collectionGrid.querySelectorAll<HTMLButtonElement>('[data-visit-work]').forEach(button => button.addEventListener('click', () => {
+    visitArtwork(Number(button.dataset.visitRoom), Number(button.dataset.visitWork));
   }));
 }
 
@@ -570,6 +569,24 @@ function setCollectionOpen(open: boolean) {
 }
 collectionToggle.addEventListener('click', () => setCollectionOpen(!collectionOpen));
 renderCollection();
+
+function visitArtwork(roomIndex: number, workIndex: number) {
+  const hanging = hangingPlans[roomIndex][workIndex];
+  const viewingDistance = Math.max(2.8, hanging.height * .82);
+  const position = wallTransform(roomIndex, { ...hanging, centerY: EYE_HEIGHT }, .47 + viewingDistance).position;
+  const wallYaw: Record<Wall, number> = { north: 0, south: 180, west: 90, east: -90 };
+
+  setCollectionOpen(false);
+  setRoom(roomIndex);
+  camera.setPosition(position);
+  yaw = wallYaw[hanging.wall];
+  pitch = Math.atan2(hanging.centerY - EYE_HEIGHT, viewingDistance) * 180 / Math.PI;
+  panelOpen = false;
+  curator.classList.add('hidden');
+  lastCard = '';
+  canvas.focus();
+  canvas.requestPointerLock?.();
+}
 
 function setRoom(index: number, teleport = false) {
   if (teleport) {
