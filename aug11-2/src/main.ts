@@ -583,7 +583,19 @@ if (doorwayViolations.length) {
 }
 
 type ArtworkPosition = { displayRoom: number; sourceRoom: number; work: number; position: pc.Vec3 };
+type ArtworkFit = { room: number; work: number; imageAspect: number; displayAspect: number };
 const artworkPositions: ArtworkPosition[] = [];
+const artworkFits: ArtworkFit[] = [];
+
+function fitArtworkWithin(maxWidth: number, maxHeight: number, imageAspect: number) {
+  let width = maxWidth;
+  let height = width / imageAspect;
+  if (height > maxHeight) {
+    height = maxHeight;
+    width = height * imageAspect;
+  }
+  return { width, height };
+}
 
 function wallTransform(room: number, hanging: Hanging, depth: number) {
   const { cx, cz } = rooms[room];
@@ -602,6 +614,10 @@ function wallBox(name: string, room: number, hanging: Hanging, depth: number, wi
 
 async function hangArtwork(room: number, work: number, hangingIndex: number, texture: pc.Texture) {
   const hanging = hangingPlans[room][hangingIndex];
+  const imageAspect = texture.width / texture.height;
+  const fitted = fitArtworkWithin(hanging.width, hanging.height, imageAspect);
+  artworkFits.push({ room, work, imageAspect, displayAspect: fitted.width / fitted.height });
+
   const canvasMat = new pc.StandardMaterial();
   canvasMat.name = galleries[room].works[work].title;
   canvasMat.diffuse = new pc.Color(1, 1, 1);
@@ -611,12 +627,12 @@ async function hangArtwork(room: number, work: number, hangingIndex: number, tex
   canvasMat.update();
 
   const border = hanging.frame === 1 ? .11 : hanging.frame === 4 ? .16 : .2;
-  wallBox('Artwork outer frame', room, hanging, .27, hanging.width + border, hanging.height + border, .17, frameMaterials[hanging.frame]);
-  wallBox('Frame inset', room, hanging, .39, hanging.width + .055, hanging.height + .055, .1, darkMat);
-  wallBox(galleries[room].works[work].title, room, hanging, .47, hanging.width, hanging.height, .065, canvasMat);
+  wallBox('Artwork outer frame', room, hanging, .27, fitted.width + border, fitted.height + border, .17, frameMaterials[hanging.frame]);
+  wallBox('Frame inset', room, hanging, .39, fitted.width + .055, fitted.height + .055, .1, darkMat);
+  wallBox(galleries[room].works[work].title, room, hanging, .47, fitted.width, fitted.height, .065, canvasMat);
 
-  const labelHanging = { ...hanging, centerY: Math.max(.38, hanging.centerY - hanging.height / 2 - .23) };
-  wallBox('Artwork label', room, labelHanging, .45, Math.min(.7, hanging.width * .45), .16, .055, plaqueMat);
+  const labelHanging = { ...hanging, centerY: Math.max(.38, hanging.centerY - fitted.height / 2 - .23) };
+  wallBox('Artwork label', room, labelHanging, .45, Math.min(.7, fitted.width * .45), .16, .055, plaqueMat);
 
   const viewPoint = wallTransform(room, { ...hanging, centerY: 1.68 }, 1.35).position;
   artworkPositions.push({ displayRoom: room, sourceRoom: room, work, position: viewPoint });
@@ -628,9 +644,8 @@ async function hangStorageArtwork(assignment: StorageAssignment, texture: pc.Tex
   if (!slot || !source) throw new Error(`Invalid visible-storage assignment: ${JSON.stringify(assignment)}`);
 
   const aspect = texture.width / texture.height;
-  let width = Math.min(1.22, 2.65 * aspect);
-  let height = width / aspect;
-  if (height > 2.65) { height = 2.65; width = height * aspect; }
+  const { width, height } = fitArtworkWithin(1.22, 2.65, aspect);
+  artworkFits.push({ room: STORAGE_ROOM_INDEX, work: assignment.work, imageAspect: aspect, displayAspect: width / height });
 
   const canvasMat = new pc.StandardMaterial();
   canvasMat.name = `Stored: ${source.title}`;
@@ -965,6 +980,7 @@ Promise.all(textureJobs).finally(() => {
 const testWindow = window as unknown as {
   museumReady: boolean;
   museumLayout: { doorwayViolations: ReturnType<typeof findDoorwayViolations>; topology: 'concourse'; roomCount: number; galleryCount: number; guideCount: number; concourseFeatureGroups: number; storage: { level: number; capacity: number; occupied: number; lightCount: number } };
+  museumArtworkFits: ArtworkFit[];
   museumViewGuide: (room: number) => void;
 };
 testWindow.museumReady = true;
@@ -977,6 +993,7 @@ testWindow.museumLayout = {
   concourseFeatureGroups: 9,
   storage: { level: STORAGE_FLOOR_Y, capacity: storageSlots.length, occupied: storageAssignments.length, lightCount: storageLightCount }
 };
+testWindow.museumArtworkFits = artworkFits;
 testWindow.museumViewGuide = (roomIndex: number) => {
   const target = guideTargets[roomIndex];
   const placement = rooms[roomIndex];

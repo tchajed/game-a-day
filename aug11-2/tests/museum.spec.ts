@@ -25,6 +25,16 @@ test('uses a six-gallery concourse with a separate lower-level room', async ({ p
   expect(layout.storage).toEqual({ level: -7.5, capacity: 42, occupied: 11, lightCount: 12 });
 });
 
+test('preserves every painting aspect ratio without cropping', async ({ page }) => {
+  await page.goto('/');
+  await expect(page.locator('#loading')).toHaveClass(/done/, { timeout: 15_000 });
+  const fits = await page.evaluate(() => (
+    window as unknown as { museumArtworkFits: { room: number; work: number; imageAspect: number; displayAspect: number }[] }
+  ).museumArtworkFits);
+  expect(fits).toHaveLength(41);
+  expect(fits.every(fit => Math.abs(fit.imageAspect - fit.displayAspect) < 0.0001)).toBe(true);
+});
+
 test('can teleport between all six galleries', async ({ page }) => {
   await page.goto('/');
   await page.locator('.gallery-nav button').nth(1).click();
