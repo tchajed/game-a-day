@@ -1,0 +1,9 @@
+node_modules/
+dist/
+test-results/
+playwright-report/
+.art-build/
+.pi/
+.pi-agent-browser/
+tmp/
+.DS_Store
