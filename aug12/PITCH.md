@@ -6,4 +6,4 @@
 
 ![Starting the Northstar morning from an email](screenshots/ledger.png)
 
-![An audit reply becoming a private journal entry](screenshots/case-file.png)
+![A queued research reply becoming a private journal entry](screenshots/case-file.png)
