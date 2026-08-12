@@ -18,7 +18,7 @@ const galleries: Gallery[] = [
     heading: 'Portraits &<br><em>Personages</em>',
     note: 'Portraiture records the ordinary negotiations between a sitter and a painter: posture, costume, rank and the occasional private joke. This room brings together public likenesses and family pictures from three centuries.',
     sign: 'Public likenesses, family pictures and studies of office. Notice how costume does as much biographical work as the face.',
-    accent: '#d7ff43', wall: '#827d6f',
+    accent: '#c9ad72', wall: '#827d6f',
     works: [
       { title: 'Marchioness in Winter Dress', artist: 'Elian Voss', year: 1768, medium: 'Oil and wax on linen', image: '/art/portraits-1.webp' },
       { title: 'Blackhorn, on Leave', artist: 'Mara Bell', year: 1804, medium: 'Oil on oak panel', image: '/art/portraits-2.webp' },
