@@ -110,6 +110,15 @@ const galleries: Gallery[] = [
   }
 ];
 
+const STORAGE_ROOM_INDEX = galleries.length;
+const STORAGE_ACCENT = '#bdefff';
+const STORAGE_FLOOR_Y = -7.5;
+const STORAGE_EYE_Y = STORAGE_FLOOR_Y + 2.08;
+const STORAGE_CX = 0;
+const STORAGE_CZ = 39;
+const STORAGE_WIDTH = 20;
+const STORAGE_DEPTH = 24;
+
 const canvas = document.querySelector<HTMLCanvasElement>('#museum')!;
 const app = new pc.Application(canvas, {
   mouse: new pc.Mouse(canvas),
@@ -168,6 +177,11 @@ const deskMat = material('Information desk oak', '#6b4931', { gloss: .42 });
 const planterMat = material('Terracotta planter', '#75513e', { gloss: .2 });
 const leafMat = material('Plant leaves', '#41513c', { gloss: .24 });
 const sculptureMat = material('Concourse sculpture', '#b8aa91', { metal: .12, gloss: .5 });
+const storageWallMat = material('Lower-level white plaster', '#a7aaa5', { gloss: .16 });
+const storageFloorMat = material('Storage sealed concrete', '#454b4a', { gloss: .48 });
+const storageRackMat = material('Powder-coated storage rack', '#66716f', { metal: .72, gloss: .44 });
+const storageBayMat = material('Open storage mesh', '#252c2b', { metal: .38, gloss: .24 });
+const storageDoorMat = material('Lift doors', '#747d7b', { metal: .82, gloss: .52 });
 const frameMaterials = [brassMat, darkMat, oakMat, paleWoodMat, blackFrameMat];
 
 function box(name: string, position: pc.Vec3, scale: pc.Vec3, mat: pc.Material, parent?: pc.Entity) {
@@ -253,6 +267,43 @@ function canvasMaterial(name: string, title: string, room: number, vertical = fa
   return signMat;
 }
 
+function storageSignMaterial() {
+  const canvas = document.createElement('canvas');
+  canvas.width = 1200;
+  canvas.height = 360;
+  const context = canvas.getContext('2d')!;
+  context.fillStyle = '#eef1ec';
+  context.fillRect(0, 0, canvas.width, canvas.height);
+  context.fillStyle = STORAGE_ACCENT;
+  context.fillRect(0, 0, 24, canvas.height);
+  context.fillStyle = '#232826';
+  context.font = '500 25px Arial';
+  context.letterSpacing = '5px';
+  context.fillText('LOWER LEVEL B1 · COLLECTIONS', 62, 72);
+  context.letterSpacing = '0px';
+  context.font = '500 78px Georgia';
+  context.fillText('Visible Storage', 62, 178);
+  context.fillStyle = '#58605d';
+  context.font = '400 25px Georgia';
+  context.fillText('42 open-access bays · 0 currently occupied', 62, 235);
+  context.font = '500 18px Arial';
+  context.letterSpacing = '3px';
+  context.fillText('PAINTING STORE · CONTROLLED LIGHT', 62, 306);
+
+  const texture = new pc.Texture(app.graphicsDevice, { width: canvas.width, height: canvas.height, mipmaps: true, anisotropy: 8 });
+  texture.setSource(canvas);
+  const signMat = new pc.StandardMaterial();
+  signMat.name = 'Visible storage wayfinding';
+  signMat.diffuse = new pc.Color(1, 1, 1);
+  signMat.diffuseMap = texture;
+  signMat.emissive = new pc.Color(.16, .16, .16);
+  signMat.emissiveMap = texture;
+  signMat.emissiveIntensity = .42;
+  signMat.gloss = .12;
+  signMat.update();
+  return signMat;
+}
+
 // Six galleries open directly onto a shared concourse. Unlike the former
 // enfilade, every room is one doorway away from the hub.
 const ROOM_WIDTH = 12;
@@ -308,6 +359,14 @@ box('East bench support', new pc.Vec3(19.8, .3, 0), new pc.Vec3(.5, .58, .35), b
 box('Concourse directory', new pc.Vec3(14.9, 1.45, 2.9), new pc.Vec3(1.25, 2.65, .18), darkMat);
 box('Directory brass header', new pc.Vec3(14.9, 2.48, 2.78), new pc.Vec3(1.05, .12, .08), brassMat);
 
+// A public collections lift makes the lower level legible from the concourse;
+// the navigation control serves as its accessible, instant-travel equivalent.
+box('Collections lift surround', new pc.Vec3(21.78, 2.45, 0), new pc.Vec3(.16, 4.9, 4.2), darkMat);
+box('Collections lift left door', new pc.Vec3(21.67, 2.25, -.98), new pc.Vec3(.09, 4.45, 1.9), storageDoorMat);
+box('Collections lift right door', new pc.Vec3(21.67, 2.25, .98), new pc.Vec3(.09, 4.45, 1.9), storageDoorMat);
+box('Collections lift seam', new pc.Vec3(21.54, 2.25, 0), new pc.Vec3(.03, 4.1, .035), darkMat);
+box('Collections lift indicator', new pc.Vec3(21.5, 5.05, 0), new pc.Vec3(.06, .32, .8), material('Lift indicator', STORAGE_ACCENT, { emissive: STORAGE_ACCENT }));
+
 const guideTargets: { room: number; position: pc.Vec3 }[] = [];
 
 rooms.forEach(({ cx, cz, row }, index) => {
@@ -354,6 +413,72 @@ rooms.forEach(({ cx, cz, row }, index) => {
     });
   });
 });
+
+// Visible Storage sits a full level below the public galleries. Its 42 bays are
+// deliberately empty: assigning a painting in storageAssignments below is all
+// that is required to populate a bay while keeping the source collection data.
+box('Visible storage floor', new pc.Vec3(STORAGE_CX, STORAGE_FLOOR_Y - .16, STORAGE_CZ), new pc.Vec3(STORAGE_WIDTH, .3, STORAGE_DEPTH), storageFloorMat);
+box('Visible storage ceiling', new pc.Vec3(STORAGE_CX, STORAGE_FLOOR_Y + 6.12, STORAGE_CZ), new pc.Vec3(STORAGE_WIDTH, .22, STORAGE_DEPTH), ceilingMat);
+box('Visible storage west wall', new pc.Vec3(STORAGE_CX - STORAGE_WIDTH / 2, STORAGE_FLOOR_Y + 3, STORAGE_CZ), new pc.Vec3(.28, 6.2, STORAGE_DEPTH), storageWallMat);
+box('Visible storage east wall', new pc.Vec3(STORAGE_CX + STORAGE_WIDTH / 2, STORAGE_FLOOR_Y + 3, STORAGE_CZ), new pc.Vec3(.28, 6.2, STORAGE_DEPTH), storageWallMat);
+box('Visible storage north wall', new pc.Vec3(STORAGE_CX, STORAGE_FLOOR_Y + 3, STORAGE_CZ - STORAGE_DEPTH / 2), new pc.Vec3(STORAGE_WIDTH, 6.2, .28), storageWallMat);
+box('Visible storage south wall', new pc.Vec3(STORAGE_CX, STORAGE_FLOOR_Y + 3, STORAGE_CZ + STORAGE_DEPTH / 2), new pc.Vec3(STORAGE_WIDTH, 6.2, .28), storageWallMat);
+box('Lower-level lift surround', new pc.Vec3(0, STORAGE_FLOOR_Y + 2.45, STORAGE_CZ - STORAGE_DEPTH / 2 + .18), new pc.Vec3(4.2, 4.9, .16), darkMat);
+box('Lower-level lift left door', new pc.Vec3(-.98, STORAGE_FLOOR_Y + 2.25, STORAGE_CZ - STORAGE_DEPTH / 2 + .3), new pc.Vec3(1.9, 4.45, .09), storageDoorMat);
+box('Lower-level lift right door', new pc.Vec3(.98, STORAGE_FLOOR_Y + 2.25, STORAGE_CZ - STORAGE_DEPTH / 2 + .3), new pc.Vec3(1.9, 4.45, .09), storageDoorMat);
+const storageSign = box('Visible storage sign', new pc.Vec3(0, STORAGE_FLOOR_Y + 4.75, STORAGE_CZ - STORAGE_DEPTH / 2 + .34), new pc.Vec3(7.4, 2.2, .1), storageSignMaterial());
+storageSign.setEulerAngles(0, 180, 0);
+
+// High-CRI-style linear lighting: bright, even and intentionally cooler than
+// the galleries so every future stored work can be inspected without glare.
+let storageLightCount = 0;
+[-6.5, 0, 6.5].forEach(x => {
+  box('Storage continuous light', new pc.Vec3(x, STORAGE_FLOOR_Y + 5.72, STORAGE_CZ), new pc.Vec3(.12, .08, 19.5), material(`Storage light diffuser ${x}`, '#dff7f6', { emissive: '#dff7f6' }));
+  [-7.5, -2.5, 2.5, 7.5].forEach(zOffset => {
+    const light = new pc.Entity('Visible storage inspection light');
+    light.addComponent('light', { type: 'omni', color: new pc.Color(.82, .93, 1), intensity: 1.18, range: 7.8, castShadows: false });
+    light.setPosition(x, STORAGE_FLOOR_Y + 5.25, STORAGE_CZ + zOffset);
+    app.root.addChild(light);
+    storageLightCount += 1;
+  });
+});
+
+function storageBox(name: string, position: pc.Vec3, rotation: number, width: number, height: number, thickness: number, mat: pc.Material) {
+  const entity = box(name, position, new pc.Vec3(width, height, thickness), mat);
+  entity.setEulerAngles(0, rotation, 0);
+  return entity;
+}
+
+type StorageSlot = { position: pc.Vec3; rotation: number; viewPosition: pc.Vec3 };
+const storageSlots: StorageSlot[] = [];
+const storageBayY = STORAGE_FLOOR_Y + 2.8;
+
+function addStorageBay(position: pc.Vec3, rotation: number, viewPosition: pc.Vec3) {
+  const slotNumber = storageSlots.length + 1;
+  storageSlots.push({ position, rotation, viewPosition });
+  storageBox(`Empty storage bay ${slotNumber}`, position, rotation, 1.42, 3.25, .09, storageBayMat);
+  storageBox('Storage bay upper rail', new pc.Vec3(position.x, position.y + 1.66, position.z), rotation, 1.55, .08, .15, storageRackMat);
+  storageBox('Storage bay lower rail', new pc.Vec3(position.x, position.y - 1.66, position.z), rotation, 1.55, .08, .15, storageRackMat);
+  storageBox(`Storage bay label ${String(slotNumber).padStart(2, '0')}`, new pc.Vec3(position.x, position.y - 1.42, position.z), rotation, .54, .16, .13, plaqueMat);
+}
+
+// Twenty-four perimeter bays, eight end-wall bays and ten two-sided central
+// bays make every one of the collection's 41 paintings accessible at eye level,
+// with one spare bay for rehanging work.
+Array.from({ length: 12 }, (_, index) => STORAGE_CZ - 9.35 + index * 1.7).forEach(z => {
+  addStorageBay(new pc.Vec3(STORAGE_CX - 9.72, storageBayY, z), 90, new pc.Vec3(STORAGE_CX - 8.1, STORAGE_EYE_Y, z));
+  addStorageBay(new pc.Vec3(STORAGE_CX + 9.72, storageBayY, z), -90, new pc.Vec3(STORAGE_CX + 8.1, STORAGE_EYE_Y, z));
+});
+Array.from({ length: 8 }, (_, index) => STORAGE_CX - 7 + index * 2).forEach(x => {
+  addStorageBay(new pc.Vec3(x, storageBayY, STORAGE_CZ + 11.72), 180, new pc.Vec3(x, STORAGE_EYE_Y, STORAGE_CZ + 10.1));
+});
+[-4.4, -2.2, 0, 2.2, 4.4].forEach(x => {
+  addStorageBay(new pc.Vec3(x, storageBayY, STORAGE_CZ - .14), 0, new pc.Vec3(x, STORAGE_EYE_Y, STORAGE_CZ - 1.8));
+  addStorageBay(new pc.Vec3(x, storageBayY, STORAGE_CZ + .14), 180, new pc.Vec3(x, STORAGE_EYE_Y, STORAGE_CZ + 1.8));
+});
+box('Central rack top', new pc.Vec3(0, STORAGE_FLOOR_Y + 4.52, STORAGE_CZ), new pc.Vec3(11.2, .15, .46), storageRackMat);
+box('Central rack base', new pc.Vec3(0, STORAGE_FLOOR_Y + .22, STORAGE_CZ), new pc.Vec3(11.2, .35, .72), storageRackMat);
+[-5.5, 5.5].forEach(x => box('Central rack end post', new pc.Vec3(x, STORAGE_FLOOR_Y + 2.32, STORAGE_CZ), new pc.Vec3(.18, 4.4, .65), storageRackMat));
 
 function loadTexture(url: string): Promise<pc.Texture> {
   return new Promise((resolve, reject) => {
@@ -437,7 +562,8 @@ if (doorwayViolations.length) {
   throw new Error(`Artwork overlaps a doorway: ${JSON.stringify(doorwayViolations)}`);
 }
 
-const artworkPositions: { room: number; work: number; position: pc.Vec3 }[] = [];
+type ArtworkPosition = { displayRoom: number; sourceRoom: number; work: number; position: pc.Vec3 };
+const artworkPositions: ArtworkPosition[] = [];
 
 function wallTransform(room: number, hanging: Hanging, depth: number) {
   const { cx, cz } = rooms[room];
@@ -473,12 +599,48 @@ async function hangArtwork(room: number, work: number, texture: pc.Texture) {
   wallBox('Artwork label', room, labelHanging, .45, Math.min(.7, hanging.width * .45), .16, .055, plaqueMat);
 
   const viewPoint = wallTransform(room, { ...hanging, centerY: 1.68 }, 1.35).position;
-  artworkPositions.push({ room, work, position: viewPoint });
+  artworkPositions.push({ displayRoom: room, sourceRoom: room, work, position: viewPoint });
 }
 
-const textureJobs = galleries.flatMap((gallery, room) => gallery.works.map((work, index) =>
+type StorageAssignment = { slot: number; room: number; work: number };
+// Add { slot, room, work } entries here when moving paintings into storage.
+// Slot numbers are zero-based and room/work refer to the source galleries above.
+const storageAssignments: StorageAssignment[] = [];
+
+async function hangStorageArtwork(assignment: StorageAssignment, texture: pc.Texture) {
+  const slot = storageSlots[assignment.slot];
+  const source = galleries[assignment.room]?.works[assignment.work];
+  if (!slot || !source) throw new Error(`Invalid visible-storage assignment: ${JSON.stringify(assignment)}`);
+
+  const aspect = texture.width / texture.height;
+  let width = Math.min(1.22, 2.65 * aspect);
+  let height = width / aspect;
+  if (height > 2.65) { height = 2.65; width = height * aspect; }
+
+  const canvasMat = new pc.StandardMaterial();
+  canvasMat.name = `Stored: ${source.title}`;
+  canvasMat.diffuse = new pc.Color(1, 1, 1);
+  canvasMat.diffuseMap = texture;
+  canvasMat.gloss = .12;
+  canvasMat.update();
+
+  const towardViewer = slot.viewPosition.clone().sub(slot.position).normalize();
+  const framePosition = slot.position.clone().add(towardViewer.clone().mulScalar(.13));
+  const artPosition = slot.position.clone().add(towardViewer.clone().mulScalar(.2));
+  storageBox('Stored artwork frame', framePosition, slot.rotation, width + .12, height + .12, .1, blackFrameMat);
+  storageBox(source.title, artPosition, slot.rotation, width, height, .055, canvasMat);
+  artworkPositions.push({ displayRoom: STORAGE_ROOM_INDEX, sourceRoom: assignment.room, work: assignment.work, position: slot.viewPosition });
+}
+
+const galleryTextureJobs = galleries.flatMap((gallery, room) => gallery.works.map((work, index) =>
   loadTexture(work.image).then(texture => hangArtwork(room, index, texture))
 ));
+const storageTextureJobs = storageAssignments.map(assignment => {
+  const work = galleries[assignment.room]?.works[assignment.work];
+  if (!work) return Promise.reject(new Error(`Invalid visible-storage source: ${JSON.stringify(assignment)}`));
+  return loadTexture(work.image).then(texture => hangStorageArtwork(assignment, texture));
+});
+const textureJobs = [...galleryTextureJobs, ...storageTextureJobs];
 
 // Camera and restrained first-person movement. A slightly elevated eye line keeps
 // the salon-style upper hangings comfortably visible without looking upward sharply.
@@ -512,6 +674,7 @@ document.addEventListener('mousemove', e => {
 const navButtons = [...document.querySelectorAll<HTMLButtonElement>('.gallery-nav button')];
 const curator = document.querySelector<HTMLElement>('#curator')!;
 const curatorCopy = document.querySelector<HTMLElement>('#curator-copy')!;
+const enterLabel = document.querySelector<HTMLElement>('#enter-label')!;
 const roomIndex = document.querySelector<HTMLElement>('#room-index')!;
 const progressLine = document.querySelector<HTMLElement>('.room-progress i')!;
 const artCard = document.querySelector<HTMLElement>('#art-card')!;
@@ -589,27 +752,48 @@ function visitArtwork(roomIndex: number, workIndex: number) {
 }
 
 function setRoom(index: number, teleport = false) {
+  const isStorage = index === STORAGE_ROOM_INDEX;
+  if (!isStorage && !rooms[index]) return;
   if (teleport) {
-    const room = rooms[index];
-    camera.setPosition(room.cx, EYE_HEIGHT, room.cz + (room.row === 'north' ? 4.7 : -4.7));
-    yaw = room.row === 'north' ? 0 : 180;
+    if (isStorage) {
+      camera.setPosition(STORAGE_CX, STORAGE_EYE_Y, STORAGE_CZ - 8.9);
+      yaw = 180;
+    } else {
+      const room = rooms[index];
+      camera.setPosition(room.cx, EYE_HEIGHT, room.cz + (room.row === 'north' ? 4.7 : -4.7));
+      yaw = room.row === 'north' ? 0 : 180;
+    }
     pitch = -2;
   }
   if (currentRoom === index && !teleport) return;
   currentRoom = index;
-  const gallery = galleries[index];
   navButtons.forEach((b, i) => b.classList.toggle('active', i === index));
-  document.querySelector<HTMLElement>('.eyebrow')!.textContent = `Gallery 0${index + 1} · Curator's note`;
-  document.querySelector<HTMLElement>('.curator h1')!.innerHTML = gallery.heading;
-  curatorCopy.textContent = gallery.note;
   const footerCounts = document.querySelectorAll<HTMLElement>('.curator-footer span');
-  footerCounts[0].textContent = `${gallery.works.length} works`;
-  const years = gallery.works.map(work => work.year);
-  footerCounts[1].textContent = `${Math.min(...years)}–${Math.max(...years)}`;
-  roomIndex.textContent = `0${index + 1}`;
-  const progress = (index + 1) / galleries.length * 100;
-  progressLine.style.background = `linear-gradient(90deg, ${gallery.accent} ${progress}%, #777 ${progress}%)`;
-  root.style.setProperty('--acid', gallery.accent);
+
+  if (isStorage) {
+    document.querySelector<HTMLElement>('.eyebrow')!.textContent = 'Lower level B1 · Collections care';
+    document.querySelector<HTMLElement>('.curator h1')!.innerHTML = 'Visible<br><em>Storage</em>';
+    curatorCopy.textContent = 'An evenly lit, open painting store with 42 individually numbered bays. The room begins empty, ready for works moved off display during rehanging.';
+    enterLabel.textContent = 'Enter visible storage';
+    footerCounts[0].textContent = `${storageAssignments.length} / ${storageSlots.length} bays occupied`;
+    footerCounts[1].textContent = 'Lower level B1';
+    roomIndex.textContent = 'B1';
+    progressLine.style.background = `linear-gradient(90deg, ${STORAGE_ACCENT} 100%, #777 100%)`;
+    root.style.setProperty('--acid', STORAGE_ACCENT);
+  } else {
+    const gallery = galleries[index];
+    document.querySelector<HTMLElement>('.eyebrow')!.textContent = `Gallery 0${index + 1} · Curator's note`;
+    document.querySelector<HTMLElement>('.curator h1')!.innerHTML = gallery.heading;
+    curatorCopy.textContent = gallery.note;
+    enterLabel.textContent = 'Enter the gallery';
+    footerCounts[0].textContent = `${gallery.works.length} works`;
+    const years = gallery.works.map(work => work.year);
+    footerCounts[1].textContent = `${Math.min(...years)}–${Math.max(...years)}`;
+    roomIndex.textContent = `0${index + 1}`;
+    const progress = (index + 1) / (galleries.length + 1) * 100;
+    progressLine.style.background = `linear-gradient(90deg, ${gallery.accent} ${progress}%, #777 ${progress}%)`;
+    root.style.setProperty('--acid', gallery.accent);
+  }
   if (teleport) {
     panelOpen = true;
     curator.classList.remove('hidden');
@@ -679,14 +863,14 @@ function updateCard(guideVisible: boolean) {
   if (panelOpen || collectionOpen || guideVisible) { artCard.classList.remove('visible'); return; }
   let nearest: typeof artworkPositions[number] | undefined;
   let distance = Infinity;
-  artworkPositions.filter(a => a.room === currentRoom).forEach(a => {
+  artworkPositions.filter(a => a.displayRoom === currentRoom).forEach(a => {
     const d = Math.hypot(p.x - a.position.x, p.z - a.position.z);
     if (d < distance) { distance = d; nearest = a; }
   });
   if (!nearest || distance > 3.15) { artCard.classList.remove('visible'); return; }
-  const key = `${nearest.room}-${nearest.work}`;
+  const key = `${nearest.displayRoom}-${nearest.sourceRoom}-${nearest.work}`;
   if (key !== lastCard) {
-    const work = galleries[nearest.room].works[nearest.work];
+    const work = galleries[nearest.sourceRoom].works[nearest.work];
     artCard.querySelector<HTMLElement>('.art-number')!.textContent = `0${nearest.work + 1}`;
     artCard.querySelector<HTMLElement>('h2')!.textContent = work.title;
     artCard.querySelector<HTMLElement>('.art-artist')!.textContent = `${work.artist}, ${work.year}`;
@@ -697,6 +881,9 @@ function updateCard(guideVisible: boolean) {
 }
 
 function isWalkable(x: number, z: number) {
+  if (currentRoom === STORAGE_ROOM_INDEX) {
+    return Math.abs(x - STORAGE_CX) < STORAGE_WIDTH / 2 - .55 && Math.abs(z - STORAGE_CZ) < STORAGE_DEPTH / 2 - .55;
+  }
   const inConcourse = x > -21.55 && x < 21.55 && z > -4.45 && z < 4.45;
   const inGallery = rooms.some(room => Math.abs(x - room.cx) < 5.45 && Math.abs(z - room.cz) < 7.45);
   const inPortal = rooms.some(room => Math.abs(x - room.cx) < 1.82 && Math.abs(z - (room.row === 'north' ? -5 : 5)) < .75);
@@ -720,12 +907,17 @@ app.on('update', (dt: number) => {
       // Resolve axes independently so the visitor slides along walls instead of sticking.
       const resolvedX = isWalkable(next.x, old.z) ? next.x : old.x;
       const resolvedZ = isWalkable(resolvedX, next.z) ? next.z : old.z;
-      camera.setPosition(resolvedX, EYE_HEIGHT, resolvedZ);
+      camera.setPosition(resolvedX, currentRoom === STORAGE_ROOM_INDEX ? STORAGE_EYE_Y : EYE_HEIGHT, resolvedZ);
     }
   }
   const position = camera.getPosition();
-  const occupiedRoom = rooms.findIndex(room => Math.abs(position.x - room.cx) < ROOM_HALF_WIDTH && Math.abs(position.z - room.cz) < ROOM_HALF_DEPTH);
-  if (occupiedRoom >= 0 && occupiedRoom !== currentRoom) setRoom(occupiedRoom);
+  const inStorage = Math.abs(position.y - STORAGE_EYE_Y) < 1 && Math.abs(position.x - STORAGE_CX) < STORAGE_WIDTH / 2 && Math.abs(position.z - STORAGE_CZ) < STORAGE_DEPTH / 2;
+  if (inStorage && currentRoom !== STORAGE_ROOM_INDEX) {
+    setRoom(STORAGE_ROOM_INDEX);
+  } else if (!inStorage) {
+    const occupiedRoom = rooms.findIndex(room => Math.abs(position.x - room.cx) < ROOM_HALF_WIDTH && Math.abs(position.z - room.cz) < ROOM_HALF_DEPTH);
+    if (occupiedRoom >= 0 && occupiedRoom !== currentRoom) setRoom(occupiedRoom);
+  }
   const guideVisible = updateGuide();
   updateCard(guideVisible);
 });
@@ -738,11 +930,19 @@ Promise.all(textureJobs).finally(() => {
 // Exposed only for deterministic layout and smoke tests.
 const testWindow = window as unknown as {
   museumReady: boolean;
-  museumLayout: { doorwayViolations: ReturnType<typeof findDoorwayViolations>; topology: 'concourse'; roomCount: number; guideCount: number; concourseFeatureGroups: number };
+  museumLayout: { doorwayViolations: ReturnType<typeof findDoorwayViolations>; topology: 'concourse'; roomCount: number; galleryCount: number; guideCount: number; concourseFeatureGroups: number; storage: { level: number; capacity: number; occupied: number; lightCount: number } };
   museumViewGuide: (room: number) => void;
 };
 testWindow.museumReady = true;
-testWindow.museumLayout = { doorwayViolations, topology: 'concourse', roomCount: rooms.length, guideCount: guideTargets.length, concourseFeatureGroups: 8 };
+testWindow.museumLayout = {
+  doorwayViolations,
+  topology: 'concourse',
+  roomCount: rooms.length + 1,
+  galleryCount: rooms.length,
+  guideCount: guideTargets.length,
+  concourseFeatureGroups: 9,
+  storage: { level: STORAGE_FLOOR_Y, capacity: storageSlots.length, occupied: storageAssignments.length, lightCount: storageLightCount }
+};
 testWindow.museumViewGuide = (roomIndex: number) => {
   const target = guideTargets[roomIndex];
   const placement = rooms[roomIndex];
