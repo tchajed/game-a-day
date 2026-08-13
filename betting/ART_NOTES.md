@@ -4,7 +4,7 @@
 
 The two playable stalls now use independent background and character layers:
 
-- `public/art/stalls/backgrounds/fox-evening.webp` — straight-on Silver Spin kiosk in a small evening carnival
+- `public/art/stalls/backgrounds/fox-evening.webp` — straight-on Silver Draw kiosk in a small evening carnival
 - `public/art/stalls/backgrounds/rabbit-evening.webp` — angled Generous Toss booth in the same small carnival
 - `public/art/stalls/characters/{fox,rabbit}-{neutral,win,lose}.png` — transparent reaction sprites
 

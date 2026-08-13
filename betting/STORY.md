@@ -20,17 +20,17 @@ The overworld is a simple 2D, top-down carnival of tents, booths, paths, lights,
 
 ## Open Betting Stalls
 
-### The Silver Spin
+### The Silver Draw
 
-A kind wolf operates an old slot machine and apologetically warns that it rarely pays out. The wolf appears sincere, but has underestimated the machine's real odds. Careful players can discover that the game is better than advertised.
+A kind fox offers draws from a ten-card pack containing four silver cards and six soot cards. She returns each drawn card to the pack and shuffles, so every wager has the same odds. The full composition is displayed in plain sight, but the fox sincerely and inaccurately calls the chance of silver “about one in five.” A player can calculate the true chance without collecting any results.
 
 ### Rabbit's Generous Toss
 
-A shady, tattooed rabbit runs a coin-toss booth and loudly promises favorable odds on heads. On the player's first visit, he explains that they may call heads or tails, choose a wager, and receive twice their stake for a correct call. The coin is biased toward heads, but the rabbit exaggerates just how generous it is.
+A shady, tattooed rabbit runs a coin-toss booth and loudly claims that heads lands four times in five. On the player's first visit, he explains that they may call heads or tails, choose a wager, and receive twice their stake for a correct call. The coin is biased toward heads, but the rabbit exaggerates just how generous it is.
 
 ### Hidden Betting Rules
 
-Each wager is an independent roll with no streak adjustment, rubber-banding, or effect from optional purchases. The Silver Spin advertises a 20% win chance but actually wins 30% of the time and returns 3× the stake (including the stake). Rabbit's Generous Toss advertises heads at 60%, but the coin actually lands heads 55% of the time; a correct heads or tails call returns 2× the stake. Both pitches are directionally correct but wrong in magnitude: the fox's game is genuinely unfavorable, though not as bad as claimed, while calling heads at the rabbit's game is genuinely favorable, though not as generous as claimed. The fox game has a 0.90× expected return per dollar; Rabbit returns 1.10× on heads and 0.90× on tails.
+Each wager is independent, with no streak adjustment, rubber-banding, or effect from optional purchases. The Silver Draw has four winning silver cards in a ten-card pack, returns the card after every draw, and pays 3× the stake (including the stake). Its true 40% win chance gives a positive 1.20× expected return per dollar, despite the fox's inaccurate “about one in five” estimate. Rabbit's Generous Toss advertises heads at 4/5 (80%), but the coin actually lands heads 65% of the time; a correct call returns 2× the stake. Calling heads therefore has a 1.30× expected return per dollar, while tails returns 0.70×. The rabbit's edge must be estimated empirically, whereas the fox's edge can be computed exactly from the visible pack.
 
 ## Advertisements and Hidden Stalls
 

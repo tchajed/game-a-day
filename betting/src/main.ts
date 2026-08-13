@@ -28,7 +28,8 @@ type Place = {
 }
 type BetCount = 1 | 5 | 10
 type CoinSide = 'heads' | 'tails'
-type BetResult = { id: number; won: boolean; wager: number; payout: number; streak: number; call?: CoinSide; outcome?: CoinSide }
+type CardKind = 'silver' | 'soot'
+type BetResult = { id: number; won: boolean; wager: number; payout: number; streak: number; call?: CoinSide; outcome?: CoinSide; card?: CardKind }
 type GameStats = { plays: number; wins: number; wagered: number; returned: number; manualPlays: number }
 type Stats = Record<GameKey, GameStats>
 
@@ -39,6 +40,7 @@ type State = {
   bet: number
   rabbitSide: CoinSide
   rabbitDialogueStep: number
+  foxDialogueStep: number
   reaction: Reaction
   result: string
   stats: Stats
@@ -65,14 +67,24 @@ const COLORS = {
   pathEdge: 0xa97845,
 }
 
+const FOX_SILVER_CARDS = 4
+const FOX_DECK_SIZE = 10
+const RABBIT_HEADS_CHANCE = .65
+
+const FOX_DIALOGUE = [
+  { speech: 'My Silver Draw uses ten cards: four silver and six soot. Draw silver and I return three times your stake.', option: 'WHAT HAPPENS TO THE CARD?' },
+  { speech: 'I put it straight back and shuffle. The same ten cards are in the pack for every draw.', option: 'SO WHAT ARE MY CHANCES?' },
+  { speech: 'Oh—about one in five, I should think. Figures have never been my particular gift.', option: 'LET’S DRAW' },
+] as const
+
 const RABBIT_DIALOGUE = [
-  { speech: 'Welcome to my Generous Toss. You may call heads or tails—but between us, heads lands three times in five.', option: 'WHAT DOES A CORRECT CALL PAY?' },
+  { speech: 'Welcome to my Generous Toss. You may call heads or tails—but between us, heads lands four times in five.', option: 'WHAT DOES A CORRECT CALL PAY?' },
   { speech: 'Name your wager, call a side, and I toss the coin. Call it right and I return twice your stake.', option: 'AND IF I CALL IT WRONG?' },
   { speech: 'Then your stake stays with me. Every toss stands alone. That is the whole generous arrangement.', option: 'LET’S TOSS' },
 ] as const
 
 const basePlaces: Place[] = [
-  { id: 'fox', x: 27, y: 29, title: 'The Silver Spin', subtitle: 'WIN PAYS 3×', kind: 'stall' },
+  { id: 'fox', x: 27, y: 29, title: 'The Silver Draw', subtitle: 'SILVER PAYS 3×', kind: 'stall' },
   { id: 'rabbit', x: 73, y: 29, title: "Rabbit's Generous Toss", subtitle: 'WIN PAYS 2×', kind: 'stall' },
   { id: 'closed', x: 12, y: 49, title: 'Turtle Derby', subtitle: 'CLOSED', kind: 'closed' },
   { id: 'closed', x: 88, y: 49, title: 'The Lucky Lantern', subtitle: 'CLOSED', kind: 'closed' },
@@ -87,7 +99,7 @@ const initialStats = (): Stats => ({
 })
 
 const initialState = (): State => ({
-  mode: 'welcome', balance: 100, minutes: 0, bet: 5, rabbitSide: 'heads', rabbitDialogueStep: 0, reaction: 'neutral',
+  mode: 'welcome', balance: 100, minutes: 0, bet: 5, rabbitSide: 'heads', rabbitDialogueStep: 0, foxDialogueStep: 0, reaction: 'neutral',
   result: 'Pick a game. Press your luck.', stats: initialStats(),
   histories: { fox: [], rabbit: [] }, betCounts: { fox: 1, rabbit: 1 }, nextResultId: 1,
   ledger: false, portrait: false, tonic: false, revealed: [],
@@ -655,22 +667,27 @@ class BadBetScene extends Phaser.Scene {
     character.setDisplaySize(character.width / character.height * artH * .9, artH * .9)
     this.add.rectangle(0, this.top, width, height - this.top, 0x160d26, .13).setOrigin(0)
     this.button(72, this.top + 38, 122, 42, '← MIDWAY', () => this.go('world'), { fill: COLORS.cream, color: '#21182f', stroke: COLORS.ink, font: 14, depth: 50 })
-    this.add.text(width / 2, this.top + 22, fox ? 'THE SILVER SPIN' : "RABBIT'S GENEROUS TOSS", {
+    this.add.text(width / 2, this.top + 22, fox ? 'THE SILVER DRAW' : "RABBIT'S GENEROUS TOSS", {
       fontFamily: FONTS.ui, fontSize: '15px', fontStyle: 'bold', letterSpacing: 1.2, color: '#f3c15b', backgroundColor: '#2b1730dd', padding: { x: 12, y: 6 },
     }).setOrigin(.5, 0).setDepth(20)
-    this.add.text(width / 2, this.top + 64, fox ? '“About one in five.”' : '“Heads, three in five!”', {
+    this.add.text(width / 2, this.top + 64, fox ? '“About one in five is silver.”' : '“Heads: 4/5!”', {
       fontFamily: FONTS.body, fontSize: `${clamp(width / 30, 28, 46)}px`, color: '#fff0c9',
       stroke: '#160b1c', strokeThickness: 5, align: 'center', wordWrap: { width: width * .72 },
     }).setOrigin(.5, 0).setDepth(20)
 
+    if (fox && this.state.foxDialogueStep < FOX_DIALOGUE.length) {
+      this.renderDealerDialogue('FOX', FOX_DIALOGUE[this.state.foxDialogueStep], () => this.state.foxDialogueStep++)
+      return
+    }
     if (!fox && this.state.rabbitDialogueStep < RABBIT_DIALOGUE.length) {
-      this.renderRabbitDialogue()
+      this.renderDealerDialogue('RABBIT', RABBIT_DIALOGUE[this.state.rabbitDialogueStep], () => this.state.rabbitDialogueStep++)
       return
     }
 
     const rabbitControlsH = fox ? 0 : compact ? 48 : 45
     const consoleH = (compact ? (this.state.ledger ? 262 : 225) : (this.state.ledger ? 224 : 187)) + rabbitControlsH
     const consoleY = height - consoleH - 14
+    if (fox) this.renderFoxPack(Math.min(this.top + 164, consoleY - 43))
     const latest = this.state.histories[game].at(-1)
     if (latest && latest.streak >= 2) {
       this.add.text(width / 2, consoleY - 25, `${latest.won ? 'WIN' : 'MISS'} AGAIN · ${latest.streak} IN A ROW`, {
@@ -710,7 +727,7 @@ class BadBetScene extends Phaser.Scene {
     const count = this.state.betCounts[game]
     const playY = compact ? consoleY + (fox ? 159 : 200) : controlY
     const playX = compact ? Math.max(88, width / 2 - 70) : Math.max(width * .7, startX + 52 + amounts.length * (buttonW + buttonGap) + 42)
-    this.button(playX, playY, 116, 36, count === 1 ? (fox ? 'SPIN ONCE' : 'TOSS ONCE') : `PLAY ×${count}`, () => this.playBets(game, count), { fill: COLORS.red, font: 14, depth: 32, disabled: this.state.balance < this.state.bet })
+    this.button(playX, playY, 116, 36, count === 1 ? (fox ? 'DRAW ONCE' : 'TOSS ONCE') : `PLAY ×${count}`, () => this.playBets(game, count), { fill: COLORS.red, font: 14, depth: 32, disabled: this.state.balance < this.state.bet })
     this.button(playX + 82, playY, 58, 36, stats.manualPlays < 5 ? `×5 · ${stats.manualPlays}/5` : '×5', () => this.toggleBetCount(game, 5), {
       fill: count === 5 ? COLORS.gold : COLORS.ink, color: count === 5 ? '#21182f' : '#fff1c7', stroke: 0x9c7d58, font: 12, depth: 32, disabled: stats.manualPlays < 5,
     })
@@ -724,15 +741,14 @@ class BadBetScene extends Phaser.Scene {
     if (this.state.ledger) this.renderLedger(game, compact ? consoleY + (fox ? 204 : 245) : consoleY + (fox ? 163 : 193))
   }
 
-  private renderRabbitDialogue() {
+  private renderDealerDialogue(dealer: 'FOX' | 'RABBIT', step: { readonly speech: string; readonly option: string }, advance: () => void) {
     const { width, height } = this.scale
-    const step = RABBIT_DIALOGUE[this.state.rabbitDialogueStep]
     const compact = width < 760
     const panelW = Math.min(width * .92, 760)
     const panelH = compact ? 226 : 202
     const panelY = height - panelH - 16
     this.add.rectangle(width / 2, panelY, panelW, panelH, 0x1a1126, .97).setOrigin(.5, 0).setDepth(30).setStrokeStyle(3, COLORS.gold)
-    this.add.text(width / 2, panelY + 20, 'RABBIT', {
+    this.add.text(width / 2, panelY + 20, dealer, {
       fontFamily: FONTS.ui, fontSize: '13px', fontStyle: 'bold', color: '#efb64f', letterSpacing: 1.3,
     }).setOrigin(.5, 0).setDepth(31)
     this.add.text(width / 2, panelY + 51, `“${step.speech}”`, {
@@ -740,9 +756,31 @@ class BadBetScene extends Phaser.Scene {
       wordWrap: { width: panelW - 56 }, lineSpacing: 5,
     }).setOrigin(.5, 0).setDepth(31)
     this.button(width / 2, panelY + panelH - 39, Math.min(340, panelW - 40), 42, step.option, () => {
-      this.state.rabbitDialogueStep++
+      advance()
       this.renderMode()
     }, { fill: COLORS.red, stroke: COLORS.cream, font: compact ? 13 : 14, depth: 32 })
+  }
+
+  private renderFoxPack(y: number) {
+    const { width } = this.scale
+    const cardW = width < 520 ? 19 : 24
+    const cardH = width < 520 ? 28 : 34
+    const gap = width < 520 ? 4 : 6
+    const totalW = FOX_DECK_SIZE * cardW + (FOX_DECK_SIZE - 1) * gap
+    const pack = this.add.container(width / 2 - totalW / 2 + cardW / 2, y).setDepth(21)
+    for (let index = 0; index < FOX_DECK_SIZE; index++) {
+      const silver = index < FOX_SILVER_CARDS
+      const card = this.add.rectangle(index * (cardW + gap), 0, cardW, cardH, silver ? 0xd7dbe2 : 0x27212c, .97)
+        .setStrokeStyle(2, silver ? 0xffffff : 0x8b7182)
+      const mark = this.add.text(index * (cardW + gap), 0, silver ? '✦' : '●', {
+        fontFamily: FONTS.body, fontSize: `${silver ? cardW * .7 : cardW * .42}px`, color: silver ? '#3f4654' : '#9d7f8c',
+      }).setOrigin(.5)
+      pack.add([card, mark])
+    }
+    this.add.text(width / 2, y + cardH / 2 + 5, 'THE PACK · 4 SILVER + 6 SOOT · DRAWN CARD IS REPLACED', {
+      fontFamily: FONTS.ui, fontSize: `${width < 520 ? 10 : 12}px`, fontStyle: 'bold', color: '#fff0c9',
+      backgroundColor: '#21182fe8', padding: { x: 8, y: 4 }, letterSpacing: .45,
+    }).setOrigin(.5, 0).setDepth(21)
   }
 
   private renderResultHistory(game: GameKey, y: number, height: number) {
@@ -759,8 +797,8 @@ class BadBetScene extends Phaser.Scene {
       return
     }
 
-    const step = game === 'rabbit' ? 76 : 64
-    const chipW = game === 'rabbit' ? 70 : 58
+    const step = 76
+    const chipW = 70
     const contentW = history.length * step
     const maxOffset = Math.max(0, contentW - viewportW)
     this.historyScroll[game] = clamp(this.historyScroll[game], 0, maxOffset)
@@ -772,8 +810,10 @@ class BadBetScene extends Phaser.Scene {
       const chip = this.add.container(index * step + step / 2, height / 2 + 3).setSize(chipW, 30)
       const background = this.add.rectangle(0, 0, chipW, 30, result.won ? 0x236e5d : 0x6d2938)
       if (index === history.length - 1) background.setStrokeStyle(2, COLORS.gold)
-      const coinLabel = result.outcome ? `${result.outcome === 'heads' ? 'H' : 'T'} · ${result.won ? '+' : '−'}${money(Math.abs(net))}` : ''
-      const label = this.add.text(0, 0, coinLabel || (result.won ? `WIN ${money(net)}` : `MISS −${money(result.wager)}`), {
+      const outcomeLabel = result.outcome
+        ? `${result.outcome === 'heads' ? 'H' : 'T'} · ${result.won ? '+' : '−'}${money(Math.abs(net))}`
+        : result.card ? `${result.card === 'silver' ? 'SILVER' : 'SOOT'} · ${result.won ? '+' : '−'}${money(Math.abs(net))}` : ''
+      const label = this.add.text(0, 0, outcomeLabel || (result.won ? `WIN ${money(net)}` : `MISS −${money(result.wager)}`), {
         fontFamily: FONTS.ui, fontSize: '12px', fontStyle: 'bold', color: '#fff1cf', align: 'center',
       }).setOrigin(.5)
       chip.add([background, label])
@@ -836,8 +876,9 @@ class BadBetScene extends Phaser.Scene {
       cash -= this.state.bet
       const roll = this.random()
       const call = game === 'rabbit' ? this.state.rabbitSide : undefined
-      const landed = game === 'rabbit' ? (roll < .55 ? 'heads' : 'tails') : undefined
-      lastWin = game === 'fox' ? roll < .3 : landed === call
+      const landed = game === 'rabbit' ? (roll < RABBIT_HEADS_CHANCE ? 'heads' : 'tails') : undefined
+      const card: CardKind | undefined = game === 'fox' ? (roll < FOX_SILVER_CARDS / FOX_DECK_SIZE ? 'silver' : 'soot') : undefined
+      lastWin = game === 'fox' ? card === 'silver' : landed === call
       const payout = lastWin ? (game === 'fox' ? this.state.bet * 3 : this.state.bet * 2) : 0
       if (lastWin) {
         cash += payout
@@ -846,7 +887,7 @@ class BadBetScene extends Phaser.Scene {
       }
       const previous = this.state.histories[game].at(-1)
       const outcome: BetResult = {
-        id: this.state.nextResultId++, won: lastWin, wager: this.state.bet, payout, call, outcome: landed,
+        id: this.state.nextResultId++, won: lastWin, wager: this.state.bet, payout, call, outcome: landed, card,
         streak: previous?.won === lastWin ? previous.streak + 1 : 1,
       }
       this.state.histories[game].push(outcome)
@@ -870,7 +911,7 @@ class BadBetScene extends Phaser.Scene {
       this.state.result = played === 1
         ? game === 'rabbit'
           ? `${latest?.outcome?.toUpperCase()}  ·  ${lastWin ? 'WIN · 2× PAID' : 'NO PAYOUT'}`
-          : lastWin ? 'WIN  ·  3× PAID' : 'NO PAYOUT'
+          : `${latest?.card?.toUpperCase()}  ·  ${lastWin ? 'WIN · 3× PAID' : 'NO PAYOUT'}`
         : `${played} PLAYS  ·  ${wins} WINS  ·  ${signedMoney(net)}`
       const unlocks = []
       if (manualBefore < 5 && data.manualPlays >= 5) unlocks.push('×5')
@@ -892,7 +933,7 @@ class BadBetScene extends Phaser.Scene {
     const stagger = outcomes.length > 1 ? 65 : 0
 
     if (view) {
-      const travel = Math.min(outcomes.length * (game === 'rabbit' ? 76 : 64), view.right - view.left)
+      const travel = Math.min(outcomes.length * 76, view.right - view.left)
       view.strip.x = view.latestX + travel
       this.updateHistoryVisibility(view)
       this.tweens.add({
@@ -1024,7 +1065,7 @@ class BadBetScene extends Phaser.Scene {
     this.add.text(width / 2, this.top + 78, 'The tents are gone.', { fontFamily: FONTS.display, fontSize: `${clamp(width / 20, 36, 58)}px`, color: '#25162c' }).setOrigin(.5, 0)
     this.add.text(width / 2, this.top + 155, money(this.state.balance), { fontFamily: FONTS.body, fontSize: `${clamp(width / 10, 70, 120)}px`, color: '#b13437' }).setOrigin(.5, 0)
     this.add.text(width / 2, this.top + 270, verdict, { fontFamily: FONTS.ui, fontSize: '16px', fontStyle: 'bold', letterSpacing: .6, color: '#25162c', align: 'center', wordWrap: { width: cardW * .8 } }).setOrigin(.5, 0)
-    const stats = [`${total}\nTOTAL WAGERS`, `${this.state.stats.fox.plays}\nSILVER SPINS`, `${this.state.stats.rabbit.plays}\nCOIN TOSSES`, `${this.state.ledger ? 'YES' : 'NO'}\nKEPT RECORDS`]
+    const stats = [`${total}\nTOTAL WAGERS`, `${this.state.stats.fox.plays}\nSILVER DRAWS`, `${this.state.stats.rabbit.plays}\nCOIN TOSSES`, `${this.state.ledger ? 'YES' : 'NO'}\nKEPT RECORDS`]
     stats.forEach((copy, index) => this.add.text(width / 2 - cardW * .36 + index * cardW * .24, this.top + 330, copy, { fontFamily: FONTS.ui, fontSize: '16px', fontStyle: 'bold', color: '#25162c', align: 'center', fixedWidth: cardW * .22, backgroundColor: '#ead8aa', padding: { y: 12 }, letterSpacing: .3 }).setOrigin(.5, 0))
     this.button(width / 2, this.top + cardH - 52, 240, 48, 'RETURN NEXT SEASON', () => this.reset(), { fill: 0xa53335, stroke: COLORS.ink, font: 16, depth: 5 })
   }
@@ -1123,6 +1164,8 @@ class BadBetScene extends Phaser.Scene {
         if (game === 'rabbit') {
           this.state.rabbitDialogueStep = RABBIT_DIALOGUE.length
           if (side) this.state.rabbitSide = side
+        } else {
+          this.state.foxDialogueStep = FOX_DIALOGUE.length
         }
         this.playBets(game, count)
       },
