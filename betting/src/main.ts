@@ -7,9 +7,9 @@ const DEBUG = params.get('debug') === 'true'
 const MUSIC_DISABLED = params.get('music') === 'off'
 const MAX_MINUTES = 12 * 60
 const BET_MINUTES = 5
-const AD_MINUTES = 15
+const AD_MINUTES = 5
 const AD_HOLD_MS = 5_000
-const PORTRAIT_MINUTES = 60
+const PORTRAIT_MINUTES = 15
 const AFTERNOON_MINUTES = 3 * 60
 const NIGHT_MINUTES = 9 * 60
 const DUSK_TRANSITION_MINUTES = 60
@@ -1187,7 +1187,7 @@ class BadBetScene extends Phaser.Scene {
     this.button(width / 2 - boardW / 2 + 82, this.top + 48, 128, 40, '← STEP BACK', () => this.go('world'), { fill: COLORS.ink, stroke: COLORS.cream, font: 13, depth: 20 })
     const statusY = this.top + boardH - 28
     if (this.posterJustUnlocked === id) {
-      this.add.text(width / 2, statusY, `15 minutes pass. Something stirs elsewhere on the midway.`, {
+      this.add.text(width / 2, statusY, `${AD_MINUTES} minutes pass. Something stirs elsewhere on the midway.`, {
         fontFamily: FONTS.body, fontSize: '17px', color: '#fff0c9', backgroundColor: '#21182fdd', padding: { x: 12, y: 6 },
       }).setOrigin(.5).setDepth(20)
     } else if (!unlocked) {
@@ -1289,7 +1289,7 @@ class BadBetScene extends Phaser.Scene {
     this.state.balance -= cost
     this.state[type] = true
     if (type === 'portrait') this.state.minutes = Math.min(MAX_MINUTES, this.state.minutes + PORTRAIT_MINUTES)
-    this.state.result = type === 'ledger' ? 'LEDGER EQUIPPED' : type === 'portrait' ? 'ONE HOUR LATER · YOU FEEL ODDLY MORE DETAILED' : 'THOROUGHLY INVIGORATED'
+    this.state.result = type === 'ledger' ? 'LEDGER EQUIPPED' : type === 'portrait' ? `${PORTRAIT_MINUTES} MINUTES LATER · YOU FEEL ODDLY MORE DETAILED` : 'THOROUGHLY INVIGORATED'
     this.renderMode()
   }
 
