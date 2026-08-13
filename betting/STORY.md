@@ -2,9 +2,9 @@
 
 ## Premise
 
-A mysterious traveling carnival appears outside town at dusk without warning. No one remembers seeing it arrive, and its bright tents, painted signs, and animal attendants will vanish again after three nights.
+A mysterious traveling carnival appears outside town at dawn without warning. No one remembers seeing it arrive, and its bright tents, painted signs, and animal attendants will vanish again that night.
 
-The player enters with a small purse and one goal: leave with as much money as possible before the carnival disappears. Every wager advances time a little, allowing hundreds of bets across the three-night visit.
+The player enters with a small purse and one goal: leave with as much money as possible before the carnival disappears. Every wager advances time a little, allowing a day of investigation and betting before the gates close.
 
 The carnival advertises generous odds, but its dealers cannot be trusted. Some knowingly exaggerate their games; others misunderstand the machines they operate. The player must investigate actual results, decide which claims are false, and choose how much money to risk.
 
@@ -34,7 +34,7 @@ Each wager is independent, with no streak adjustment, rubber-banding, or effect 
 
 ## Advertisements and Hidden Stalls
 
-Three large advertisements stand around the carnival. Looking at an advertisement continuously for a few seconds causes the stall it promotes to mysteriously appear nearby. This should feel like the carnival responding to the player's attention. Each advertisement leads to a real, visitable shop, but only one sells something relevant to the betting investigation.
+Three large advertisements stand around the carnival. Looking at an advertisement continuously for five seconds costs fifteen in-game minutes and causes the stall it promotes to mysteriously appear nearby. This should feel like the carnival responding to the player's attention. Each advertisement leads to a real, visitable shop, but only one sells something relevant to the betting investigation.
 
 ### Practical Ledgers & Forecasting
 
@@ -59,4 +59,4 @@ These stalls cannot be opened or played in the prototype.
 
 ## Ending
 
-At the end of the third night, the carnival lights go dark and the mysterious carnival disappears. The player's final money total is their score. The game does not require uncovering every lie; its story is expressed through what the player chooses to trust, measure, buy, and risk before time runs out.
+At the end of the night, the carnival lights go dark and the mysterious carnival disappears. The player's final money total is their score. The game does not require uncovering every lie; its story is expressed through what the player chooses to trust, measure, buy, and risk before time runs out.
