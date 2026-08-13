@@ -12,6 +12,7 @@ const AD_HOLD_MS = 5_000
 const PORTRAIT_MINUTES = 60
 const AFTERNOON_MINUTES = 3 * 60
 const NIGHT_MINUTES = 9 * 60
+const DUSK_TRANSITION_MINUTES = 60
 const TEXT_RESOLUTION = Math.min(window.devicePixelRatio || 1, 2)
 const FONTS = {
   display: 'Rye, Georgia, serif',
@@ -208,7 +209,8 @@ class BadBetScene extends Phaser.Scene {
 
   preload() {
     for (const game of ['fox', 'rabbit']) {
-      this.load.image(`${game}-background`, `${BASE}art/stalls/backgrounds/${game}-evening.webp`)
+      this.load.image(`${game}-background-morning`, `${BASE}art/stalls/backgrounds/${game}-morning.webp`)
+      this.load.image(`${game}-background-night`, `${BASE}art/stalls/backgrounds/${game}-evening.webp`)
       for (const reaction of ['neutral', 'win', 'lose']) {
         this.load.image(`${game}-${reaction}`, `${BASE}art/stalls/characters/${game}-${reaction}.png`)
       }
@@ -472,22 +474,33 @@ class BadBetScene extends Phaser.Scene {
     })
   }
 
+  private renderStallBackground(game: GameKey, x: number, y: number, width: number, height: number) {
+    const duskStart = NIGHT_MINUTES - DUSK_TRANSITION_MINUTES
+    if (this.state.minutes < NIGHT_MINUTES) {
+      this.applySceneLighting(this.add.image(x, y, `${game}-background-morning`).setDisplaySize(width, height))
+    }
+    if (this.state.minutes >= duskStart) {
+      const night = this.add.image(x, y, `${game}-background-night`).setDisplaySize(width, height)
+      if (this.state.minutes < NIGHT_MINUTES) night.setAlpha(clamp((this.state.minutes - duskStart) / DUSK_TRANSITION_MINUTES, 0, 1))
+      else this.applySceneLighting(night)
+    }
+  }
+
   private applySceneLighting(image: Phaser.GameObjects.Image) {
     const minutes = this.state.minutes
-    const phase = dayPhase(minutes)
-    const matrix = phase === 'MORNING'
-      ? [1.16, 0, 0, 0, 30, 0, 1.12, 0, 0, 27, 0, 0, .98, 0, 18, 0, 0, 0, 1, 0]
-      : phase === 'AFTERNOON'
-        ? (() => {
-            const t = clamp((minutes - AFTERNOON_MINUTES) / (NIGHT_MINUTES - AFTERNOON_MINUTES), 0, 1)
-            return [1.18 - t * .18, 0, 0, 0, 30 - t * 30, 0, 1.1 - t * .1, 0, 0, 23 - t * 23, 0, 0, .92 + t * .08, 0, 12 - t * 12, 0, 0, 0, 1, 0]
-          })()
-        : (() => {
-            const t = clamp((minutes - NIGHT_MINUTES) / (MAX_MINUTES - NIGHT_MINUTES), 0, 1)
-            return [1 - t * .22, 0, 0, 0, 0, 0, 1 - t * .16, 0, 0, 0, 0, 0, 1 - t * .04, 0, 4 * t, 0, 0, 0, 1, 0]
-          })()
     image.enableFilters()
-    image.filters!.internal.addColorMatrix().colorMatrix.set(matrix)
+    const color = image.filters!.internal.addColorMatrix().colorMatrix
+    if (minutes < NIGHT_MINUTES) {
+      const twoPm = 5 * 60
+      const early = minutes < twoPm
+      const t = early ? clamp(minutes / twoPm, 0, 1) : clamp((minutes - twoPm) / (NIGHT_MINUTES - twoPm), 0, 1)
+      const brightness = early ? .93 + t * .05 : .98 - t * .13
+      const saturation = early ? .78 + t * .12 : .9 - t * .06
+      color.saturate(saturation - 1).brightness(brightness, true)
+    } else {
+      const t = clamp((minutes - NIGHT_MINUTES) / (MAX_MINUTES - NIGHT_MINUTES), 0, 1)
+      color.set([1 - t * .22, 0, 0, 0, 0, 0, 1 - t * .16, 0, 0, 0, 0, 0, 1 - t * .04, 0, 4 * t, 0, 0, 0, 1, 0])
+    }
     return image
   }
 
@@ -740,7 +753,7 @@ class BadBetScene extends Phaser.Scene {
     const artW = Math.min(width - 24, availableH * 1.5)
     const artH = artW / 1.5
     const artX = width / 2, artY = this.top + 10 + artH / 2
-    this.applySceneLighting(this.add.image(artX, artY, `${game}-background`).setDisplaySize(artW, artH))
+    this.renderStallBackground(game, artX, artY, artW, artH)
     const character = this.applySceneLighting(this.add.image(fox ? artX + artW * .25 : artX - artW * .25, artY + artH * .1, `${game}-${this.state.reaction}`).setName('dealer'))
     character.setDisplaySize(character.width / character.height * artH * .9, artH * .9)
     this.add.rectangle(0, this.top, width, height - this.top, 0x160d26, .13).setOrigin(0)

@@ -4,11 +4,12 @@
 
 The two playable stalls now use independent background and character layers:
 
+- `public/art/stalls/backgrounds/{fox,rabbit}-morning.webp` — bright, character-free late-morning versions of both game booths
 - `public/art/stalls/backgrounds/fox-evening.webp` — straight-on Silver Draw kiosk in a small evening carnival
 - `public/art/stalls/backgrounds/rabbit-evening.webp` — angled Generous Toss booth in the same small carnival
 - `public/art/stalls/characters/{fox,rabbit}-{neutral,win,lose}.png` — transparent reaction sprites
 
-The fox is female and wears a modest high-necked blouse. The rabbit is male and has a small healed notch in one ear. Betting outcomes cross-fade and translate between neutral, player-win, and player-loss poses. The two distinct backgrounds use artificial evening lighting and different camera views. Phaser color-matrix filters reuse those same paintings for warmer morning and afternoon light, then reveal their native night treatment after 6 PM. The game contains each 3:2 artboard inside the available viewport rather than cropping it.
+The fox is female and wears a modest high-necked blouse. The rabbit is male and has a small healed notch in one ear. Betting outcomes cross-fade and translate between neutral, player-win, and player-loss poses. Each stall now has genuinely different morning and night artwork. Phaser color-matrix filters shift the morning painting through the afternoon, then cross-fade to the native night painting between 5 and 6 PM. The game contains each 3:2 artboard inside the available viewport rather than cropping it.
 
 The overworld is now a code-native Phaser 2.5D diorama: angled booth faces, depth-scaled characters, y-sorted occlusion, branching packed-earth paths, an arrival gate, a larger big top, scenery layers, and open foreground fencing create a physical three-quarter space without external assets. The playable booths dominate the rear midway, while the notice-board advertisements sit near the entrance and summon their shops at distinct locations farther inside.
 

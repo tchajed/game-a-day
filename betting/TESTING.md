@@ -38,5 +38,5 @@ Core loop:
 7. Approach an ordinary notice board and deliberately inspect its hand-drawn advertisement. Leaving before five continuous seconds must not unlock it. At five seconds, verify that fifteen in-game minutes pass, “Something stirs” appears, and the advertised shop materializes.
 8. Buy the ledger to reveal observed rates at both stalls.
 9. Buy a Moon Portrait. Verify that one hour passes, the finished stick-figure likeness appears inside the studio's ornate easel frame, and returning to the midway reveals a tiny face and two coat buttons on the player sprite without changing its silhouette.
-10. Verify the clock is visible in stalls and shops. Use `setTime` or debug controls to compare the warm morning filter, afternoon transition, and distinct night lighting in both game backgrounds and the overworld.
+10. Verify the clock is visible in stalls and shops. Use `setTime` or debug controls to compare each game's bright morning background, the filtered afternoon treatment, the 5–6 PM cross-fade into its separate night background, and the overworld night lighting.
 11. Make as much money as possible before the single day ends at 9 PM.
