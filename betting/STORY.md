@@ -22,7 +22,7 @@ The overworld is a simple 2D, top-down carnival of tents, booths, paths, lights,
 
 ### The Silver Draw
 
-A kind fox offers draws from a ten-card pack containing four silver cards and six soot cards. She returns each drawn card to the pack and shuffles, so every wager has the same odds. The full composition is displayed in plain sight, but the fox sincerely and inaccurately calls the chance of silver “about one in five.” A player can calculate the true chance without collecting any results.
+A kind fox offers two wagers from an ordinary 52-card deck. Silver Pair deals five cards and wins only with exactly one pair. Silver Run deals three cards and wins when all three ranks are consecutive, regardless of suit. She returns every card and reshuffles the full deck between wagers. Before opening the table, the player must ask her about each game through a small dialogue tree. The fox appears sincere but gives inaccurate odds for both bets, whose true chances can be calculated without collecting results.
 
 ### Rabbit's Generous Toss
 
@@ -30,7 +30,7 @@ A shady, tattooed rabbit runs a coin-toss booth and loudly claims that heads lan
 
 ### Hidden Betting Rules
 
-Each wager is independent, with no streak adjustment, rubber-banding, or effect from optional purchases. The Silver Draw has four winning silver cards in a ten-card pack, returns the card after every draw, and pays 3× the stake (including the stake). Its true 40% win chance gives a positive 1.20× expected return per dollar, despite the fox's inaccurate “about one in five” estimate. Rabbit's Generous Toss advertises heads at 4/5 (80%), but the coin actually lands heads 65% of the time; a correct call returns 2× the stake. Calling heads therefore has a 1.30× expected return per dollar, while tails returns 0.70×. The rabbit's edge must be estimated empirically, whereas the fox's edge can be computed exactly from the visible pack.
+Each wager is independent, with no streak adjustment, rubber-banding, or effect from optional purchases. Silver Pair pays 4× the stake (including the stake). Exactly-one-pair hands occur with probability `13 × C(4,2) × C(12,3) × 4³ / C(52,5)`, or about 42.26%, giving a 1.69× expected return despite the fox's “one in three” estimate. Silver Run pays 100×. Counting A-2-3 through Q-K-A gives `12 × 4³ / C(52,3)`, or about 3.48%, for a 3.48× expected return despite her “one in fifty” estimate. Rabbit's Generous Toss advertises heads at 4/5 (80%), but the coin actually lands heads 65% of the time; a correct call returns 2× the stake. Calling heads therefore returns 1.30× per dollar, while tails returns 0.70×. The rabbit's edge must be estimated empirically, whereas both fox bets can be computed exactly from their rules.
 
 ## Advertisements and Hidden Stalls
 
