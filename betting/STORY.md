@@ -48,10 +48,7 @@ Its breathless advertisement promises confidence, vigor, and uncommon luck. Watc
 
 Additional stalls make the carnival feel larger while keeping the prototype focused. Their shutters remain closed, and only their painted names hint at possible games:
 
-- The Gilded Shell
-- Beetle Derby
-- Madame Moth's Wheel of Fortune
-- Three-Cup Trouble
+- Turtle Derby
 - The Lucky Lantern
 - Crow's High Striker
 
