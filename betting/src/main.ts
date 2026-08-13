@@ -20,7 +20,10 @@ type Place = {
   subtitle: string
   kind: 'stall' | 'ad' | 'closed' | 'shop'
 }
-type Stats = Record<GameKey, { plays: number; wins: number; wagered: number; returned: number }>
+type BetCount = 1 | 5 | 10
+type BetResult = { id: number; won: boolean; wager: number; payout: number; streak: number }
+type GameStats = { plays: number; wins: number; wagered: number; returned: number; manualPlays: number }
+type Stats = Record<GameKey, GameStats>
 
 type State = {
   mode: Mode
@@ -30,6 +33,9 @@ type State = {
   reaction: Reaction
   result: string
   stats: Stats
+  histories: Record<GameKey, BetResult[]>
+  betCounts: Record<GameKey, BetCount>
+  nextResultId: number
   ledger: boolean
   portrait: boolean
   tonic: boolean
@@ -61,13 +67,14 @@ const basePlaces: Place[] = [
 ]
 
 const initialStats = (): Stats => ({
-  fox: { plays: 0, wins: 0, wagered: 0, returned: 0 },
-  rabbit: { plays: 0, wins: 0, wagered: 0, returned: 0 },
+  fox: { plays: 0, wins: 0, wagered: 0, returned: 0, manualPlays: 0 },
+  rabbit: { plays: 0, wins: 0, wagered: 0, returned: 0, manualPlays: 0 },
 })
 
 const initialState = (): State => ({
   mode: 'world', balance: 100, minutes: 0, bet: 5, reaction: 'neutral',
   result: 'The carnival has made several claims.', stats: initialStats(),
+  histories: { fox: [], rabbit: [] }, betCounts: { fox: 1, rabbit: 1 }, nextResultId: 1,
   ledger: false, portrait: false, tonic: false, revealed: [],
   player: { x: 50, y: 56 }, target: null,
 })
@@ -75,6 +82,7 @@ const initialState = (): State => ({
 const clamp = (value: number, min: number, max: number) => Math.max(min, Math.min(max, value))
 const distance = (a: Point, b: Point) => Math.hypot(a.x - b.x, a.y - b.y)
 const money = (value: number) => `$${value.toFixed(0)}`
+const signedMoney = (value: number) => `${value >= 0 ? '+' : '−'}${money(Math.abs(value))}`
 const placeKey = (place?: Place) => place ? `${place.id}:${place.title}` : ''
 
 function timeLabel(minutes: number) {
@@ -134,6 +142,9 @@ class BadBetScene extends Phaser.Scene {
   private nearestKey = ''
   private gaze: { id: string; progress: number } | null = null
   private elapsed = 0
+  private historyScroll: Record<GameKey, number> = { fox: 0, rabbit: 0 }
+  private historyViews = new Map<GameKey, { strip: Phaser.GameObjects.Container; chips: Phaser.GameObjects.Container[]; latestX: number; maxOffset: number; left: number; right: number; top: number; bottom: number }>()
+  private resultContainers = new Map<number, Phaser.GameObjects.Container>()
 
   constructor() { super('BadBet') }
 
@@ -154,6 +165,12 @@ class BadBetScene extends Phaser.Scene {
       e: Phaser.Input.Keyboard.KeyCodes.E, enter: Phaser.Input.Keyboard.KeyCodes.ENTER,
     }) as Record<'w' | 'a' | 's' | 'd' | 'e' | 'enter', Phaser.Input.Keyboard.Key>
     this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => this.handleWorldPointer(pointer))
+    this.input.on('wheel', (pointer: Phaser.Input.Pointer, _objects: Phaser.GameObjects.GameObject[], _deltaX: number, deltaY: number) => {
+      const game = this.state.mode === 'fox' || this.state.mode === 'rabbit' ? this.state.mode : null
+      const view = game ? this.historyViews.get(game) : null
+      if (!game || !view || pointer.x < view.left || pointer.x > view.right || pointer.y < view.top || pointer.y > view.bottom) return
+      this.scrollHistory(game, -deltaY * .55)
+    })
     this.scale.on('resize', () => this.renderMode())
     this.renderMode()
     this.installDebugApi()
@@ -224,6 +241,8 @@ class BadBetScene extends Phaser.Scene {
   private renderMode() {
     this.children.removeAll(true)
     this.placeContainers.clear()
+    this.historyViews.clear()
+    this.resultContainers.clear()
     this.playerContainer = undefined
     this.caption = undefined
     if (this.state.mode === 'world') this.renderWorld()
@@ -517,13 +536,14 @@ class BadBetScene extends Phaser.Scene {
   private renderStall(game: GameKey) {
     const { width, height } = this.scale
     const fox = game === 'fox'
+    const compact = width < 760
     this.add.rectangle(0, 0, width, height, 0x120b1a).setOrigin(0)
     const availableH = height - this.top - 18
     const artW = Math.min(width - 24, availableH * 1.5)
     const artH = artW / 1.5
     const artX = width / 2, artY = this.top + 10 + artH / 2
     this.add.image(artX, artY, `${game}-background`).setDisplaySize(artW, artH)
-    const character = this.add.image(fox ? artX + artW * .25 : artX - artW * .25, artY + artH * .1, `${game}-${this.state.reaction}`)
+    const character = this.add.image(fox ? artX + artW * .25 : artX - artW * .25, artY + artH * .1, `${game}-${this.state.reaction}`).setName('dealer')
     character.setDisplaySize(character.width / character.height * artH * .9, artH * .9)
     this.add.rectangle(0, this.top, width, height - this.top, 0x160d26, .13).setOrigin(0)
     this.button(64, this.top + 35, 104, 34, '← MIDWAY', () => this.go('world'), { fill: COLORS.cream, color: '#21182f', stroke: COLORS.ink, font: 10, depth: 50 })
@@ -535,26 +555,117 @@ class BadBetScene extends Phaser.Scene {
       stroke: '#160b1c', strokeThickness: 4, align: 'center', wordWrap: { width: width * .72 },
     }).setOrigin(.5, 0).setDepth(20)
 
-    const consoleH = this.state.ledger ? 150 : 119
+    const consoleH = compact ? (this.state.ledger ? 262 : 225) : (this.state.ledger ? 224 : 187)
     const consoleY = height - consoleH - 14
-    const panel = this.add.rectangle(width / 2, consoleY, width * .92, consoleH, 0x1a1126, .95).setOrigin(.5, 0).setDepth(30)
+    const latest = this.state.histories[game].at(-1)
+    if (latest && latest.streak >= 2) {
+      this.add.text(width / 2, consoleY - 25, `${latest.won ? 'WIN' : 'MISS'} AGAIN · ${latest.streak} IN A ROW`, {
+        fontFamily: 'DM Mono, monospace', fontSize: `${clamp(width / 90, 10, 14)}px`, fontStyle: 'bold',
+        color: latest.won ? '#21182f' : '#fff3ce', backgroundColor: latest.won ? '#efb64f' : '#c84438',
+        padding: { x: 14, y: 8 }, stroke: '#21182f', strokeThickness: 2,
+      }).setOrigin(.5).setDepth(45).setName('streakBadge')
+    }
+
+    const panel = this.add.rectangle(width / 2, consoleY, width * .94, consoleH, 0x1a1126, .97).setOrigin(.5, 0).setDepth(30)
     panel.setStrokeStyle(2, COLORS.gold)
-    this.add.text(width / 2, consoleY + 12, this.state.result, {
-      fontFamily: 'Fraunces, Georgia, serif', fontSize: `${clamp(width / 70, 13, 18)}px`, fontStyle: 'bold', color: '#fff4cf', align: 'center', wordWrap: { width: width * .82 },
-    }).setOrigin(.5, 0).setDepth(31)
+    this.add.text(width / 2, consoleY + 10, this.state.result, {
+      fontFamily: 'Fraunces, Georgia, serif', fontSize: `${clamp(width / 78, 12, 17)}px`, fontStyle: 'bold', color: '#fff4cf', align: 'center', wordWrap: { width: width * .84 },
+    }).setOrigin(.5, 0).setDepth(31).setName('resultText')
+    this.renderResultHistory(game, consoleY + 39, 46)
+
     const amounts = [1, 5, 10, 25, 50]
-    const buttonW = width < 650 ? 42 : 52
-    const startX = width * .08
-    this.add.text(startX, consoleY + 55, 'WAGER', { fontFamily: 'DM Mono, monospace', fontSize: '9px', color: '#dfb654' }).setDepth(31)
-    amounts.forEach((amount, index) => this.button(startX + 55 + index * (buttonW + 6), consoleY + 68, buttonW, 30, money(amount), () => {
+    const buttonW = width < 650 ? 40 : 52
+    const buttonGap = width < 650 ? 4 : 6
+    const startX = compact ? Math.max(18, width / 2 - 150) : width * .08
+    const controlY = consoleY + 115
+    this.add.text(startX, controlY - 20, 'WAGER', { fontFamily: 'DM Mono, monospace', fontSize: '9px', color: '#dfb654' }).setDepth(31)
+    amounts.forEach((amount, index) => this.button(startX + 52 + index * (buttonW + buttonGap), controlY, buttonW, 30, money(amount), () => {
       this.state.bet = amount
       this.renderMode()
     }, { fill: this.state.bet === amount ? COLORS.gold : COLORS.ink, color: this.state.bet === amount ? '#21182f' : '#fff1c7', stroke: 0x9c7d58, font: 10, depth: 32, disabled: amount > this.state.balance }))
-    const playX = Math.max(width * .7, startX + 55 + amounts.length * (buttonW + 6) + 45)
-    this.button(playX, consoleY + 68, 106, 34, 'PLAY ONCE', () => this.playBets(game, 1), { fill: COLORS.red, font: 10, depth: 32, disabled: this.state.balance < this.state.bet })
-    this.button(playX + 75, consoleY + 68, 42, 34, '×10', () => this.playBets(game, 10), { fill: COLORS.ink, stroke: 0x9c7d58, font: 10, depth: 32, disabled: this.state.balance < this.state.bet })
-    this.button(playX + 124, consoleY + 68, 42, 34, '×25', () => this.playBets(game, 25), { fill: COLORS.ink, stroke: 0x9c7d58, font: 10, depth: 32, disabled: this.state.balance < this.state.bet })
-    if (this.state.ledger) this.renderLedger(game, consoleY + 105)
+
+    const stats = this.state.stats[game]
+    const count = this.state.betCounts[game]
+    const playY = compact ? consoleY + 159 : controlY
+    const playX = compact ? Math.max(88, width / 2 - 70) : Math.max(width * .7, startX + 52 + amounts.length * (buttonW + buttonGap) + 42)
+    this.button(playX, playY, 108, 34, count === 1 ? 'PLAY ONCE' : `PLAY ×${count}`, () => this.playBets(game, count), { fill: COLORS.red, font: 10, depth: 32, disabled: this.state.balance < this.state.bet })
+    this.button(playX + 77, playY, 52, 34, stats.manualPlays < 5 ? `×5 ${stats.manualPlays}/5` : '×5', () => this.toggleBetCount(game, 5), {
+      fill: count === 5 ? COLORS.gold : COLORS.ink, color: count === 5 ? '#21182f' : '#fff1c7', stroke: 0x9c7d58, font: stats.manualPlays < 5 ? 8 : 10, depth: 32, disabled: stats.manualPlays < 5,
+    })
+    this.button(playX + 137, playY, 58, 34, stats.manualPlays < 10 ? `×10 ${stats.manualPlays}/10` : '×10', () => this.toggleBetCount(game, 10), {
+      fill: count === 10 ? COLORS.gold : COLORS.ink, color: count === 10 ? '#21182f' : '#fff1c7', stroke: 0x9c7d58, font: stats.manualPlays < 10 ? 8 : 10, depth: 32, disabled: stats.manualPlays < 10,
+    })
+    const hintY = compact ? consoleY + 184 : consoleY + 139
+    this.add.text(playX + 42, hintY, count === 1 ? `MULTI-BET UNLOCKS AFTER 5 / 10 MANUAL PLAYS · ${stats.manualPlays}/10` : `MULTI-BET SET TO ×${count} · TAP IT AGAIN FOR SINGLE PLAY`, {
+      fontFamily: 'DM Mono, monospace', fontSize: width < 520 ? '7px' : '8px', color: '#bca884', align: 'center',
+    }).setOrigin(.5, 0).setDepth(31)
+    if (this.state.ledger) this.renderLedger(game, compact ? consoleY + 204 : consoleY + 163)
+  }
+
+  private renderResultHistory(game: GameKey, y: number, height: number) {
+    const { width } = this.scale
+    const left = width < 650 ? 46 : 76
+    const right = width - left
+    const viewportW = right - left
+    const history = this.state.histories[game]
+    this.add.rectangle(width / 2, y, viewportW, height, 0x0e0916, .94).setOrigin(.5, 0).setDepth(31).setStrokeStyle(1, 0x66516f)
+    this.add.text(left + 7, y + 3, 'RESULTS', { fontFamily: 'DM Mono, monospace', fontSize: '7px', color: '#8f7a9d' }).setDepth(34)
+
+    if (!history.length) {
+      this.add.text(width / 2, y + height / 2 + 3, 'Your results will roll in here.', { fontFamily: 'Fraunces, Georgia, serif', fontSize: '11px', fontStyle: 'italic', color: '#8f8297' }).setOrigin(.5).setDepth(33)
+      return
+    }
+
+    const step = 64
+    const contentW = history.length * step
+    const maxOffset = Math.max(0, contentW - viewportW)
+    this.historyScroll[game] = clamp(this.historyScroll[game], 0, maxOffset)
+    const latestX = maxOffset ? right - contentW : left
+    const strip = this.add.container(latestX + this.historyScroll[game], y).setDepth(33)
+    const chips: Phaser.GameObjects.Container[] = []
+    history.forEach((result, index) => {
+      const net = result.payout - result.wager
+      const chip = this.add.container(index * step + step / 2, height / 2 + 3)
+      const background = this.add.rectangle(0, 0, 58, 30, result.won ? 0x236e5d : 0x6d2938)
+      if (index === history.length - 1) background.setStrokeStyle(2, COLORS.gold)
+      const label = this.add.text(0, 0, result.won ? `WIN ${money(net)}` : `MISS −${money(result.wager)}`, {
+        fontFamily: 'DM Mono, monospace', fontSize: '8px', fontStyle: 'bold', color: '#fff1cf', align: 'center',
+      }).setOrigin(.5)
+      chip.add([background, label])
+      strip.add(chip)
+      chips.push(chip)
+      this.resultContainers.set(result.id, chip)
+    })
+    const view = { strip, chips, latestX, maxOffset, left, right, top: y, bottom: y + height }
+    this.historyViews.set(game, view)
+    this.updateHistoryVisibility(view)
+    this.button(left - 20, y + height / 2, 28, 30, '‹', () => this.scrollHistory(game, 180), { fill: COLORS.ink, stroke: 0x66516f, font: 18, depth: 35, disabled: maxOffset === 0 })
+    this.button(right + 20, y + height / 2, 28, 30, '›', () => this.scrollHistory(game, -180), { fill: COLORS.ink, stroke: 0x66516f, font: 18, depth: 35, disabled: maxOffset === 0 })
+  }
+
+  private scrollHistory(game: GameKey, delta: number) {
+    const view = this.historyViews.get(game)
+    if (!view) return
+    this.historyScroll[game] = clamp(this.historyScroll[game] + delta, 0, view.maxOffset)
+    this.tweens.killTweensOf(view.strip)
+    this.tweens.add({
+      targets: view.strip, x: view.latestX + this.historyScroll[game], duration: 150, ease: 'Sine.Out',
+      onUpdate: () => this.updateHistoryVisibility(view), onComplete: () => this.updateHistoryVisibility(view),
+    })
+  }
+
+  private updateHistoryVisibility(view: { strip: Phaser.GameObjects.Container; chips: Phaser.GameObjects.Container[]; left: number; right: number }) {
+    view.chips.forEach((chip) => {
+      const center = view.strip.x + chip.x
+      chip.setVisible(center - 29 >= view.left && center + 29 <= view.right)
+    })
+  }
+
+  private toggleBetCount(game: GameKey, count: Exclude<BetCount, 1>) {
+    const needed = count
+    if (this.state.stats[game].manualPlays < needed) return
+    this.state.betCounts[game] = this.state.betCounts[game] === count ? 1 : count
+    this.renderMode()
   }
 
   private renderLedger(game: GameKey, y: number) {
@@ -570,36 +681,93 @@ class BadBetScene extends Phaser.Scene {
     })
   }
 
-  private playBets(game: GameKey, count: number) {
+  private playBets(game: GameKey, count: BetCount | number) {
     let cash = this.state.balance, elapsed = this.state.minutes, played = 0, wins = 0, returned = 0, lastWin = false
+    const outcomes: BetResult[] = []
+    const data = this.state.stats[game]
+    const manualBefore = data.manualPlays
     while (played < count && cash >= this.state.bet && elapsed < MAX_MINUTES) {
       cash -= this.state.bet
       lastWin = this.random() < (game === 'fox' ? .42 : .4)
+      const payout = lastWin ? (game === 'fox' ? this.state.bet * 3 : this.state.bet * 2) : 0
       if (lastWin) {
-        const payout = game === 'fox' ? this.state.bet * 3 : this.state.bet * 2
         cash += payout
         returned += payout
         wins++
       }
+      const previous = this.state.histories[game].at(-1)
+      const outcome: BetResult = {
+        id: this.state.nextResultId++, won: lastWin, wager: this.state.bet, payout,
+        streak: previous?.won === lastWin ? previous.streak + 1 : 1,
+      }
+      this.state.histories[game].push(outcome)
+      outcomes.push(outcome)
       played++
       elapsed += BET_MINUTES
     }
     const net = cash - this.state.balance
     this.state.balance = cash
     this.state.minutes = elapsed
-    const data = this.state.stats[game]
-    data.plays += played; data.wins += wins; data.wagered += played * this.state.bet; data.returned += returned
+    data.plays += played
+    data.wins += wins
+    data.wagered += played * this.state.bet
+    data.returned += returned
+    if (count === 1) data.manualPlays += played
     if (!played) {
-      this.state.reaction = 'neutral'; this.state.result = 'Your purse declines the opportunity.'
+      this.state.reaction = 'neutral'
+      this.state.result = 'Your purse declines the opportunity.'
     } else {
       this.state.reaction = net >= 0 ? 'win' : 'lose'
       this.state.result = played === 1
         ? lastWin ? game === 'fox' ? 'Three times back. The fox looks pleasantly surprised.' : 'You win. Rabbit looks professionally delighted.'
           : game === 'fox' ? 'Nothing. “Yes. Usually that.”' : 'The coin disagrees with the advertisement.'
-        : `${played} wagers: ${wins} paid, ${played - wins} did not. Net ${net >= 0 ? '+' : ''}${money(net)}.`
+        : `${played} wagers: ${wins} paid, ${played - wins} did not. Net ${signedMoney(net)}.`
+      const unlocks = []
+      if (manualBefore < 5 && data.manualPlays >= 5) unlocks.push('×5')
+      if (manualBefore < 10 && data.manualPlays >= 10) unlocks.push('×10')
+      if (unlocks.length) this.state.result += ` ${unlocks.join(' and ')} multi-bet unlocked.`
     }
+    this.historyScroll[game] = 0
     if (elapsed >= MAX_MINUTES) this.state.mode = 'ending'
     this.renderMode()
+    if (this.state.mode === game && outcomes.length) this.animateBetResults(game, outcomes)
+  }
+
+  private animateBetResults(game: GameKey, outcomes: BetResult[]) {
+    const dealer = this.children.getByName('dealer') as Phaser.GameObjects.Image | null
+    const resultText = this.children.getByName('resultText') as Phaser.GameObjects.Text | null
+    const badge = this.children.getByName('streakBadge') as Phaser.GameObjects.Text | null
+    const view = this.historyViews.get(game)
+    const latest = outcomes.at(-1)
+    const stagger = outcomes.length > 1 ? 65 : 0
+
+    if (view) {
+      const travel = Math.min(outcomes.length * 64, view.right - view.left)
+      view.strip.x = view.latestX + travel
+      this.updateHistoryVisibility(view)
+      this.tweens.add({
+        targets: view.strip, x: view.latestX, duration: 220 + outcomes.length * stagger, ease: 'Cubic.Out',
+        onUpdate: () => this.updateHistoryVisibility(view), onComplete: () => this.updateHistoryVisibility(view),
+      })
+    }
+    outcomes.forEach((outcome, index) => {
+      const chip = this.resultContainers.get(outcome.id)
+      if (!chip) return
+      chip.setAlpha(0).setScale(.55).setY(chip.y - 8)
+      this.tweens.add({ targets: chip, alpha: 1, scale: 1, y: chip.y + 8, delay: 70 + index * stagger, duration: 190, ease: 'Back.Out' })
+    })
+    if (dealer && latest) {
+      const baseY = dealer.y
+      this.tweens.add({ targets: dealer, y: baseY - (latest.won ? 13 : 6), angle: latest.won ? -2 : 2, duration: 120, yoyo: true, repeat: latest.streak >= 2 ? 1 : 0, ease: 'Sine.InOut' })
+    }
+    if (resultText) {
+      resultText.setAlpha(.25).setScale(.96)
+      this.tweens.add({ targets: resultText, alpha: 1, scale: 1, duration: 220, ease: 'Back.Out' })
+    }
+    if (badge) {
+      badge.setAlpha(0).setScale(.35).setAngle(-3)
+      this.tweens.add({ targets: badge, alpha: 1, scale: 1, angle: 0, delay: Math.max(80, (outcomes.length - 1) * stagger), duration: 300, ease: 'Back.Out' })
+    }
   }
 
   private renderShop(type: 'ledger' | 'portrait' | 'tonic') {
@@ -655,7 +823,15 @@ class BadBetScene extends Phaser.Scene {
     if (options.stroke !== undefined) background.setStrokeStyle(2, options.stroke)
     const text = this.add.text(0, 0, label, { fontFamily: options.family ?? 'DM Mono, monospace', fontSize: `${options.font ?? 10}px`, fontStyle: 'bold', color: options.color ?? '#fff6da', align: 'center' }).setOrigin(.5)
     container.add([background, text])
-    if (!disabled) background.setInteractive({ useHandCursor: true }).on('pointerover', () => container.setScale(1.03)).on('pointerout', () => container.setScale(1)).on('pointerup', action)
+    if (!disabled) {
+      background.setInteractive({ useHandCursor: true })
+        .on('pointerover', () => container.setScale(1.03))
+        .on('pointerdown', () => container.setScale(.94))
+        .on('pointerout', () => container.setScale(1))
+        .on('pointerup', () => {
+          this.tweens.add({ targets: container, scale: 1.06, duration: 55, yoyo: true, ease: 'Sine.Out', onComplete: action })
+        })
+    }
     return container
   }
 
@@ -669,6 +845,7 @@ class BadBetScene extends Phaser.Scene {
     this.state = initialState()
     this.randomSeed = Number(params.get('seed')) || 481516
     this.gaze = null
+    this.historyScroll = { fox: 0, rabbit: 0 }
     this.renderMode()
     this.installDebugApi()
   }

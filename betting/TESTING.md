@@ -25,7 +25,8 @@ window.__BAD_BET__.play('fox', 10)
 Core loop:
 
 1. Walk or click to visit the fox and rabbit stalls.
-2. Bet repeatedly and compare their advertised odds.
-3. Stand still by an advertisement until its shop materializes.
-4. Buy the ledger to reveal observed rates at both stalls.
-5. Make as much money as possible before three days elapse.
+2. Bet repeatedly and compare their advertised odds. Results animate into a horizontally scrollable history; use its arrow buttons or mouse wheel to review older outcomes.
+3. After 5 manual plays at a stall, toggle ×5 and confirm the main play button changes to `PLAY ×5`; after 10 manual plays, repeat for ×10. Batch plays must not advance either unlock counter.
+4. Stand still by an advertisement until its shop materializes.
+5. Buy the ledger to reveal observed rates at both stalls.
+6. Make as much money as possible before three days elapse.
