@@ -24,9 +24,13 @@ The overworld is a simple 2D, top-down carnival of tents, booths, paths, lights,
 
 A kind wolf operates an old slot machine and apologetically warns that it rarely pays out. The wolf appears sincere, but has underestimated the machine's real odds. Careful players can discover that the game is better than advertised.
 
-### Rabbit's Even Chance
+### Rabbit's Generous Toss
 
-A shady, tattooed rabbit runs a coin-toss booth and loudly promises favorable odds. The rabbit's claims are deliberately misleading: the coin is biased against the player.
+A shady, tattooed rabbit runs a coin-toss booth and loudly promises favorable odds. The toss is biased in the player's favor, but the rabbit exaggerates just how generous it is.
+
+### Hidden Betting Rules
+
+Each wager is an independent roll with no streak adjustment, rubber-banding, or effect from optional purchases. The Silver Spin advertises a 20% win chance but actually wins 30% of the time and returns 3× the stake (including the stake). Rabbit's Generous Toss advertises a 60% win chance but actually wins 55% of the time and returns 2× the stake. Both pitches are directionally correct but wrong in magnitude: the fox's game is genuinely unfavorable, though not as bad as claimed, while the rabbit's is genuinely favorable, though not as generous as claimed. The fox game has a 0.90× expected return per dollar; the rabbit game has a 1.10× expected return.
 
 ## Advertisements and Hidden Stalls
 
