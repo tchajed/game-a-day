@@ -51,7 +51,7 @@ const COLORS = {
 
 const basePlaces: Place[] = [
   { id: 'fox', x: 21, y: 20, title: 'The Silver Spin', subtitle: '1 win in 5, if that', kind: 'stall' },
-  { id: 'rabbit', x: 78, y: 22, title: "Rabbit's Even Chance", subtitle: 'A generous 3 wins in 5', kind: 'stall' },
+  { id: 'rabbit', x: 78, y: 22, title: "Rabbit's Generous Toss", subtitle: 'A generous 3 wins in 5', kind: 'stall' },
   { id: 'closed', x: 39, y: 25, title: 'Turtle Derby', subtitle: 'Closed for rapidity', kind: 'closed' },
   { id: 'closed', x: 61, y: 29, title: "Crow's High Striker", subtitle: 'Testing the hammer', kind: 'closed' },
   { id: 'closed', x: 50, y: 49, title: 'The Lucky Lantern', subtitle: 'Illuminating soon', kind: 'closed' },
@@ -527,7 +527,7 @@ class BadBetScene extends Phaser.Scene {
     character.setDisplaySize(character.width / character.height * artH * .9, artH * .9)
     this.add.rectangle(0, this.top, width, height - this.top, 0x160d26, .13).setOrigin(0)
     this.button(64, this.top + 35, 104, 34, '← MIDWAY', () => this.go('world'), { fill: COLORS.cream, color: '#21182f', stroke: COLORS.ink, font: 10, depth: 50 })
-    this.add.text(width / 2, this.top + 24, fox ? 'THE SILVER SPIN' : "RABBIT'S EVEN CHANCE", {
+    this.add.text(width / 2, this.top + 24, fox ? 'THE SILVER SPIN' : "RABBIT'S GENEROUS TOSS", {
       fontFamily: 'DM Mono, monospace', fontSize: '10px', color: '#f3c15b', backgroundColor: '#2b1730cc', padding: { x: 8, y: 5 },
     }).setOrigin(.5, 0).setDepth(20)
     this.add.text(width / 2, this.top + 58, fox ? '“It is not a very generous machine.”' : '“Three in five. You have my word.”', {
@@ -574,7 +574,7 @@ class BadBetScene extends Phaser.Scene {
     let cash = this.state.balance, elapsed = this.state.minutes, played = 0, wins = 0, returned = 0, lastWin = false
     while (played < count && cash >= this.state.bet && elapsed < MAX_MINUTES) {
       cash -= this.state.bet
-      lastWin = this.random() < (game === 'fox' ? .42 : .4)
+      lastWin = this.random() < (game === 'fox' ? .3 : .55)
       if (lastWin) {
         const payout = game === 'fox' ? this.state.bet * 3 : this.state.bet * 2
         cash += payout
@@ -604,9 +604,9 @@ class BadBetScene extends Phaser.Scene {
 
   private renderShop(type: 'ledger' | 'portrait' | 'tonic') {
     const data = {
-      ledger: { icon: '▦', title: 'Practical Ledgers & Forecasting', keeper: 'OWL, SOLE PROPRIETOR', cost: 18, copy: 'Records every wager, result, observed win rate, and average return. Astonishingly unglamorous. Potentially useful.', buy: 'BUY LEDGER — $18' },
-      portrait: { icon: '◒', title: 'Marvelous Moon Portraits', keeper: 'LUNAR LIKENESSES WHILE-U-WAIT', cost: 25, copy: 'An ornate portrait revealing the beauty of your inner beast. Your outer finances remain unchanged.', buy: 'SIT FOR PORTRAIT — $25' },
-      tonic: { icon: '⚗', title: "Dr. Stoat's Invigorating Tonic", keeper: 'FORMULATED WITH CONFIDENCE', cost: 30, copy: 'Sparkling botanical confidence in a handsome bottle. No specific claims regarding chance are legally available.', buy: 'DRINK TONIC — $30' },
+      ledger: { icon: '▦', title: 'Practical Ledgers & Forecasting', keeper: 'OWL, SOLE PROPRIETOR', cost: 10, copy: 'Records every wager, result, observed win rate, and average return. Astonishingly unglamorous. Potentially useful.', buy: 'BUY LEDGER — $10' },
+      portrait: { icon: '◒', title: 'Marvelous Moon Portraits', keeper: 'LUNAR LIKENESSES WHILE-U-WAIT', cost: 15, copy: 'An ornate portrait revealing the beauty of your inner beast. Your outer finances remain unchanged.', buy: 'SIT FOR PORTRAIT — $15' },
+      tonic: { icon: '⚗', title: "Dr. Stoat's Invigorating Tonic", keeper: 'FORMULATED WITH CONFIDENCE', cost: 20, copy: 'Sparkling botanical confidence in a handsome bottle. No specific claims regarding chance are legally available.', buy: 'DRINK TONIC — $20' },
     }[type]
     const owned = this.state[type]
     const { width, height } = this.scale

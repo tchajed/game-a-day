@@ -5,7 +5,7 @@
 The two playable stalls now use independent background and character layers:
 
 - `public/art/stalls/backgrounds/fox-evening.webp` — straight-on Silver Spin kiosk in a small evening carnival
-- `public/art/stalls/backgrounds/rabbit-evening.webp` — angled Even Chance booth in the same small carnival
+- `public/art/stalls/backgrounds/rabbit-evening.webp` — angled Generous Toss booth in the same small carnival
 - `public/art/stalls/characters/{fox,rabbit}-{neutral,win,lose}.png` — transparent reaction sprites
 
 The fox is female and wears a modest high-necked blouse. The rabbit is male and has a small healed notch in one ear. Betting outcomes cross-fade and translate between neutral, player-win, and player-loss poses. Backgrounds use artificial evening lighting and different camera views. The game contains each 3:2 artboard inside the available viewport rather than cropping it.
