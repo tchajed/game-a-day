@@ -14,7 +14,7 @@ const FONTS = {
   ui: '"Barlow Condensed", Arial, sans-serif',
 }
 
-type Mode = 'world' | 'fox' | 'rabbit' | 'ledger' | 'portrait' | 'tonic' | 'poster' | 'ending'
+type Mode = 'welcome' | 'world' | 'fox' | 'rabbit' | 'ledger' | 'portrait' | 'tonic' | 'poster' | 'ending'
 type GameKey = 'fox' | 'rabbit'
 type Reaction = 'neutral' | 'win' | 'lose'
 type Point = { x: number; y: number }
@@ -63,14 +63,14 @@ const COLORS = {
 }
 
 const basePlaces: Place[] = [
-  { id: 'fox', x: 21, y: 20, title: 'The Silver Spin', subtitle: 'WIN PAYS 3×', kind: 'stall' },
-  { id: 'rabbit', x: 78, y: 22, title: "Rabbit's Generous Toss", subtitle: 'WIN PAYS 2×', kind: 'stall' },
-  { id: 'closed', x: 39, y: 25, title: 'Turtle Derby', subtitle: 'CLOSED', kind: 'closed' },
-  { id: 'closed', x: 61, y: 29, title: "Crow's High Striker", subtitle: 'CLOSED', kind: 'closed' },
-  { id: 'closed', x: 50, y: 49, title: 'The Lucky Lantern', subtitle: 'CLOSED', kind: 'closed' },
-  { id: 'ad-ledger', x: 17, y: 70, title: 'Weathered Notice Board', subtitle: 'OLD NOTICES & LOCAL NEWS', kind: 'ad' },
-  { id: 'ad-portrait', x: 50, y: 77, title: 'Town Notice Board', subtitle: 'PINS, PAPER & OLD INK', kind: 'ad' },
-  { id: 'ad-tonic', x: 83, y: 68, title: 'Crooked Notice Board', subtitle: 'NOTICES OF UNCERTAIN IMPORTANCE', kind: 'ad' },
+  { id: 'fox', x: 27, y: 29, title: 'The Silver Spin', subtitle: 'WIN PAYS 3×', kind: 'stall' },
+  { id: 'rabbit', x: 73, y: 29, title: "Rabbit's Generous Toss", subtitle: 'WIN PAYS 2×', kind: 'stall' },
+  { id: 'closed', x: 12, y: 49, title: 'Turtle Derby', subtitle: 'CLOSED', kind: 'closed' },
+  { id: 'closed', x: 88, y: 49, title: "Crow's High Striker", subtitle: 'CLOSED', kind: 'closed' },
+  { id: 'closed', x: 36, y: 52, title: 'The Lucky Lantern', subtitle: 'CLOSED', kind: 'closed' },
+  { id: 'ad-ledger', x: 11, y: 84, title: 'Weathered Notice Board', subtitle: 'OLD NOTICES & LOCAL NEWS', kind: 'ad' },
+  { id: 'ad-portrait', x: 34, y: 86, title: 'Town Notice Board', subtitle: 'PINS, PAPER & OLD INK', kind: 'ad' },
+  { id: 'ad-tonic', x: 89, y: 84, title: 'Crooked Notice Board', subtitle: 'NOTICES OF UNCERTAIN IMPORTANCE', kind: 'ad' },
 ]
 
 const initialStats = (): Stats => ({
@@ -79,11 +79,11 @@ const initialStats = (): Stats => ({
 })
 
 const initialState = (): State => ({
-  mode: 'world', balance: 100, minutes: 0, bet: 5, reaction: 'neutral',
+  mode: 'welcome', balance: 100, minutes: 0, bet: 5, reaction: 'neutral',
   result: 'Pick a game. Press your luck.', stats: initialStats(),
   histories: { fox: [], rabbit: [] }, betCounts: { fox: 1, rabbit: 1 }, nextResultId: 1,
   ledger: false, portrait: false, tonic: false, revealed: [],
-  player: { x: 50, y: 56 }, target: null, poster: null,
+  player: { x: 50, y: 89 }, target: null, poster: null,
 })
 
 const clamp = (value: number, min: number, max: number) => Math.max(min, Math.min(max, value))
@@ -164,6 +164,10 @@ class BadBetScene extends Phaser.Scene {
     this.load.image('poster-ad-ledger', `${BASE}art/posters/practical-ledgers.png`)
     this.load.image('poster-ad-portrait', `${BASE}art/posters/moon-portraits.png`)
     this.load.image('poster-ad-tonic', `${BASE}art/posters/stoat-tonic.png`)
+    this.load.image('shop-ledger', `${BASE}art/shops/practical-ledgers-evening.webp`)
+    this.load.image('shop-portrait', `${BASE}art/shops/moon-portraits-evening.webp`)
+    this.load.image('shop-tonic', `${BASE}art/shops/stoat-tonic-evening.webp`)
+    this.load.image('carnival-welcome', `${BASE}art/entrance/bad-bet-welcome.webp`)
   }
 
   create() {
@@ -234,9 +238,9 @@ class BadBetScene extends Phaser.Scene {
 
   private places() {
     const shops: Place[] = []
-    if (this.state.revealed.includes('ad-ledger')) shops.push({ id: 'ledger', x: 17, y: 57, title: 'Practical Ledgers', subtitle: 'OPEN', kind: 'shop' })
-    if (this.state.revealed.includes('ad-portrait')) shops.push({ id: 'portrait', x: 50, y: 65, title: 'Moon Portraits', subtitle: 'OPEN', kind: 'shop' })
-    if (this.state.revealed.includes('ad-tonic')) shops.push({ id: 'tonic', x: 83, y: 55, title: "Dr. Stoat's Tonic", subtitle: 'OPEN', kind: 'shop' })
+    if (this.state.revealed.includes('ad-ledger')) shops.push({ id: 'ledger', x: 25, y: 67, title: 'Practical Ledgers', subtitle: 'OPEN', kind: 'shop' })
+    if (this.state.revealed.includes('ad-portrait')) shops.push({ id: 'portrait', x: 62, y: 69, title: 'Moon Portraits', subtitle: 'OPEN', kind: 'shop' })
+    if (this.state.revealed.includes('ad-tonic')) shops.push({ id: 'tonic', x: 79, y: 66, title: "Dr. Stoat's Tonic", subtitle: 'OPEN', kind: 'shop' })
     return [...basePlaces, ...shops]
   }
 
@@ -252,7 +256,8 @@ class BadBetScene extends Phaser.Scene {
     this.resultContainers.clear()
     this.playerContainer = undefined
     this.caption = undefined
-    if (this.state.mode === 'world') this.renderWorld()
+    if (this.state.mode === 'welcome') this.renderWelcome()
+    else if (this.state.mode === 'world') this.renderWorld()
     else if (this.state.mode === 'fox' || this.state.mode === 'rabbit') this.renderStall(this.state.mode)
     else if (this.state.mode === 'poster') this.renderPoster()
     else if (this.state.mode === 'ending') this.renderEnding()
@@ -297,6 +302,34 @@ class BadBetScene extends Phaser.Scene {
     }, { fill: COLORS.cream, color: '#21182f', stroke: COLORS.ink, font: 12, depth: 10002 })
   }
 
+  private renderWelcome() {
+    const { width, height } = this.scale
+    this.add.rectangle(0, 0, width, height, 0x130d1b).setOrigin(0)
+    const availableH = height - this.top
+    const artW = Math.min(width, availableH * 1.5)
+    const artH = artW / 1.5
+    const artX = width / 2, artY = this.top + availableH / 2
+    this.add.image(artX, artY, 'carnival-welcome').setDisplaySize(artW, artH)
+    if (artW < width) this.add.rectangle(0, this.top, width, availableH, 0x120c1a, .24).setOrigin(0)
+    const panelW = artW * .55
+    const titleY = artY - artH * .18
+    this.add.text(artX, titleY, 'THE BAD BET CARNIVAL', {
+      fontFamily: FONTS.display, fontSize: `${clamp(artW / 24, 28, 58)}px`, color: '#3a2030',
+      align: 'center', wordWrap: { width: panelW }, stroke: '#f3dba7', strokeThickness: 1,
+    }).setOrigin(.5)
+    this.add.text(artX, titleY + clamp(artH * .12, 50, 92), 'THREE DAYS. ONE PURSE.\nEVERY PROMISE PRICED TO SELL.', {
+      fontFamily: FONTS.body, fontSize: `${clamp(artW / 58, 17, 27)}px`, color: '#4e3030',
+      align: 'center', lineSpacing: 6, wordWrap: { width: panelW * .88 },
+    }).setOrigin(.5)
+    this.add.text(artX, artY + artH * .055, 'Test the games. Trust the evidence.\nLeave before the tents do.', {
+      fontFamily: FONTS.ui, fontSize: `${clamp(artW / 85, 13, 19)}px`, fontStyle: 'bold', color: '#6f4738',
+      letterSpacing: .7, align: 'center', lineSpacing: 5, wordWrap: { width: panelW * .82 },
+    }).setOrigin(.5)
+    this.button(artX, artY + artH * .22, Math.min(270, panelW * .7), 48, 'ENTER THE MIDWAY  →', () => this.go('world'), {
+      fill: COLORS.red, color: '#fff1c8', stroke: COLORS.ink, font: 16, family: FONTS.ui, depth: 10,
+    })
+  }
+
   private renderWorld() {
     this.drawGround()
     this.drawScenery()
@@ -318,29 +351,48 @@ class BadBetScene extends Phaser.Scene {
     const w = this.scale.width
     const h = this.worldHeight
     const g = this.add.graphics().setPosition(0, this.top).setDepth(-1000)
-    g.fillStyle(COLORS.grass).fillRect(0, 0, w, h)
-    g.fillStyle(0x276d61).fillRect(0, 0, w, h * 0.12)
-    g.fillStyle(0x3d9270).fillTriangle(0, h * 0.12, w * 0.24, h * 0.035, w * 0.48, h * 0.12)
-    g.fillStyle(0x358369).fillTriangle(w * 0.32, h * 0.12, w * 0.63, h * 0.02, w * 0.88, h * 0.12)
-    g.fillStyle(0x2c765f).fillTriangle(w * 0.7, h * 0.12, w * 0.9, h * 0.05, w, h * 0.12)
-    const loop = new Phaser.Curves.Ellipse(w * 0.5, h * 0.51, w * 0.43, h * 0.31)
-    const loopPoints = loop.getPoints(90)
-    g.lineStyle(Math.max(36, h * 0.085), COLORS.pathEdge).strokePoints(loopPoints, true)
-    g.lineStyle(Math.max(29, h * 0.068), COLORS.path).strokePoints(loopPoints, true)
-    const paths = [
-      new Phaser.Curves.CubicBezier(new Phaser.Math.Vector2(w * .12, h * .63), new Phaser.Math.Vector2(w * .35, h * .48), new Phaser.Math.Vector2(w * .66, h * .48), new Phaser.Math.Vector2(w * .88, h * .4)),
-      new Phaser.Curves.CubicBezier(new Phaser.Math.Vector2(w * .23, h * .48), new Phaser.Math.Vector2(w * .38, h * .6), new Phaser.Math.Vector2(w * .62, h * .7), new Phaser.Math.Vector2(w * .82, h * .82)),
+    const p = (x: number, y: number) => new Phaser.Math.Vector2(w * x, h * y)
+    g.fillStyle(0x245f50).fillRect(0, 0, w, h)
+    g.fillStyle(0x31745a).fillPoints([
+      p(0, .1), p(.18, .04), p(.36, .09), p(.55, .02), p(.75, .08), p(1, .03), p(1, 1), p(0, 1),
+    ], true)
+
+    // An irregular, trampled fairground clearing reads as earth rather than a racetrack.
+    const clearing = [p(.5, .16), p(.75, .19), p(.93, .36), p(.97, .64), p(.87, .87), p(.62, .96), p(.38, .95), p(.13, .87), p(.035, .65), p(.07, .37), p(.25, .19)]
+    g.fillStyle(0x9c764b, .72).fillPoints(clearing, true)
+    g.lineStyle(Math.max(9, h * .018), 0x6c543c, .3).strokePoints(clearing, true)
+
+    const paths: Array<{ curve: Phaser.Curves.Curve; width: number }> = [
+      { curve: new Phaser.Curves.CubicBezier(p(.5, 1), p(.5, .84), p(.49, .7), p(.5, .55)), width: .095 },
+      { curve: new Phaser.Curves.CubicBezier(p(.48, .57), p(.43, .49), p(.35, .41), p(.27, .35)), width: .067 },
+      { curve: new Phaser.Curves.CubicBezier(p(.52, .57), p(.57, .49), p(.65, .41), p(.73, .35)), width: .067 },
+      { curve: new Phaser.Curves.CubicBezier(p(.48, .58), p(.34, .63), p(.22, .58), p(.12, .55)), width: .06 },
+      { curve: new Phaser.Curves.CubicBezier(p(.52, .58), p(.66, .63), p(.78, .58), p(.88, .55)), width: .06 },
+      { curve: new Phaser.Curves.Line(p(.34, .62), p(.25, .73)), width: .052 },
+      { curve: new Phaser.Curves.Line(p(.5, .77), p(.62, .76)), width: .052 },
+      { curve: new Phaser.Curves.Line(p(.67, .62), p(.79, .72)), width: .052 },
+      { curve: new Phaser.Curves.CubicBezier(p(.49, .84), p(.35, .82), p(.22, .85), p(.11, .89)), width: .047 },
+      { curve: new Phaser.Curves.Line(p(.49, .89), p(.34, .91)), width: .047 },
+      { curve: new Phaser.Curves.CubicBezier(p(.51, .84), p(.67, .82), p(.79, .85), p(.89, .89)), width: .047 },
     ]
-    paths.forEach((path) => {
-      const points = path.getPoints(45)
-      g.lineStyle(Math.max(28, h * .064), COLORS.pathEdge).strokePoints(points)
-      g.lineStyle(Math.max(22, h * .05), COLORS.path).strokePoints(points)
-    })
-    for (let i = 0; i < 100; i++) {
-      const x = ((i * 83) % 997) / 997 * w
-      const y = (.14 + ((i * 47) % 887) / 887 * .82) * h
-      const size = 1 + y / h * 1.5
-      g.fillStyle(i % 4 ? 0x2b8664 : 0xf0c658, .72).fillEllipse(x, y, size * 1.8, size)
+    paths.forEach(({ curve, width }) => g.lineStyle(Math.max(14, h * (width + .018)), 0x725238, .85).strokePoints(curve.getPoints(36)))
+    paths.forEach(({ curve, width }) => g.lineStyle(Math.max(10, h * width), 0xc69a5b, 1).strokePoints(curve.getPoints(36)))
+    g.fillStyle(0xc69a5b).fillEllipse(w * .5, h * .57, w * .23, h * .15)
+
+    // Packed-earth variation, scuffs, grass clumps, and stones break up flat fills.
+    for (let i = 0; i < 190; i++) {
+      const x = ((i * 83 + 17) % 997) / 997 * w
+      const y = (.17 + ((i * 47 + 29) % 887) / 887 * .8) * h
+      const nearCenter = Math.abs(x / w - .5) < .43 && y / h > .18
+      if (nearCenter && i % 3) {
+        g.fillStyle(i % 4 ? 0x77583e : 0xe0b870, .22).fillEllipse(x, y, 2 + i % 7, 1 + i % 3)
+      } else {
+        g.fillStyle(i % 5 ? 0x183f38 : 0xd6ad55, .65).fillEllipse(x, y, 2 + i % 4, 1 + i % 2)
+      }
+    }
+    for (let i = 0; i < 18; i++) {
+      const x = w * (.41 + (i % 5) * .045), y = h * (.72 + Math.floor(i / 5) * .045)
+      g.lineStyle(1.5, 0x6a4c35, .38).strokeEllipse(x, y, 4, 8)
     }
   }
 
@@ -348,41 +400,62 @@ class BadBetScene extends Phaser.Scene {
     const w = this.scale.width
     const h = this.worldHeight
     const y0 = this.top
-    const fence = this.add.graphics().setPosition(0, y0).setDepth(y0 + h * .135)
-    fence.lineStyle(4, 0x164d48).lineBetween(w * .05, h * .145, w * .95, h * .145)
-    for (let x = w * .06; x < w * .96; x += w * .055) {
-      fence.fillStyle(0x244f47).fillRect(x - 3, h * .115, 6, h * .055)
-      fence.fillStyle(COLORS.gold).fillTriangle(x - 4, h * .115, x + 4, h * .115, x, h * .1)
+    const fence = this.add.graphics().setPosition(0, y0).setDepth(y0 + h * .17)
+    fence.lineStyle(4, 0x163f39).lineBetween(w * .035, h * .17, w * .39, h * .17).lineBetween(w * .61, h * .17, w * .965, h * .17)
+    for (const x of [.05, .11, .17, .23, .29, .35, .65, .71, .77, .83, .89, .95]) {
+      fence.fillStyle(0x2d5144).fillRect(w * x - 3, h * .135, 6, h * .055)
+      fence.fillStyle(COLORS.gold).fillTriangle(w * x - 4, h * .135, w * x + 4, h * .135, w * x, h * .12)
     }
-    const tent = this.add.graphics().setPosition(0, y0).setDepth(y0 + h * .17)
-    const tx = w * .5, ty = h * .2
-    tent.fillStyle(0x713044).fillEllipse(tx, ty + h * .014, w * .14, h * .035)
-    tent.fillStyle(0xf5dfad).fillTriangle(tx, ty - h * .13, tx - w * .07, ty, tx + w * .07, ty)
-    tent.fillStyle(COLORS.red).fillTriangle(tx, ty - h * .13, tx - w * .045, ty, tx - w * .014, ty)
-    tent.fillStyle(COLORS.red).fillTriangle(tx, ty - h * .13, tx + w * .014, ty, tx + w * .045, ty)
-    tent.lineStyle(3, COLORS.ink).strokeTriangle(tx, ty - h * .13, tx - w * .07, ty, tx + w * .07, ty)
-    tent.lineStyle(3, COLORS.ink).lineBetween(tx, ty - h * .13, tx, ty - h * .17)
-    tent.fillStyle(COLORS.gold).fillTriangle(tx, ty - h * .17, tx + 18, ty - h * .155, tx, ty - h * .145)
-    const bunting = this.add.graphics().setPosition(0, y0).setDepth(y0 + h * .22)
-    const sx = w * .13, ex = w * .87, ry = h * .205
-    bunting.lineStyle(2, COLORS.ink, .8).lineBetween(sx, ry, ex, ry + h * .025)
-    for (let i = 0; i < 16; i++) {
-      const x = Phaser.Math.Linear(sx, ex, i / 15), y = Phaser.Math.Linear(ry, ry + h * .025, i / 15)
-      bunting.fillStyle(i % 2 ? COLORS.gold : COLORS.red).fillTriangle(x - 5, y, x + 5, y, x, y + 10)
+
+    const tent = this.add.graphics().setPosition(0, y0).setDepth(y0 + h * .46)
+    const tx = w * .5
+    tent.fillStyle(0x392732, .45).fillEllipse(tx, h * .46, w * .23, h * .045)
+    tent.fillStyle(0x7c2e39).fillPoints([
+      new Phaser.Math.Vector2(w * .405, h * .35), new Phaser.Math.Vector2(w * .595, h * .35),
+      new Phaser.Math.Vector2(w * .61, h * .47), new Phaser.Math.Vector2(w * .39, h * .47),
+    ], true)
+    tent.fillStyle(0xf1d49d).fillTriangle(tx, h * .19, w * .4, h * .36, w * .6, h * .36)
+    tent.fillStyle(COLORS.red).fillTriangle(tx, h * .19, w * .4, h * .36, w * .44, h * .36)
+    tent.fillStyle(COLORS.red).fillTriangle(tx, h * .19, w * .48, h * .36, w * .52, h * .36)
+    tent.fillStyle(COLORS.red).fillTriangle(tx, h * .19, w * .56, h * .36, w * .6, h * .36)
+    tent.lineStyle(3, COLORS.ink).strokeTriangle(tx, h * .19, w * .4, h * .36, w * .6, h * .36).strokeRect(w * .39, h * .35, w * .22, h * .12)
+    tent.fillStyle(0x21182f).fillTriangle(w * .47, h * .47, tx, h * .38, w * .53, h * .47)
+    tent.lineStyle(3, COLORS.gold).lineBetween(tx, h * .19, tx, h * .135)
+    tent.fillStyle(COLORS.gold).fillTriangle(tx, h * .135, w * .523, h * .15, tx, h * .165)
+    for (let i = 0; i < 9; i++) tent.fillStyle(COLORS.gold).fillCircle(w * (.405 + i * .024), h * .355, 2.3)
+
+    const bunting = this.add.graphics().setPosition(0, y0).setDepth(y0 + h * .2)
+    const points = [{ x: .1, y: .2 }, { x: .5, y: .13 }, { x: .9, y: .2 }]
+    for (let segment = 0; segment < 2; segment++) {
+      const a = points[segment], b = points[segment + 1]
+      bunting.lineStyle(2, COLORS.ink, .8).lineBetween(w * a.x, h * a.y, w * b.x, h * b.y)
+      for (let i = 1; i < 9; i++) {
+        const t = i / 9, x = w * Phaser.Math.Linear(a.x, b.x, t), y = h * Phaser.Math.Linear(a.y, b.y, t)
+        bunting.fillStyle((i + segment) % 2 ? COLORS.gold : COLORS.red).fillTriangle(x - 5, y, x + 5, y, x, y + 10)
+      }
     }
-    const foreground = this.add.graphics().setPosition(0, y0).setDepth(y0 + h * .965)
-    foreground.lineStyle(7, 0x28584b).lineBetween(0, h * .96, w, h * .98)
-    for (let x = w * .02; x < w; x += w * .1) {
-      foreground.fillStyle(0x183f3b).fillRect(x, h * .925, 10, h * .075)
-      foreground.fillStyle(COLORS.gold).fillTriangle(x - 2, h * .925, x + 12, h * .925, x + 5, h * .905)
+
+    // The foreground fence opens into a proper arrival gate rather than sealing the player in.
+    const foreground = this.add.graphics().setPosition(0, y0).setDepth(y0 + h * .975)
+    foreground.lineStyle(7, 0x285044).lineBetween(0, h * .97, w * .43, h * .97).lineBetween(w * .57, h * .97, w, h * .97)
+    for (const x of [.02, .12, .22, .32, .42, .58, .68, .78, .88, .98]) {
+      foreground.fillStyle(0x183934).fillRect(w * x - 5, h * .925, 10, h * .075)
+      foreground.fillStyle(COLORS.gold).fillTriangle(w * x - 7, h * .925, w * x + 7, h * .925, w * x, h * .905)
     }
+    foreground.fillStyle(0x34252c).fillRect(w * .435, h * .88, 12, h * .12).fillRect(w * .555, h * .88, 12, h * .12)
+    foreground.fillStyle(COLORS.gold).fillCircle(w * .435 + 6, h * .875, 7).fillCircle(w * .555 + 6, h * .875, 7)
+    foreground.lineStyle(6, 0x34252c).beginPath().moveTo(w * .44, h * .9).lineTo(w * .47, h * .86).lineTo(w * .53, h * .86).lineTo(w * .56, h * .9).strokePath()
+    this.add.text(w * .5, y0 + h * .855, 'MIDWAY', {
+      fontFamily: FONTS.display, fontSize: `${clamp(w / 70, 14, 22)}px`, color: '#ffe2a1', stroke: '#21182f', strokeThickness: 4,
+    }).setOrigin(.5).setDepth(y0 + h * .978)
   }
 
   private createPlace(place: Place, index: number) {
     const x = place.x / 100 * this.scale.width
     const y = this.top + place.y / 100 * this.worldHeight
     const container = this.add.container(x, y).setDepth(y)
-    const scale = .76 + place.y / 100 * .3
+    const hierarchyScale = place.kind === 'stall' ? 1.15 : place.kind === 'closed' ? .84 : place.kind === 'ad' ? .8 : 1
+    const scale = (.76 + place.y / 100 * .3) * hierarchyScale
     container.setScale(scale)
     const highlight = this.add.graphics().lineStyle(4, 0xfff2a8, .95).strokeEllipse(0, -2, place.kind === 'ad' ? 78 : 116, place.kind === 'ad' ? 24 : 31)
     highlight.fillStyle(0xffef96, .13).fillEllipse(0, -2, place.kind === 'ad' ? 78 : 116, place.kind === 'ad' ? 24 : 31).setName('highlight')
@@ -431,10 +504,25 @@ class BadBetScene extends Phaser.Scene {
       g.lineStyle(3, COLORS.ink).strokeTriangle(-43, -76, -4, -119, 36, -76)
       g.lineStyle(2, COLORS.ink).lineBetween(-4, -119, -4, -137)
       g.fillStyle(index % 2 ? COLORS.red : COLORS.gold).fillTriangle(-4, -137, 17, -128, -4, -122)
+      if (place.kind === 'stall') {
+        for (let i = 0; i < 7; i++) g.fillStyle(COLORS.gold).fillCircle(-36 + i * 12, -67, 2.4)
+      }
+      if (shop) {
+        g.fillStyle(COLORS.gold)
+        if (place.id === 'ledger') g.fillRect(-13, -45, 24, 22).lineStyle(2, COLORS.ink).strokeRect(-13, -45, 24, 22)
+        else if (place.id === 'portrait') g.fillCircle(0, -34, 12).fillStyle(COLORS.ink).fillCircle(5, -38, 11)
+        else g.fillRoundedRect(-8, -47, 16, 25, 5).lineStyle(2, COLORS.ink).strokeRoundedRect(-8, -47, 16, 25, 5)
+      }
+    }
+    if (closed) {
+      g.lineStyle(6, 0xd7c9a5).lineBetween(-38, -59, 34, -10)
+      g.lineStyle(2, COLORS.ink).lineBetween(-38, -62, 37, -11)
     }
   }
 
   private drawBillboard(g: Phaser.GameObjects.Graphics, _place: Place, index: number) {
+    g.fillStyle(0x39271f).fillRect(-38, -113, 76, 13)
+    g.fillStyle(0xead7a2).fillRect(-34, -110, 68, 7)
     g.fillStyle(0x4b3228).fillRect(-39, -62, 7, 65).fillRect(31, -62, 7, 65)
     g.fillStyle(0x271d24).fillPoints([new Phaser.Math.Vector2(-49, -101), new Phaser.Math.Vector2(41, -101), new Phaser.Math.Vector2(50, -91), new Phaser.Math.Vector2(-40, -91)], true)
     g.fillStyle(0x70503a).fillRect(-46, -94, 88, 58).lineStyle(4, COLORS.ink).strokeRect(-46, -94, 88, 58)
@@ -805,24 +893,59 @@ class BadBetScene extends Phaser.Scene {
 
   private renderShop(type: 'ledger' | 'portrait' | 'tonic') {
     const data = {
-      ledger: { icon: '▦', title: 'Practical Ledgers', keeper: 'OWL, SOLE PROPRIETOR', cost: 10, copy: 'Tracks wagers, wins, and return.', buy: 'BUY LEDGER  ·  $10' },
-      portrait: { icon: '◒', title: 'Moon Portraits', keeper: 'LIKENESSES WHILE-U-WAIT', cost: 15, copy: 'A handsome souvenir. No strategic value.', buy: 'SIT FOR PORTRAIT  ·  $15' },
-      tonic: { icon: '⚗', title: "Dr. Stoat's Tonic", keeper: 'FORMULATED WITH CONFIDENCE', cost: 20, copy: 'Sparkling confidence. Same odds.', buy: 'DRINK TONIC  ·  $20' },
+      ledger: { title: 'Practical Ledgers', keeper: 'OWL, SOLE PROPRIETOR', cost: 10, copy: 'Tracks every wager, win, and dollar returned. Astonishingly unglamorous. Potentially useful.', buy: 'BUY LEDGER  ·  $10' },
+      portrait: { title: 'Marvelous Moon Portraits', keeper: 'LIKENESSES WHILE-U-WAIT', cost: 15, copy: 'A handsome souvenir of your inner beast. Lovingly rendered. Strategically irrelevant.', buy: 'SIT FOR PORTRAIT  ·  $15' },
+      tonic: { title: "Dr. Stoat's Tonic", keeper: 'FORMULATED WITH CONFIDENCE', cost: 20, copy: 'Sparkling confidence in every bottle. Your odds remain exactly as they were.', buy: 'DRINK TONIC  ·  $20' },
     }[type]
     const owned = this.state[type]
     const { width, height } = this.scale
-    this.add.rectangle(0, 0, width, height, 0x281835).setOrigin(0)
-    this.button(72, this.top + 38, 122, 42, '← MIDWAY', () => this.go('world'), { fill: COLORS.ink, stroke: COLORS.cream, font: 14, depth: 5 })
-    const cardTop = this.top + 14
-    const cardW = Math.min(680, width * .9), cardH = Math.min(560, height - cardTop - 14)
-    const card = this.add.rectangle(width / 2, cardTop, cardW, cardH, 0xf8e9bd).setOrigin(.5, 0)
-    card.setStrokeStyle(7, COLORS.red)
-    this.add.text(width / 2, cardTop + 24, data.icon, { fontFamily: FONTS.body, fontSize: '52px', color: '#fff0b9', backgroundColor: '#176d70', padding: { x: 20, y: 8 } }).setOrigin(.5, 0)
-    this.add.text(width / 2, cardTop + 112, data.keeper, { fontFamily: FONTS.ui, fontSize: '14px', fontStyle: 'bold', letterSpacing: 1, color: '#9c4a3f' }).setOrigin(.5, 0)
-    this.add.text(width / 2, cardTop + 138, data.title, { fontFamily: FONTS.display, fontSize: `${clamp(width / 30, 28, 40)}px`, color: '#25162c', align: 'center', wordWrap: { width: cardW * .84 } }).setOrigin(.5, 0)
-    this.add.text(width / 2, cardTop + cardH * .56, data.copy, { fontFamily: FONTS.body, fontSize: '21px', color: '#25162c', align: 'center', wordWrap: { width: cardW * .76 }, lineSpacing: 5 }).setOrigin(.5, 0)
-    this.button(width / 2, cardTop + cardH - 64, Math.min(310, cardW * .74), 48, owned ? 'PURCHASED' : data.buy, () => this.buy(type, data.cost), { fill: owned ? 0xc8b997 : 0xa53335, stroke: COLORS.ink, font: 16, depth: 5, disabled: owned || this.state.balance < data.cost })
-    this.add.text(width / 2, cardTop + cardH - 32, this.state.result, { fontFamily: FONTS.ui, fontSize: '15px', fontStyle: 'bold', color: '#5d4860', align: 'center', wordWrap: { width: cardW * .8 }, letterSpacing: .5 }).setOrigin(.5, 0)
+    this.add.rectangle(0, 0, width, height, 0x130c19).setOrigin(0)
+    const availableH = height - this.top - 12
+    const artW = Math.min(width - 20, availableH * 1.5)
+    const artH = artW / 1.5
+    const artX = width / 2, artY = this.top + 6 + artH / 2
+    this.add.image(artX, artY, `shop-${type}`).setDisplaySize(artW, artH)
+    this.add.rectangle(artX, artY, artW, artH, 0x170d21, .12).setStrokeStyle(4, COLORS.gold)
+
+    const short = artH < 470
+    const narrow = artW < 680
+    const left = artX - artW / 2
+    const top = artY - artH / 2
+    const backW = narrow ? 96 : 122
+    this.button(left + backW / 2 + 12, top + 30, backW, 38, '← MIDWAY', () => this.go('world'), {
+      fill: COLORS.ink, stroke: COLORS.cream, font: narrow ? 12 : 14, depth: 20,
+    })
+
+    const titleX = narrow ? artX : left + artW * .53
+    const titleY = top + (short ? 18 : 24)
+    this.add.text(titleX, titleY, data.keeper, {
+      fontFamily: FONTS.ui, fontSize: `${narrow ? 11 : 14}px`, fontStyle: 'bold', letterSpacing: 1,
+      color: '#f6d378', backgroundColor: '#21182fdd', padding: { x: 9, y: 5 },
+    }).setOrigin(.5, 0).setDepth(12)
+    this.add.text(titleX, titleY + (short ? 30 : 38), data.title, {
+      fontFamily: FONTS.display, fontSize: `${clamp(artW / (narrow ? 27 : 33), 25, 43)}px`, color: '#fff0c4',
+      stroke: '#21182f', strokeThickness: 6, align: 'center', wordWrap: { width: artW * (narrow ? .72 : .53) },
+    }).setOrigin(.5, 0).setDepth(12)
+
+    const copyW = narrow ? artW * .82 : artW * .31
+    const copyX = narrow ? artX : left + artW * .185
+    const copyY = narrow ? top + artH * .52 : top + artH * .39
+    this.add.text(copyX, copyY, data.copy, {
+      fontFamily: FONTS.body, fontSize: `${clamp(artW / 62, 15, 21)}px`, color: '#fff1cf',
+      backgroundColor: '#21182fe8', padding: { x: 14, y: short ? 8 : 12 }, align: narrow ? 'center' : 'left',
+      wordWrap: { width: copyW - 28 }, lineSpacing: 4, fixedWidth: copyW,
+    }).setOrigin(.5, .5).setDepth(12)
+
+    const buttonY = top + artH - (short ? 44 : 54)
+    const buttonW = Math.min(310, artW * (narrow ? .64 : .38))
+    this.button(artX, buttonY, buttonW, short ? 40 : 46, owned ? 'PURCHASED' : data.buy, () => this.buy(type, data.cost), {
+      fill: owned ? 0x726a5c : COLORS.red, stroke: COLORS.cream, font: narrow ? 13 : 16, depth: 15,
+      disabled: owned || this.state.balance < data.cost,
+    })
+    if (this.state.result) this.add.text(artX, buttonY - (short ? 31 : 37), this.state.result, {
+      fontFamily: FONTS.ui, fontSize: `${narrow ? 12 : 14}px`, fontStyle: 'bold', color: '#fff0b7',
+      backgroundColor: '#21182fdd', padding: { x: 10, y: 4 }, align: 'center', wordWrap: { width: artW * .72 }, letterSpacing: .5,
+    }).setOrigin(.5).setDepth(14)
   }
 
   private buy(type: 'ledger' | 'portrait' | 'tonic', cost: number) {
