@@ -10,7 +10,11 @@ The carnival advertises generous odds, but its dealers cannot be trusted. Some k
 
 ## Tone and Presentation
 
-The carnival is cozy, colorful, and faintly predatory rather than overtly frightening. It should feel inviting enough that the player wants to stay, even after realizing that its promises are unreliable.
+The carnival is colorful, surreal, and faintly predatory. Impossible events are treated as ordinary: the carnival arrives without tracks, shops materialize when their advertisements receive enough attention, and attendants calmly accept that the entire place will soon vanish. Characters respond with cheerful professionalism rather than alarm.
+
+Its menace is strictly commercial. The carnival wants the player's money—not their soul, body, memories, or freedom—and it does not physically harm anyone. The danger comes from persuasive salesmanship, misleading claims, hidden information, and the player's own willingness to keep betting. This keeps the atmosphere uncanny and malicious without turning it into horror.
+
+The humor should be dry and matter-of-fact, with friendly announcements, overly specific rules, and upbeat advertising copy that inadvertently reveals how predatory the carnival is. It should feel inviting enough that the player wants to stay, even after realizing that its promises are unreliable.
 
 The overworld is a simple 2D, top-down carnival of tents, booths, paths, lights, and large painted advertisements. Entering an open betting stall presents a detailed static illustration of its operator and a simple betting interface.
 
