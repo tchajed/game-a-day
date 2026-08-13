@@ -4,5 +4,7 @@ dist/
 *.tsbuildinfo
 # Preserve unedited image-generation originals locally; named production assets are tracked.
 public/art/stalls/layers/
+public/art/shops/0*/
+public/art/entrance/0*/
 tmp/
 .pi-agent-browser/
