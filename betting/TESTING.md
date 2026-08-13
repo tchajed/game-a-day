@@ -10,7 +10,7 @@ bun run dev -- --port 47381
 Useful URLs:
 
 - `/?music=off` — disables the procedural music control for automated tests
-- `/?debug=true&music=off` — shows money, reveal, day-skip, and ending controls
+- `/?debug=true&music=off` — shows the otherwise-hidden carnival timer plus money, reveal, day-skip, and ending controls
 - `/?seed=123&music=off` — deterministic betting outcomes
 
 Programmatic playtesting is available from the browser console:
@@ -26,6 +26,6 @@ Core loop:
 
 1. Walk or click to visit the fox and rabbit stalls.
 2. Bet repeatedly and compare their advertised odds.
-3. Stand still by an advertisement until its shop materializes.
+3. Approach an ordinary notice board and deliberately inspect it to read its hand-drawn advertisement; the advertised shop then materializes.
 4. Buy the ledger to reveal observed rates at both stalls.
 5. Make as much money as possible before three days elapse.

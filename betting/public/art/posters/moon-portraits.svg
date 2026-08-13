@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 960">
+  <defs><filter id="paper"><feTurbulence baseFrequency=".02" numOctaves="4" seed="21" result="n"/><feBlend in="SourceGraphic" in2="n" mode="multiply"/></filter><filter id="wobble"><feTurbulence baseFrequency=".009" numOctaves="2" seed="8" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="3"/></filter></defs>
+  <path d="M24 17L611 27 622 265 613 526 626 940 478 946 322 938 19 949 25 691 15 421Z" fill="#ead7ba" stroke="#30243c" stroke-width="12" filter="url(#paper)"/>
+  <g fill="none" stroke="#743d66" stroke-width="7" filter="url(#wobble)"><path d="M54 55Q182 75 320 54T584 55M54 905Q184 884 320 906T584 905"/><path d="M62 87Q95 92 104 126M578 87Q545 92 536 126M62 875Q95 870 104 836M578 875Q545 870 536 836"/></g>
+  <text x="320" y="122" text-anchor="middle" fill="#30243c" font-family="Georgia,serif" font-weight="900" font-size="58" letter-spacing="2">MARVELOUS</text>
+  <text x="320" y="190" text-anchor="middle" fill="#743d66" font-family="Georgia,serif" font-weight="900" font-size="69">MOON PORTRAITS</text>
+  <g fill="#b78b43" stroke="#30243c" stroke-width="5"><path d="M84 222l8 19 20 3-16 14 4 21-18-11-18 11 5-21-17-14 21-3Z"/><path d="M551 245l6 14 16 2-12 11 3 16-14-8-14 8 4-16-13-11 16-2Z"/></g>
+  <g filter="url(#wobble)"><ellipse cx="320" cy="510" rx="218" ry="257" fill="#efe2c1" stroke="#30243c" stroke-width="13"/><ellipse cx="320" cy="510" rx="193" ry="231" fill="none" stroke="#b78b43" stroke-width="8"/><path d="M410 328Q313 344 297 455 277 591 411 644 306 691 226 617 148 544 186 431 226 313 359 304Z" fill="#d6b754" stroke="#30243c" stroke-width="10"/>
+    <path d="M266 628Q274 538 315 500L295 425 337 456 369 407 382 485Q431 529 443 631Z" fill="#51334d" stroke="#30243c" stroke-width="9"/>
+    <path d="M311 510Q333 489 357 511M382 511Q405 489 424 510" fill="none" stroke="#ead7ba" stroke-width="7" stroke-linecap="round"/>
+    <path d="M337 545Q371 572 405 544" fill="none" stroke="#ead7ba" stroke-width="6"/>
+    <path d="M236 715Q319 753 407 713" fill="none" stroke="#743d66" stroke-width="7"/>
+  </g>
+  <g fill="#743d66"><circle cx="129" cy="395" r="8"/><circle cx="502" cy="350" r="7"/><circle cx="519" cy="665" r="9"/><circle cx="107" cy="650" r="6"/></g>
+  <text x="320" y="814" text-anchor="middle" fill="#30243c" font-family="Georgia,serif" font-weight="700" font-size="31" letter-spacing="2">MEET YOUR BETTER PROFILE</text>
+  <path d="M107 840Q320 859 534 840" fill="none" stroke="#b78b43" stroke-width="5"/>
+  <text x="320" y="878" text-anchor="middle" fill="#743d66" font-family="Georgia,serif" font-style="italic" font-size="25">Likenesses while-u-wait</text>
+</svg>

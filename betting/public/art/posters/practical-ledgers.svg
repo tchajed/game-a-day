@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 960">
+  <defs>
+    <filter id="paper"><feTurbulence baseFrequency=".018" numOctaves="4" seed="12" result="n"/><feBlend in="SourceGraphic" in2="n" mode="multiply"/></filter>
+    <filter id="wobble"><feTurbulence baseFrequency=".008" numOctaves="2" seed="4" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="3"/></filter>
+  </defs>
+  <path d="M24 22L615 14 626 936 598 948 337 939 25 949 15 721 24 452 13 177Z" fill="#ead9a8" stroke="#302631" stroke-width="12" filter="url(#paper)"/>
+  <g fill="none" stroke="#8d3535" stroke-width="7" filter="url(#wobble)">
+    <path d="M53 54Q155 73 317 52T584 54M53 905Q182 886 320 906T585 904"/>
+    <path d="M48 82Q72 93 77 121M590 82Q566 93 561 121M48 879Q72 868 77 840M590 879Q566 868 561 840"/>
+  </g>
+  <text x="320" y="130" text-anchor="middle" fill="#302631" font-family="Georgia,serif" font-weight="900" font-size="66" letter-spacing="3">PRACTICAL</text>
+  <text x="320" y="198" text-anchor="middle" fill="#8d3535" font-family="Georgia,serif" font-weight="900" font-size="76">LEDGERS</text>
+  <path d="M91 228Q318 242 549 226" fill="none" stroke="#302631" stroke-width="6"/>
+  <g stroke="#302631" stroke-width="10" stroke-linecap="round" stroke-linejoin="round" filter="url(#wobble)">
+    <path d="M211 396Q210 288 320 276 432 287 429 399 431 509 320 525 208 511 211 396Z" fill="#687c78"/>
+    <path d="M235 321L180 271 205 374M405 322L462 270 434 377" fill="#687c78"/>
+    <circle cx="277" cy="388" r="58" fill="#efe1b5"/><circle cx="363" cy="388" r="58" fill="#efe1b5"/>
+    <circle cx="281" cy="394" r="18" fill="#302631"/><circle cx="359" cy="394" r="18" fill="#302631"/>
+    <path d="M308 427L320 454 334 427Z" fill="#b98a3d"/>
+    <path d="M247 349Q278 326 305 350M335 350Q366 326 395 349" fill="none"/>
+    <path d="M320 337V442M249 337Q278 306 320 337 361 306 393 337" fill="none" stroke="#8d3535"/>
+  </g>
+  <g stroke="#302631" stroke-width="8" stroke-linejoin="round" filter="url(#wobble)">
+    <path d="M102 572Q212 535 320 582 427 535 538 572L526 770Q424 735 320 783 213 735 114 770Z" fill="#f4e8c3"/>
+    <path d="M320 582V782" fill="none"/>
+    <g stroke="#8d3535" stroke-width="5"><path d="M140 616L285 596M140 659L285 638M140 701L285 679M355 600L500 620M355 642L500 662M355 684L500 704"/></g>
+    <path d="M499 536Q543 475 561 483 576 494 523 554L480 598Z" fill="#3f7370"/>
+  </g>
+  <text x="320" y="838" text-anchor="middle" fill="#302631" font-family="Georgia,serif" font-weight="700" font-size="31" letter-spacing="3">AVERAGES OBSERVED</text>
+  <text x="320" y="878" text-anchor="middle" fill="#8d3535" font-family="Georgia,serif" font-style="italic" font-size="25">Owl accounting · by appointment</text>
+</svg>
