@@ -318,22 +318,20 @@ class BadBetScene extends Phaser.Scene {
     this.add.image(artX, artY, 'carnival-welcome').setDisplaySize(artW, artH)
     if (artW < width) this.add.rectangle(0, this.top, width, availableH, 0x120c1a, .24).setOrigin(0)
     const panelW = artW * .55
-    const titleY = artY - artH * .18
+    const titleY = artY - artH * .14
     this.add.text(artX, titleY, 'THE BAD BET CARNIVAL', {
       fontFamily: FONTS.display, fontSize: `${clamp(artW / 24, 28, 58)}px`, color: '#3a2030',
       align: 'center', wordWrap: { width: panelW }, stroke: '#f3dba7', strokeThickness: 1,
     }).setOrigin(.5)
-    this.add.text(artX, titleY + clamp(artH * .12, 50, 92), 'THREE DAYS. ONE PURSE.\nEVERY PROMISE PRICED TO SELL.', {
+    this.add.text(artX, titleY + clamp(artH * .12, 50, 92), 'OPEN THREE NIGHTS ONLY\nCASH PRIZES · ALL WAGERS FINAL', {
       fontFamily: FONTS.body, fontSize: `${clamp(artW / 58, 17, 27)}px`, color: '#4e3030',
       align: 'center', lineSpacing: 6, wordWrap: { width: panelW * .88 },
     }).setOrigin(.5)
-    this.add.text(artX, artY + artH * .055, 'Test the games. Trust the evidence.\nLeave before the tents do.', {
+    this.add.text(artX, artY + artH * .085, 'Odds furnished by the concessionaires.\nManagement does not check their arithmetic.', {
       fontFamily: FONTS.ui, fontSize: `${clamp(artW / 85, 13, 19)}px`, fontStyle: 'bold', color: '#6f4738',
       letterSpacing: .7, align: 'center', lineSpacing: 5, wordWrap: { width: panelW * .82 },
     }).setOrigin(.5)
-    this.button(artX, artY + artH * .22, Math.min(270, panelW * .7), 48, 'ENTER THE MIDWAY  →', () => this.go('world'), {
-      fill: COLORS.red, color: '#fff1c8', stroke: COLORS.ink, font: 16, family: FONTS.ui, depth: 10,
-    })
+    this.entryTicketButton(artX, artY + artH * .22, Math.min(270, panelW * .7), () => this.go('world'))
   }
 
   private renderWorld() {
@@ -977,6 +975,42 @@ class BadBetScene extends Phaser.Scene {
     const stats = [`${total}\nTOTAL WAGERS`, `${this.state.stats.fox.plays}\nSILVER SPINS`, `${this.state.stats.rabbit.plays}\nCOIN TOSSES`, `${this.state.ledger ? 'YES' : 'NO'}\nKEPT RECORDS`]
     stats.forEach((copy, index) => this.add.text(width / 2 - cardW * .36 + index * cardW * .24, this.top + 330, copy, { fontFamily: FONTS.ui, fontSize: '16px', fontStyle: 'bold', color: '#25162c', align: 'center', fixedWidth: cardW * .22, backgroundColor: '#ead8aa', padding: { y: 12 }, letterSpacing: .3 }).setOrigin(.5, 0))
     this.button(width / 2, this.top + cardH - 52, 240, 48, 'RETURN NEXT SEASON', () => this.reset(), { fill: 0xa53335, stroke: COLORS.ink, font: 16, depth: 5 })
+  }
+
+  private entryTicketButton(x: number, y: number, width: number, action: () => void) {
+    const height = 54
+    const halfW = width / 2
+    const halfH = height / 2
+    const points = [
+      { x: 7, y: 0 }, { x: width - 7, y: 0 },
+      { x: width, y: 7 }, { x: width, y: halfH - 7 }, { x: width - 7, y: halfH },
+      { x: width, y: halfH + 7 }, { x: width, y: height - 7 }, { x: width - 7, y: height },
+      { x: 7, y: height }, { x: 0, y: height - 7 }, { x: 0, y: halfH + 7 },
+      { x: 7, y: halfH }, { x: 0, y: halfH - 7 }, { x: 0, y: 7 },
+    ]
+    const container = this.add.container(x, y).setDepth(10)
+    const shadow = this.add.polygon(0, 4, points, 0x120c1a, .72)
+    const ticket = this.add.polygon(0, 0, points, 0xe8d49c)
+    ticket.setStrokeStyle(3, 0x4b2829)
+    const detail = this.add.graphics()
+    detail.lineStyle(1, 0x9b4b43, .9).strokeRect(-halfW + 11, -halfH + 7, width - 22, height - 14)
+    detail.lineStyle(1, 0x9b4b43, .55)
+    for (let dashY = -17; dashY < 18; dashY += 7) {
+      detail.lineBetween(-halfW + 33, dashY, -halfW + 33, dashY + 3)
+      detail.lineBetween(halfW - 33, dashY, halfW - 33, dashY + 3)
+    }
+    const label = this.add.text(0, 0, 'ADMIT ONE', {
+      fontFamily: FONTS.body, fontSize: '18px', fontStyle: 'bold', color: '#5b292c', letterSpacing: 1.2,
+    }).setOrigin(.5)
+    container.add([shadow, ticket, detail, label])
+    ticket.setInteractive({ useHandCursor: true })
+      .on('pointerover', () => container.setScale(1.025))
+      .on('pointerdown', () => container.setScale(.97))
+      .on('pointerout', () => container.setScale(1))
+      .on('pointerup', () => {
+        this.tweens.add({ targets: container, scale: 1.05, duration: 55, yoyo: true, ease: 'Sine.Out', onComplete: action })
+      })
+    return container
   }
 
   private button(x: number, y: number, width: number, height: number, label: string, action: () => void, options: { fill?: number; color?: string; stroke?: number; font?: number; family?: string; depth?: number; disabled?: boolean } = {}) {
