@@ -579,6 +579,11 @@ class BadBetScene extends Phaser.Scene {
     body.lineStyle(3, COLORS.ink).strokeRoundedRect(-15, -42, 30, 34, 8).fillStyle(0xce845b).fillCircle(0, -52, 11)
     body.lineStyle(3, COLORS.ink).strokeCircle(0, -52, 11).fillStyle(0x43254f).fillTriangle(-17, -60, 0, -79, 18, -60)
     body.fillStyle(COLORS.gold).fillRect(-15, -61, 31, 4)
+    if (this.state.portrait) {
+      body.fillStyle(COLORS.ink).fillCircle(-4, -55, 1.5).fillCircle(4, -55, 1.5)
+      body.lineStyle(1.6, COLORS.ink).beginPath().arc(0, -52, 4, .2, Math.PI - .2).strokePath()
+      body.fillStyle(COLORS.gold).fillCircle(0, -33, 1.8).fillCircle(0, -23, 1.8)
+    }
     container.add([shadow, legs, body])
     this.playerContainer = container
     this.updatePlayerVisual(Boolean(this.state.target), 0)
@@ -1146,7 +1151,7 @@ class BadBetScene extends Phaser.Scene {
     if (this.state.balance < cost || this.state[type]) return
     this.state.balance -= cost
     this.state[type] = true
-    this.state.result = type === 'ledger' ? 'LEDGER EQUIPPED' : type === 'portrait' ? 'PORTRAIT ACQUIRED' : 'THOROUGHLY INVIGORATED'
+    this.state.result = type === 'ledger' ? 'LEDGER EQUIPPED' : type === 'portrait' ? 'LIKENESS APPLIED · YOU FEEL ODDLY MORE DETAILED' : 'THOROUGHLY INVIGORATED'
     this.renderMode()
   }
 
