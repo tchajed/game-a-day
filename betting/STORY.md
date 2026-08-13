@@ -26,11 +26,11 @@ A kind wolf operates an old slot machine and apologetically warns that it rarely
 
 ### Rabbit's Generous Toss
 
-A shady, tattooed rabbit runs a coin-toss booth and loudly promises favorable odds. The toss is biased in the player's favor, but the rabbit exaggerates just how generous it is.
+A shady, tattooed rabbit runs a coin-toss booth and loudly promises favorable odds on heads. On the player's first visit, he explains that they may call heads or tails, choose a wager, and receive twice their stake for a correct call. The coin is biased toward heads, but the rabbit exaggerates just how generous it is.
 
 ### Hidden Betting Rules
 
-Each wager is an independent roll with no streak adjustment, rubber-banding, or effect from optional purchases. The Silver Spin advertises a 20% win chance but actually wins 30% of the time and returns 3× the stake (including the stake). Rabbit's Generous Toss advertises a 60% win chance but actually wins 55% of the time and returns 2× the stake. Both pitches are directionally correct but wrong in magnitude: the fox's game is genuinely unfavorable, though not as bad as claimed, while the rabbit's is genuinely favorable, though not as generous as claimed. The fox game has a 0.90× expected return per dollar; the rabbit game has a 1.10× expected return.
+Each wager is an independent roll with no streak adjustment, rubber-banding, or effect from optional purchases. The Silver Spin advertises a 20% win chance but actually wins 30% of the time and returns 3× the stake (including the stake). Rabbit's Generous Toss advertises heads at 60%, but the coin actually lands heads 55% of the time; a correct heads or tails call returns 2× the stake. Both pitches are directionally correct but wrong in magnitude: the fox's game is genuinely unfavorable, though not as bad as claimed, while calling heads at the rabbit's game is genuinely favorable, though not as generous as claimed. The fox game has a 0.90× expected return per dollar; Rabbit returns 1.10× on heads and 0.90× on tails.
 
 ## Advertisements and Hidden Stalls
 
