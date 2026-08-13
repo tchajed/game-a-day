@@ -7,6 +7,12 @@ const DEBUG = params.get('debug') === 'true'
 const MUSIC_DISABLED = params.get('music') === 'off'
 const MAX_MINUTES = 3 * 12 * 60
 const BET_MINUTES = 5
+const TEXT_RESOLUTION = Math.min(window.devicePixelRatio || 1, 2)
+const FONTS = {
+  display: 'Rye, Georgia, serif',
+  body: '"Bree Serif", Georgia, serif',
+  ui: '"Barlow Condensed", Arial, sans-serif',
+}
 
 type Mode = 'world' | 'fox' | 'rabbit' | 'ledger' | 'portrait' | 'tonic' | 'ending'
 type GameKey = 'fox' | 'rabbit'
@@ -56,14 +62,14 @@ const COLORS = {
 }
 
 const basePlaces: Place[] = [
-  { id: 'fox', x: 21, y: 20, title: 'The Silver Spin', subtitle: '1 win in 5, if that', kind: 'stall' },
-  { id: 'rabbit', x: 78, y: 22, title: "Rabbit's Generous Toss", subtitle: 'A generous 3 wins in 5', kind: 'stall' },
-  { id: 'closed', x: 39, y: 25, title: 'Turtle Derby', subtitle: 'Closed for rapidity', kind: 'closed' },
-  { id: 'closed', x: 61, y: 29, title: "Crow's High Striker", subtitle: 'Testing the hammer', kind: 'closed' },
-  { id: 'closed', x: 50, y: 49, title: 'The Lucky Lantern', subtitle: 'Illuminating soon', kind: 'closed' },
-  { id: 'ad-ledger', x: 17, y: 70, title: 'Practical Ledgers', subtitle: 'Observe averages responsibly', kind: 'ad' },
-  { id: 'ad-portrait', x: 50, y: 77, title: 'Marvelous Moon Portraits', subtitle: 'Meet your better profile', kind: 'ad' },
-  { id: 'ad-tonic', x: 83, y: 68, title: "Dr. Stoat's Tonic", subtitle: 'Confidence, vigorously bottled', kind: 'ad' },
+  { id: 'fox', x: 21, y: 20, title: 'The Silver Spin', subtitle: 'WIN PAYS 3×', kind: 'stall' },
+  { id: 'rabbit', x: 78, y: 22, title: "Rabbit's Generous Toss", subtitle: 'WIN PAYS 2×', kind: 'stall' },
+  { id: 'closed', x: 39, y: 25, title: 'Turtle Derby', subtitle: 'CLOSED', kind: 'closed' },
+  { id: 'closed', x: 61, y: 29, title: "Crow's High Striker", subtitle: 'CLOSED', kind: 'closed' },
+  { id: 'closed', x: 50, y: 49, title: 'The Lucky Lantern', subtitle: 'CLOSED', kind: 'closed' },
+  { id: 'ad-ledger', x: 17, y: 70, title: 'Practical Ledgers', subtitle: 'KEEP WATCHING', kind: 'ad' },
+  { id: 'ad-portrait', x: 50, y: 77, title: 'Moon Portraits', subtitle: 'KEEP WATCHING', kind: 'ad' },
+  { id: 'ad-tonic', x: 83, y: 68, title: "Dr. Stoat's Tonic", subtitle: 'KEEP WATCHING', kind: 'ad' },
 ]
 
 const initialStats = (): Stats => ({
@@ -73,7 +79,7 @@ const initialStats = (): Stats => ({
 
 const initialState = (): State => ({
   mode: 'world', balance: 100, minutes: 0, bet: 5, reaction: 'neutral',
-  result: 'The carnival has made several claims.', stats: initialStats(),
+  result: 'Pick a game. Press your luck.', stats: initialStats(),
   histories: { fox: [], rabbit: [] }, betCounts: { fox: 1, rabbit: 1 }, nextResultId: 1,
   ledger: false, portrait: false, tonic: false, revealed: [],
   player: { x: 50, y: 56 }, target: null,
@@ -221,15 +227,15 @@ class BadBetScene extends Phaser.Scene {
     this.updateGaze(delta, walking || wasTargeting)
   }
 
-  private get top() { return this.scale.height < 620 ? 58 : 68 }
-  private get bottom() { return this.scale.height < 620 ? 62 : 72 }
+  private get top() { return this.scale.height < 620 ? 64 : 76 }
+  private get bottom() { return this.scale.height < 620 ? 72 : 82 }
   private get worldHeight() { return Math.max(240, this.scale.height - this.top - this.bottom) }
 
   private places() {
     const shops: Place[] = []
-    if (this.state.revealed.includes('ad-ledger')) shops.push({ id: 'ledger', x: 17, y: 57, title: 'Practical Ledgers', subtitle: 'Owl accounting, while supplies last', kind: 'shop' })
-    if (this.state.revealed.includes('ad-portrait')) shops.push({ id: 'portrait', x: 50, y: 65, title: 'Moon Portraits', subtitle: 'Ornate. Accurate-ish.', kind: 'shop' })
-    if (this.state.revealed.includes('ad-tonic')) shops.push({ id: 'tonic', x: 83, y: 55, title: "Dr. Stoat's Tonic", subtitle: 'Uncommonly sparkling', kind: 'shop' })
+    if (this.state.revealed.includes('ad-ledger')) shops.push({ id: 'ledger', x: 17, y: 57, title: 'Practical Ledgers', subtitle: 'OPEN', kind: 'shop' })
+    if (this.state.revealed.includes('ad-portrait')) shops.push({ id: 'portrait', x: 50, y: 65, title: 'Moon Portraits', subtitle: 'OPEN', kind: 'shop' })
+    if (this.state.revealed.includes('ad-tonic')) shops.push({ id: 'tonic', x: 83, y: 55, title: "Dr. Stoat's Tonic", subtitle: 'OPEN', kind: 'shop' })
     return [...basePlaces, ...shops]
   }
 
@@ -251,6 +257,9 @@ class BadBetScene extends Phaser.Scene {
     else this.renderShop(this.state.mode)
     this.renderHud()
     if (DEBUG) this.renderDebug()
+    this.children.getAll().forEach((child) => {
+      if (child instanceof Phaser.GameObjects.Text) child.setResolution(TEXT_RESOLUTION)
+    })
   }
 
   private renderHud() {
@@ -262,25 +271,26 @@ class BadBetScene extends Phaser.Scene {
     graphics.fillStyle(COLORS.gold).fillRect(0, h, width, 4)
 
     const compact = width < 720
-    this.button(compact ? 43 : 62, h / 2 - 2, compact ? 70 : 95, 34, 'BAD BET', () => this.go('world'), {
-      fill: COLORS.red, font: compact ? 17 : 22, family: 'Fraunces, Georgia, serif', depth: 10001,
+    this.button(compact ? 45 : 70, h / 2 - 2, compact ? 76 : 112, 40, 'BAD BET', () => this.go('world'), {
+      fill: COLORS.red, font: compact ? 17 : 21, family: FONTS.display, depth: 10001,
     })
-    const timeX = compact ? 91 : 124
+    const timeX = compact ? 92 : 136
     const timeW = compact ? Math.min(210, width * 0.38) : Math.min(360, width * 0.34)
-    graphics.fillStyle(0x352340).fillRect(timeX, 18, timeW, 28)
-    graphics.lineStyle(2, COLORS.ink).strokeRect(timeX, 18, timeW, 28)
-    graphics.fillStyle(COLORS.red).fillRect(timeX + 2, 20, (timeW - 4) * Math.min(1, this.state.minutes / MAX_MINUTES), 24)
-    this.add.text(timeX + timeW / 2, 32, timeLabel(this.state.minutes), {
-      fontFamily: 'DM Mono, monospace', fontSize: compact ? '9px' : '11px', color: '#ffffff',
+    const timeY = h / 2 - 15
+    graphics.fillStyle(0x352340).fillRect(timeX, timeY, timeW, 30)
+    graphics.lineStyle(2, COLORS.ink).strokeRect(timeX, timeY, timeW, 30)
+    graphics.fillStyle(COLORS.red).fillRect(timeX + 2, timeY + 2, (timeW - 4) * Math.min(1, this.state.minutes / MAX_MINUTES), 26)
+    this.add.text(timeX + timeW / 2, h / 2, timeLabel(this.state.minutes), {
+      fontFamily: FONTS.ui, fontSize: compact ? '12px' : '14px', fontStyle: 'bold', color: '#ffffff', letterSpacing: 0.5,
     }).setOrigin(0.5).setDepth(10002)
 
-    this.add.text(width - (compact ? 78 : 190), 19, compact ? money(this.state.balance) : `PURSE  ${money(this.state.balance)}`, {
-      fontFamily: 'Fraunces, Georgia, serif', fontSize: compact ? '20px' : '26px', fontStyle: 'bold', color: '#21182f',
-    }).setOrigin(0.5, 0).setDepth(10002)
+    this.add.text(width - (compact ? 78 : 190), h / 2, compact ? money(this.state.balance) : `PURSE  ${money(this.state.balance)}`, {
+      fontFamily: FONTS.body, fontSize: compact ? '22px' : '28px', color: '#21182f',
+    }).setOrigin(0.5).setDepth(10002)
     if (!compact) this.button(width - 53, h / 2 - 2, 90, 31, MUSIC_DISABLED ? 'MUSIC OFF' : this.music.on ? 'MUSIC ON' : 'MUSIC OFF', () => {
       if (!MUSIC_DISABLED) this.music.toggle()
       this.renderMode()
-    }, { fill: COLORS.cream, color: '#21182f', stroke: COLORS.ink, font: 9, depth: 10002 })
+    }, { fill: COLORS.cream, color: '#21182f', stroke: COLORS.ink, font: 12, depth: 10002 })
   }
 
   private renderWorld() {
@@ -291,11 +301,11 @@ class BadBetScene extends Phaser.Scene {
     const panel = this.add.rectangle(0, this.scale.height - this.bottom, this.scale.width, this.bottom, COLORS.ink).setOrigin(0).setDepth(9000)
     panel.setStrokeStyle(5, COLORS.gold)
     this.caption = this.add.text(28, this.scale.height - this.bottom / 2, this.captionCopy(), {
-      fontFamily: 'Fraunces, Georgia, serif', fontSize: `${clamp(this.scale.width / 70, 14, 20)}px`,
-      fontStyle: 'bold', color: '#fff2c4', wordWrap: { width: this.scale.width * 0.68 },
+      fontFamily: FONTS.body, fontSize: `${clamp(this.scale.width / 58, 18, 24)}px`,
+      color: '#fff2c4', wordWrap: { width: this.scale.width * 0.65 },
     }).setOrigin(0, 0.5).setDepth(9001)
-    if (this.scale.width > 800) this.add.text(this.scale.width - 24, this.scale.height - this.bottom / 2, 'CLICK TO WALK · WASD / ARROWS · E TO ENTER', {
-      fontFamily: 'DM Mono, monospace', fontSize: '9px', color: '#bdb0c5',
+    if (this.scale.width > 800) this.add.text(this.scale.width - 24, this.scale.height - this.bottom / 2, 'CLICK TO WALK   ·   WASD / ARROWS   ·   E TO ENTER', {
+      fontFamily: FONTS.ui, fontSize: '13px', fontStyle: 'bold', color: '#cfc2d5', letterSpacing: 0.4,
     }).setOrigin(1, 0.5).setDepth(9001)
     this.updateProximity(true)
   }
@@ -376,13 +386,13 @@ class BadBetScene extends Phaser.Scene {
     if (place.kind === 'ad') this.drawBillboard(art, place, index)
     else this.drawBooth(art, place, index)
     container.add([highlight, art])
-    const title = this.add.text(0, place.kind === 'ad' ? -49 : -31, place.title, {
-      fontFamily: 'Fraunces, Georgia, serif', fontSize: place.kind === 'ad' ? '13px' : '14px', fontStyle: 'bold',
-      color: '#fff2ca', backgroundColor: '#241a32e8', padding: { x: 6, y: 3 }, align: 'center', wordWrap: { width: 142 },
+    const title = this.add.text(0, place.kind === 'ad' ? -52 : -34, place.title, {
+      fontFamily: FONTS.body, fontSize: place.kind === 'ad' ? '16px' : '18px',
+      color: '#fff2ca', backgroundColor: '#241a32ee', padding: { x: 8, y: 4 }, align: 'center', wordWrap: { width: 168 },
     }).setOrigin(.5).setName('title')
-    const subtitle = this.add.text(0, 17, place.subtitle, {
-      fontFamily: 'DM Mono, monospace', fontSize: '8px', color: '#291d32', backgroundColor: '#ffe5a8eb',
-      padding: { x: 5, y: 3 }, align: 'center', wordWrap: { width: 150 },
+    const subtitle = this.add.text(0, 18, place.subtitle, {
+      fontFamily: FONTS.ui, fontSize: '13px', fontStyle: 'bold', color: '#291d32', backgroundColor: '#ffe5a8f2',
+      padding: { x: 8, y: 4 }, align: 'center', letterSpacing: 0.5,
     }).setOrigin(.5, 0).setName('subtitle')
     const gazeBack = this.add.rectangle(0, 35, 84, 7, 0x24182e).setName('gazeBack')
     const gazeFill = this.add.rectangle(-40, 35, 0, 3, 0xffef83).setOrigin(0, .5).setName('gazeFill')
@@ -473,7 +483,7 @@ class BadBetScene extends Phaser.Scene {
       this.gaze.progress += delta / 25
       if (this.gaze.progress >= 100) {
         this.state.revealed.push(ad.id)
-        this.state.result = 'The advertisement appears satisfied. A shop has arrived.'
+        this.state.result = 'A new shop opens on the midway.'
         this.gaze = null
         this.renderMode()
         return
@@ -497,9 +507,9 @@ class BadBetScene extends Phaser.Scene {
 
   private captionCopy() {
     const nearest = this.nearestPlace()
-    if (nearest?.kind === 'ad' && !this.state.revealed.includes(nearest.id)) return 'Stand still. Give the advertisement your complete attention.'
-    if (nearest?.kind === 'closed') return `${nearest.title} is professionally unavailable.`
-    if (nearest) return `Press E or tap again to visit ${nearest.title}.`
+    if (nearest?.kind === 'ad' && !this.state.revealed.includes(nearest.id)) return 'KEEP WATCHING…'
+    if (nearest?.kind === 'closed') return `${nearest.title}  ·  CLOSED`
+    if (nearest) return `E  ·  ENTER ${nearest.title.toUpperCase()}`
     return this.state.result
   }
 
@@ -528,7 +538,7 @@ class BadBetScene extends Phaser.Scene {
     if (place.kind === 'closed' || place.kind === 'ad') return
     this.state.mode = place.id as Mode
     this.state.reaction = 'neutral'
-    this.state.result = place.id === 'fox' ? '“Honestly? One spin in five pays. On a charitable day.”' : place.id === 'rabbit' ? '“Three in five. Practically wages.”' : ''
+    this.state.result = place.id === 'fox' || place.id === 'rabbit' ? 'PLACE YOUR BET' : ''
     this.state.target = null
     this.renderMode()
   }
@@ -546,13 +556,13 @@ class BadBetScene extends Phaser.Scene {
     const character = this.add.image(fox ? artX + artW * .25 : artX - artW * .25, artY + artH * .1, `${game}-${this.state.reaction}`).setName('dealer')
     character.setDisplaySize(character.width / character.height * artH * .9, artH * .9)
     this.add.rectangle(0, this.top, width, height - this.top, 0x160d26, .13).setOrigin(0)
-    this.button(64, this.top + 35, 104, 34, '← MIDWAY', () => this.go('world'), { fill: COLORS.cream, color: '#21182f', stroke: COLORS.ink, font: 10, depth: 50 })
-    this.add.text(width / 2, this.top + 24, fox ? 'THE SILVER SPIN' : "RABBIT'S GENEROUS TOSS", {
-      fontFamily: 'DM Mono, monospace', fontSize: '10px', color: '#f3c15b', backgroundColor: '#2b1730cc', padding: { x: 8, y: 5 },
+    this.button(72, this.top + 38, 122, 42, '← MIDWAY', () => this.go('world'), { fill: COLORS.cream, color: '#21182f', stroke: COLORS.ink, font: 14, depth: 50 })
+    this.add.text(width / 2, this.top + 22, fox ? 'THE SILVER SPIN' : "RABBIT'S GENEROUS TOSS", {
+      fontFamily: FONTS.ui, fontSize: '15px', fontStyle: 'bold', letterSpacing: 1.2, color: '#f3c15b', backgroundColor: '#2b1730dd', padding: { x: 12, y: 6 },
     }).setOrigin(.5, 0).setDepth(20)
-    this.add.text(width / 2, this.top + 58, fox ? '“It is not a very generous machine.”' : '“Three in five. You have my word.”', {
-      fontFamily: 'Fraunces, Georgia, serif', fontSize: `${clamp(width / 30, 25, 46)}px`, fontStyle: 'bold', color: '#fff0c9',
-      stroke: '#160b1c', strokeThickness: 4, align: 'center', wordWrap: { width: width * .72 },
+    this.add.text(width / 2, this.top + 64, fox ? '“About one in five.”' : '“Three wins in five!”', {
+      fontFamily: FONTS.body, fontSize: `${clamp(width / 30, 28, 46)}px`, color: '#fff0c9',
+      stroke: '#160b1c', strokeThickness: 5, align: 'center', wordWrap: { width: width * .72 },
     }).setOrigin(.5, 0).setDepth(20)
 
     const consoleH = compact ? (this.state.ledger ? 262 : 225) : (this.state.ledger ? 224 : 187)
@@ -560,7 +570,7 @@ class BadBetScene extends Phaser.Scene {
     const latest = this.state.histories[game].at(-1)
     if (latest && latest.streak >= 2) {
       this.add.text(width / 2, consoleY - 25, `${latest.won ? 'WIN' : 'MISS'} AGAIN · ${latest.streak} IN A ROW`, {
-        fontFamily: 'DM Mono, monospace', fontSize: `${clamp(width / 90, 10, 14)}px`, fontStyle: 'bold',
+        fontFamily: FONTS.ui, fontSize: `${clamp(width / 70, 14, 18)}px`, fontStyle: 'bold', letterSpacing: .5,
         color: latest.won ? '#21182f' : '#fff3ce', backgroundColor: latest.won ? '#efb64f' : '#c84438',
         padding: { x: 14, y: 8 }, stroke: '#21182f', strokeThickness: 2,
       }).setOrigin(.5).setDepth(45).setName('streakBadge')
@@ -569,7 +579,7 @@ class BadBetScene extends Phaser.Scene {
     const panel = this.add.rectangle(width / 2, consoleY, width * .94, consoleH, 0x1a1126, .97).setOrigin(.5, 0).setDepth(30)
     panel.setStrokeStyle(2, COLORS.gold)
     this.add.text(width / 2, consoleY + 10, this.state.result, {
-      fontFamily: 'Fraunces, Georgia, serif', fontSize: `${clamp(width / 78, 12, 17)}px`, fontStyle: 'bold', color: '#fff4cf', align: 'center', wordWrap: { width: width * .84 },
+      fontFamily: FONTS.body, fontSize: `${clamp(width / 58, 18, 23)}px`, color: '#fff4cf', align: 'center', wordWrap: { width: width * .84 },
     }).setOrigin(.5, 0).setDepth(31).setName('resultText')
     this.renderResultHistory(game, consoleY + 39, 46)
 
@@ -578,26 +588,26 @@ class BadBetScene extends Phaser.Scene {
     const buttonGap = width < 650 ? 4 : 6
     const startX = compact ? Math.max(18, width / 2 - 150) : width * .08
     const controlY = consoleY + 115
-    this.add.text(startX, controlY - 20, 'WAGER', { fontFamily: 'DM Mono, monospace', fontSize: '9px', color: '#dfb654' }).setDepth(31)
+    this.add.text(startX - 10, controlY, 'BET', { fontFamily: FONTS.ui, fontSize: '15px', fontStyle: 'bold', color: '#dfb654', letterSpacing: 1 }).setOrigin(1, .5).setDepth(31)
     amounts.forEach((amount, index) => this.button(startX + 52 + index * (buttonW + buttonGap), controlY, buttonW, 30, money(amount), () => {
       this.state.bet = amount
       this.renderMode()
-    }, { fill: this.state.bet === amount ? COLORS.gold : COLORS.ink, color: this.state.bet === amount ? '#21182f' : '#fff1c7', stroke: 0x9c7d58, font: 10, depth: 32, disabled: amount > this.state.balance }))
+    }, { fill: this.state.bet === amount ? COLORS.gold : COLORS.ink, color: this.state.bet === amount ? '#21182f' : '#fff1c7', stroke: 0x9c7d58, font: 14, depth: 32, disabled: amount > this.state.balance }))
 
     const stats = this.state.stats[game]
     const count = this.state.betCounts[game]
     const playY = compact ? consoleY + 159 : controlY
     const playX = compact ? Math.max(88, width / 2 - 70) : Math.max(width * .7, startX + 52 + amounts.length * (buttonW + buttonGap) + 42)
-    this.button(playX, playY, 108, 34, count === 1 ? 'PLAY ONCE' : `PLAY ×${count}`, () => this.playBets(game, count), { fill: COLORS.red, font: 10, depth: 32, disabled: this.state.balance < this.state.bet })
-    this.button(playX + 77, playY, 52, 34, stats.manualPlays < 5 ? `×5 ${stats.manualPlays}/5` : '×5', () => this.toggleBetCount(game, 5), {
-      fill: count === 5 ? COLORS.gold : COLORS.ink, color: count === 5 ? '#21182f' : '#fff1c7', stroke: 0x9c7d58, font: stats.manualPlays < 5 ? 8 : 10, depth: 32, disabled: stats.manualPlays < 5,
+    this.button(playX, playY, 116, 36, count === 1 ? (fox ? 'SPIN ONCE' : 'TOSS ONCE') : `PLAY ×${count}`, () => this.playBets(game, count), { fill: COLORS.red, font: 14, depth: 32, disabled: this.state.balance < this.state.bet })
+    this.button(playX + 82, playY, 58, 36, stats.manualPlays < 5 ? `×5 · ${stats.manualPlays}/5` : '×5', () => this.toggleBetCount(game, 5), {
+      fill: count === 5 ? COLORS.gold : COLORS.ink, color: count === 5 ? '#21182f' : '#fff1c7', stroke: 0x9c7d58, font: 12, depth: 32, disabled: stats.manualPlays < 5,
     })
-    this.button(playX + 137, playY, 58, 34, stats.manualPlays < 10 ? `×10 ${stats.manualPlays}/10` : '×10', () => this.toggleBetCount(game, 10), {
-      fill: count === 10 ? COLORS.gold : COLORS.ink, color: count === 10 ? '#21182f' : '#fff1c7', stroke: 0x9c7d58, font: stats.manualPlays < 10 ? 8 : 10, depth: 32, disabled: stats.manualPlays < 10,
+    this.button(playX + 150, playY, 68, 36, stats.manualPlays < 10 ? `×10 · ${stats.manualPlays}/10` : '×10', () => this.toggleBetCount(game, 10), {
+      fill: count === 10 ? COLORS.gold : COLORS.ink, color: count === 10 ? '#21182f' : '#fff1c7', stroke: 0x9c7d58, font: 12, depth: 32, disabled: stats.manualPlays < 10,
     })
     const hintY = compact ? consoleY + 184 : consoleY + 139
-    this.add.text(playX + 42, hintY, count === 1 ? `MULTI-BET UNLOCKS AFTER 5 / 10 MANUAL PLAYS · ${stats.manualPlays}/10` : `MULTI-BET SET TO ×${count} · TAP IT AGAIN FOR SINGLE PLAY`, {
-      fontFamily: 'DM Mono, monospace', fontSize: width < 520 ? '7px' : '8px', color: '#bca884', align: 'center',
+    this.add.text(playX + 48, hintY, count === 1 ? `MULTI-BET  ·  ${stats.manualPlays}/10 PLAYS` : `MULTI-BET  ·  ×${count}`, {
+      fontFamily: FONTS.ui, fontSize: '13px', fontStyle: 'bold', color: '#bca884', align: 'center', letterSpacing: .5,
     }).setOrigin(.5, 0).setDepth(31)
     if (this.state.ledger) this.renderLedger(game, compact ? consoleY + 204 : consoleY + 163)
   }
@@ -609,10 +619,10 @@ class BadBetScene extends Phaser.Scene {
     const viewportW = right - left
     const history = this.state.histories[game]
     this.add.rectangle(width / 2, y, viewportW, height, 0x0e0916, .94).setOrigin(.5, 0).setDepth(31).setStrokeStyle(1, 0x66516f)
-    this.add.text(left + 7, y + 3, 'RESULTS', { fontFamily: 'DM Mono, monospace', fontSize: '7px', color: '#8f7a9d' }).setDepth(34)
+    this.add.text(left + 7, y + 2, 'RESULTS', { fontFamily: FONTS.ui, fontSize: '11px', fontStyle: 'bold', color: '#a996b6', letterSpacing: .6 }).setDepth(34)
 
     if (!history.length) {
-      this.add.text(width / 2, y + height / 2 + 3, 'Your results will roll in here.', { fontFamily: 'Fraunces, Georgia, serif', fontSize: '11px', fontStyle: 'italic', color: '#8f8297' }).setOrigin(.5).setDepth(33)
+      this.add.text(width / 2, y + height / 2 + 3, 'Your results roll in here.', { fontFamily: FONTS.body, fontSize: '14px', color: '#a698ad' }).setOrigin(.5).setDepth(33)
       return
     }
 
@@ -629,7 +639,7 @@ class BadBetScene extends Phaser.Scene {
       const background = this.add.rectangle(0, 0, 58, 30, result.won ? 0x236e5d : 0x6d2938)
       if (index === history.length - 1) background.setStrokeStyle(2, COLORS.gold)
       const label = this.add.text(0, 0, result.won ? `WIN ${money(net)}` : `MISS −${money(result.wager)}`, {
-        fontFamily: 'DM Mono, monospace', fontSize: '8px', fontStyle: 'bold', color: '#fff1cf', align: 'center',
+        fontFamily: FONTS.ui, fontSize: '12px', fontStyle: 'bold', color: '#fff1cf', align: 'center',
       }).setOrigin(.5)
       chip.add([background, label])
       strip.add(chip)
@@ -676,7 +686,7 @@ class BadBetScene extends Phaser.Scene {
     items.forEach((copy, index) => {
       const w = this.scale.width * .205
       this.add.text(this.scale.width * .09 + index * w, y, copy, {
-        fontFamily: 'DM Mono, monospace', fontSize: '9px', color: '#ffe5a0', backgroundColor: '#272035', padding: { x: 12, y: 7 }, align: 'center', fixedWidth: w - 2,
+        fontFamily: FONTS.ui, fontSize: '14px', fontStyle: 'bold', color: '#ffe5a0', backgroundColor: '#272035', padding: { x: 6, y: 7 }, align: 'center', fixedWidth: w - 3, letterSpacing: .4,
       }).setDepth(33)
     })
   }
@@ -714,18 +724,16 @@ class BadBetScene extends Phaser.Scene {
     data.returned += returned
     if (count === 1) data.manualPlays += played
     if (!played) {
-      this.state.reaction = 'neutral'
-      this.state.result = 'Your purse declines the opportunity.'
+      this.state.reaction = 'neutral'; this.state.result = 'NOT ENOUGH CASH'
     } else {
       this.state.reaction = net >= 0 ? 'win' : 'lose'
       this.state.result = played === 1
-        ? lastWin ? game === 'fox' ? 'Three times back. The fox looks pleasantly surprised.' : 'You win. Rabbit looks professionally delighted.'
-          : game === 'fox' ? 'Nothing. “Yes. Usually that.”' : 'The coin disagrees with the advertisement.'
-        : `${played} wagers: ${wins} paid, ${played - wins} did not. Net ${signedMoney(net)}.`
+        ? lastWin ? `WIN  ·  ${game === 'fox' ? '3×' : '2×'} PAID` : 'NO PAYOUT'
+        : `${played} PLAYS  ·  ${wins} WINS  ·  ${signedMoney(net)}`
       const unlocks = []
       if (manualBefore < 5 && data.manualPlays >= 5) unlocks.push('×5')
       if (manualBefore < 10 && data.manualPlays >= 10) unlocks.push('×10')
-      if (unlocks.length) this.state.result += ` ${unlocks.join(' and ')} multi-bet unlocked.`
+      if (unlocks.length) this.state.result += `  ·  ${unlocks.join(' & ')} UNLOCKED`
     }
     this.historyScroll[game] = 0
     if (elapsed >= MAX_MINUTES) this.state.mode = 'ending'
@@ -772,30 +780,31 @@ class BadBetScene extends Phaser.Scene {
 
   private renderShop(type: 'ledger' | 'portrait' | 'tonic') {
     const data = {
-      ledger: { icon: '▦', title: 'Practical Ledgers & Forecasting', keeper: 'OWL, SOLE PROPRIETOR', cost: 10, copy: 'Records every wager, result, observed win rate, and average return. Astonishingly unglamorous. Potentially useful.', buy: 'BUY LEDGER — $10' },
-      portrait: { icon: '◒', title: 'Marvelous Moon Portraits', keeper: 'LUNAR LIKENESSES WHILE-U-WAIT', cost: 15, copy: 'An ornate portrait revealing the beauty of your inner beast. Your outer finances remain unchanged.', buy: 'SIT FOR PORTRAIT — $15' },
-      tonic: { icon: '⚗', title: "Dr. Stoat's Invigorating Tonic", keeper: 'FORMULATED WITH CONFIDENCE', cost: 20, copy: 'Sparkling botanical confidence in a handsome bottle. No specific claims regarding chance are legally available.', buy: 'DRINK TONIC — $20' },
+      ledger: { icon: '▦', title: 'Practical Ledgers', keeper: 'OWL, SOLE PROPRIETOR', cost: 10, copy: 'Tracks wagers, wins, and return.', buy: 'BUY LEDGER  ·  $10' },
+      portrait: { icon: '◒', title: 'Moon Portraits', keeper: 'LIKENESSES WHILE-U-WAIT', cost: 15, copy: 'A handsome souvenir. No strategic value.', buy: 'SIT FOR PORTRAIT  ·  $15' },
+      tonic: { icon: '⚗', title: "Dr. Stoat's Tonic", keeper: 'FORMULATED WITH CONFIDENCE', cost: 20, copy: 'Sparkling confidence. Same odds.', buy: 'DRINK TONIC  ·  $20' },
     }[type]
     const owned = this.state[type]
     const { width, height } = this.scale
     this.add.rectangle(0, 0, width, height, 0x281835).setOrigin(0)
-    this.button(68, this.top + 38, 110, 34, '← MIDWAY', () => this.go('world'), { fill: COLORS.ink, stroke: COLORS.cream, font: 10, depth: 5 })
-    const cardW = Math.min(680, width * .9), cardH = Math.min(540, height - this.top - 42)
-    const card = this.add.rectangle(width / 2, this.top + 20, cardW, cardH, 0xf8e9bd).setOrigin(.5, 0)
+    this.button(72, this.top + 38, 122, 42, '← MIDWAY', () => this.go('world'), { fill: COLORS.ink, stroke: COLORS.cream, font: 14, depth: 5 })
+    const cardTop = this.top + 14
+    const cardW = Math.min(680, width * .9), cardH = Math.min(560, height - cardTop - 14)
+    const card = this.add.rectangle(width / 2, cardTop, cardW, cardH, 0xf8e9bd).setOrigin(.5, 0)
     card.setStrokeStyle(7, COLORS.red)
-    this.add.text(width / 2, this.top + 43, data.icon, { fontFamily: 'Fraunces, Georgia, serif', fontSize: '58px', color: '#fff0b9', backgroundColor: '#176d70', padding: { x: 20, y: 10 } }).setOrigin(.5, 0)
-    this.add.text(width / 2, this.top + 135, data.keeper, { fontFamily: 'DM Mono, monospace', fontSize: '9px', color: '#9c4a3f' }).setOrigin(.5, 0)
-    this.add.text(width / 2, this.top + 158, data.title, { fontFamily: 'Fraunces, Georgia, serif', fontSize: `${clamp(width / 24, 28, 46)}px`, fontStyle: 'bold', color: '#25162c', align: 'center', wordWrap: { width: cardW * .84 } }).setOrigin(.5, 0)
-    this.add.text(width / 2, this.top + 285, data.copy, { fontFamily: 'Fraunces, Georgia, serif', fontSize: '16px', color: '#25162c', align: 'center', wordWrap: { width: cardW * .76 }, lineSpacing: 5 }).setOrigin(.5, 0)
-    this.button(width / 2, this.top + cardH - 63, Math.min(280, cardW * .7), 43, owned ? 'ALREADY PURCHASED' : data.buy, () => this.buy(type, data.cost), { fill: owned ? 0xc8b997 : 0xa53335, stroke: COLORS.ink, font: 11, depth: 5, disabled: owned || this.state.balance < data.cost })
-    this.add.text(width / 2, this.top + cardH - 25, this.state.result, { fontFamily: 'Fraunces, Georgia, serif', fontSize: '12px', fontStyle: 'italic', color: '#5d4860', align: 'center', wordWrap: { width: cardW * .8 } }).setOrigin(.5, 0)
+    this.add.text(width / 2, cardTop + 24, data.icon, { fontFamily: FONTS.body, fontSize: '52px', color: '#fff0b9', backgroundColor: '#176d70', padding: { x: 20, y: 8 } }).setOrigin(.5, 0)
+    this.add.text(width / 2, cardTop + 112, data.keeper, { fontFamily: FONTS.ui, fontSize: '14px', fontStyle: 'bold', letterSpacing: 1, color: '#9c4a3f' }).setOrigin(.5, 0)
+    this.add.text(width / 2, cardTop + 138, data.title, { fontFamily: FONTS.display, fontSize: `${clamp(width / 30, 28, 40)}px`, color: '#25162c', align: 'center', wordWrap: { width: cardW * .84 } }).setOrigin(.5, 0)
+    this.add.text(width / 2, cardTop + cardH * .56, data.copy, { fontFamily: FONTS.body, fontSize: '21px', color: '#25162c', align: 'center', wordWrap: { width: cardW * .76 }, lineSpacing: 5 }).setOrigin(.5, 0)
+    this.button(width / 2, cardTop + cardH - 64, Math.min(310, cardW * .74), 48, owned ? 'PURCHASED' : data.buy, () => this.buy(type, data.cost), { fill: owned ? 0xc8b997 : 0xa53335, stroke: COLORS.ink, font: 16, depth: 5, disabled: owned || this.state.balance < data.cost })
+    this.add.text(width / 2, cardTop + cardH - 32, this.state.result, { fontFamily: FONTS.ui, fontSize: '15px', fontStyle: 'bold', color: '#5d4860', align: 'center', wordWrap: { width: cardW * .8 }, letterSpacing: .5 }).setOrigin(.5, 0)
   }
 
   private buy(type: 'ledger' | 'portrait' | 'tonic', cost: number) {
     if (this.state.balance < cost || this.state[type]) return
     this.state.balance -= cost
     this.state[type] = true
-    this.state.result = type === 'ledger' ? 'The ledger quietly begins remembering everything.' : type === 'portrait' ? 'It is a very flattering expense.' : 'You feel exactly as lucky as before, but more carbonated.'
+    this.state.result = type === 'ledger' ? 'LEDGER EQUIPPED' : type === 'portrait' ? 'PORTRAIT ACQUIRED' : 'THOROUGHLY INVIGORATED'
     this.renderMode()
   }
 
@@ -807,13 +816,13 @@ class BadBetScene extends Phaser.Scene {
     const cardW = Math.min(720, width * .92), cardH = Math.min(570, height - this.top - 30)
     const card = this.add.rectangle(width / 2, this.top + 15, cardW, cardH, 0xf8e9bd).setOrigin(.5, 0)
     card.setStrokeStyle(7, COLORS.ink)
-    this.add.text(width / 2, this.top + 42, 'AFTER THREE PERFECTLY REASONABLE DAYS', { fontFamily: 'DM Mono, monospace', fontSize: '10px', color: '#9c4a3f' }).setOrigin(.5, 0)
-    this.add.text(width / 2, this.top + 75, 'The tents are gone.', { fontFamily: 'Fraunces, Georgia, serif', fontSize: `${clamp(width / 17, 38, 65)}px`, fontStyle: 'bold', color: '#25162c' }).setOrigin(.5, 0)
-    this.add.text(width / 2, this.top + 155, money(this.state.balance), { fontFamily: 'Fraunces, Georgia, serif', fontSize: `${clamp(width / 10, 70, 120)}px`, fontStyle: 'bold', color: '#b13437' }).setOrigin(.5, 0)
-    this.add.text(width / 2, this.top + 270, verdict, { fontFamily: 'DM Mono, monospace', fontSize: '11px', color: '#25162c', align: 'center', wordWrap: { width: cardW * .8 } }).setOrigin(.5, 0)
+    this.add.text(width / 2, this.top + 42, 'AFTER THREE PERFECTLY REASONABLE DAYS', { fontFamily: FONTS.ui, fontSize: '14px', fontStyle: 'bold', letterSpacing: 1, color: '#9c4a3f' }).setOrigin(.5, 0)
+    this.add.text(width / 2, this.top + 78, 'The tents are gone.', { fontFamily: FONTS.display, fontSize: `${clamp(width / 20, 36, 58)}px`, color: '#25162c' }).setOrigin(.5, 0)
+    this.add.text(width / 2, this.top + 155, money(this.state.balance), { fontFamily: FONTS.body, fontSize: `${clamp(width / 10, 70, 120)}px`, color: '#b13437' }).setOrigin(.5, 0)
+    this.add.text(width / 2, this.top + 270, verdict, { fontFamily: FONTS.ui, fontSize: '16px', fontStyle: 'bold', letterSpacing: .6, color: '#25162c', align: 'center', wordWrap: { width: cardW * .8 } }).setOrigin(.5, 0)
     const stats = [`${total}\nTOTAL WAGERS`, `${this.state.stats.fox.plays}\nSILVER SPINS`, `${this.state.stats.rabbit.plays}\nCOIN TOSSES`, `${this.state.ledger ? 'YES' : 'NO'}\nKEPT RECORDS`]
-    stats.forEach((copy, index) => this.add.text(width / 2 - cardW * .36 + index * cardW * .24, this.top + 330, copy, { fontFamily: 'Fraunces, Georgia, serif', fontSize: '17px', fontStyle: 'bold', color: '#25162c', align: 'center', fixedWidth: cardW * .22, backgroundColor: '#ead8aa', padding: { y: 12 } }).setOrigin(.5, 0))
-    this.button(width / 2, this.top + cardH - 52, 220, 43, 'RETURN NEXT SEASON', () => this.reset(), { fill: 0xa53335, stroke: COLORS.ink, font: 11, depth: 5 })
+    stats.forEach((copy, index) => this.add.text(width / 2 - cardW * .36 + index * cardW * .24, this.top + 330, copy, { fontFamily: FONTS.ui, fontSize: '16px', fontStyle: 'bold', color: '#25162c', align: 'center', fixedWidth: cardW * .22, backgroundColor: '#ead8aa', padding: { y: 12 }, letterSpacing: .3 }).setOrigin(.5, 0))
+    this.button(width / 2, this.top + cardH - 52, 240, 48, 'RETURN NEXT SEASON', () => this.reset(), { fill: 0xa53335, stroke: COLORS.ink, font: 16, depth: 5 })
   }
 
   private button(x: number, y: number, width: number, height: number, label: string, action: () => void, options: { fill?: number; color?: string; stroke?: number; font?: number; family?: string; depth?: number; disabled?: boolean } = {}) {
@@ -821,7 +830,7 @@ class BadBetScene extends Phaser.Scene {
     const container = this.add.container(x, y).setDepth(options.depth ?? 1).setAlpha(disabled ? .38 : 1)
     const background = this.add.rectangle(0, 0, width, height, options.fill ?? COLORS.red)
     if (options.stroke !== undefined) background.setStrokeStyle(2, options.stroke)
-    const text = this.add.text(0, 0, label, { fontFamily: options.family ?? 'DM Mono, monospace', fontSize: `${options.font ?? 10}px`, fontStyle: 'bold', color: options.color ?? '#fff6da', align: 'center' }).setOrigin(.5)
+    const text = this.add.text(0, 0, label, { fontFamily: options.family ?? FONTS.ui, fontSize: `${options.font ?? 14}px`, fontStyle: 'bold', color: options.color ?? '#fff6da', align: 'center', letterSpacing: .4 }).setOrigin(.5)
     container.add([background, text])
     if (!disabled) {
       background.setInteractive({ useHandCursor: true })
@@ -877,6 +886,12 @@ class BadBetScene extends Phaser.Scene {
     }
   }
 }
+
+await Promise.all([
+  document.fonts.load(`16px ${FONTS.display}`),
+  document.fonts.load(`16px ${FONTS.body}`),
+  document.fonts.load(`600 16px ${FONTS.ui}`),
+]).catch(() => undefined)
 
 new Phaser.Game({
   type: Phaser.AUTO,
