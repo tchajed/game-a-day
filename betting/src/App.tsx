@@ -8,8 +8,7 @@ const MUSIC_DISABLED = params.get('music') === 'off'
 const MAX_MINUTES = 3 * 12 * 60
 const BET_MINUTES = 5
 
-type Scene = 'world' | 'fox' | 'rabbit' | 'ledger' | 'portrait' | 'tonic' | 'ending' | 'art'
-type ArtKey = 'sunny' | 'rain' | 'summer'
+type Scene = 'world' | 'fox' | 'rabbit' | 'ledger' | 'portrait' | 'tonic' | 'ending'
 type GameKey = 'fox' | 'rabbit'
 type Reaction = 'neutral' | 'win' | 'lose'
 type Stats = Record<GameKey, { plays: number; wins: number; wagered: number; returned: number }>
@@ -22,27 +21,6 @@ type Place = {
   title: string
   subtitle: string
   kind: 'stall' | 'ad' | 'closed' | 'shop'
-}
-
-const ART: Record<ArtKey, { label: string; note: string; fox: string; rabbit: string }> = {
-  sunny: {
-    label: 'Bright midway',
-    note: 'Warm late-morning midway',
-    fox: 'art/stall-concepts/fox-d-sunny.webp',
-    rabbit: 'art/stall-concepts/rabbit-d-sunny.webp',
-  },
-  rain: {
-    label: 'After the rain',
-    note: 'Soft daylight at the carnival edge',
-    fox: 'art/stall-concepts/fox-e-after-rain.webp',
-    rabbit: 'art/stall-concepts/rabbit-e-after-rain.webp',
-  },
-  summer: {
-    label: 'High summer',
-    note: 'Crisp sun and turquoise canvas',
-    fox: 'art/stall-concepts/fox-f-high-summer.webp',
-    rabbit: 'art/stall-concepts/rabbit-f-high-summer.webp',
-  },
 }
 
 const basePlaces: Place[] = [
@@ -117,8 +95,6 @@ function useCarnivalMusic() {
 
 export default function App() {
   const [scene, setScene] = useState<Scene>('world')
-  const [returnScene, setReturnScene] = useState<Scene>('world')
-  const [art, setArt] = useState<ArtKey>('summer')
   const [balance, setBalance] = useState(100)
   const [minutes, setMinutes] = useState(0)
   const [bet, setBet] = useState(5)
@@ -247,11 +223,11 @@ export default function App() {
 
   useEffect(() => {
     window.__BAD_BET__ = {
-      getState: () => ({ scene, balance, minutes, stats, ledger, revealed, player, art }),
+      getState: () => ({ scene, balance, minutes, stats, ledger, revealed, player }),
       travel: (x: number, y: number) => setPlayer({ x, y }),
       open: (next: Scene) => setScene(next),
     }
-  }, [art, balance, ledger, minutes, player, revealed, scene, stats])
+  }, [balance, ledger, minutes, player, revealed, scene, stats])
 
   const playBets = (game: GameKey, count: number) => {
     let cash = balance
@@ -308,11 +284,6 @@ export default function App() {
     randomSeed.current = Number(params.get('seed')) || 481516
   }
 
-  const openArt = () => {
-    setReturnScene(scene)
-    setScene('art')
-  }
-
   return (
     <main className={`app scene-${scene}`}>
       <header className="hud">
@@ -322,7 +293,6 @@ export default function App() {
         <div className="time"><span>{timeLabel(minutes)}</span><i style={{ width: `${Math.min(100, (minutes / MAX_MINUTES) * 100)}%` }} /></div>
         <div className="cash" aria-label={`Balance ${money(balance)}`}><small>PURSE</small>{money(balance)}</div>
         {portrait && <span className="portrait-badge" title="A marvelous portrait. It does nothing.">✦</span>}
-        <button className="icon-button" onClick={openArt}>ART STUDY</button>
         <button className="icon-button music" disabled={MUSIC_DISABLED} onClick={music.toggle}>{MUSIC_DISABLED ? 'MUSIC OFF' : music.on ? 'MUSIC ON' : 'MUSIC OFF'}</button>
       </header>
 
@@ -342,7 +312,6 @@ export default function App() {
       {(scene === 'fox' || scene === 'rabbit') && (
         <BettingStall
           game={scene}
-          art={art}
           reaction={reaction}
           balance={balance}
           bet={bet}
@@ -371,7 +340,6 @@ export default function App() {
           result={result}
         />
       )}
-      {scene === 'art' && <ArtStudy selected={art} onSelect={setArt} onClose={() => setScene(returnScene === 'art' ? 'world' : returnScene)} />}
       {scene === 'ending' && <Ending balance={balance} stats={stats} ledger={ledger} tonic={tonic} onReset={reset} />}
 
       {DEBUG && (
@@ -443,9 +411,8 @@ function World({ places, player, target, nearest, gaze, revealed, result, onMove
   )
 }
 
-function BettingStall({ game, art, reaction, balance, bet, result, stats, hasLedger, onBet, onPlay, onLeave }: {
+function BettingStall({ game, reaction, balance, bet, result, stats, hasLedger, onBet, onPlay, onLeave }: {
   game: GameKey
-  art: ArtKey
   reaction: Reaction
   balance: number
   bet: number
@@ -519,28 +486,6 @@ function Shop({ type, balance, owned, onBuy, onLeave, result }: { type: 'ledger'
         <button className="shop-buy" disabled={owned || balance < shop.cost} onClick={() => onBuy(shop.cost)}>{owned ? 'ALREADY PURCHASED' : shop.buy}</button>
         <em>{result}</em>
       </div>
-    </section>
-  )
-}
-
-function ArtStudy({ selected, onSelect, onClose }: { selected: ArtKey; onSelect: (art: ArtKey) => void; onClose: () => void }) {
-  return (
-    <section className="art-study">
-      <div className="art-heading">
-        <div><small>STALL ART DIRECTION · DAYLIGHT PASS</small><h1>Choose a shared atmosphere</h1><p>The fox and rabbit stay paired so the carnival feels like one place. This is a temporary in-game review tool.</p></div>
-        <button className="close-art" onClick={onClose}>DONE</button>
-      </div>
-      <div className="concepts">
-        {(Object.keys(ART) as ArtKey[]).map((key) => (
-          <article className={selected === key ? 'selected' : ''} key={key}>
-            <button onClick={() => onSelect(key)}>
-              <div className="pair"><img src={`${BASE}${ART[key].fox}`} alt={`Female fox stall, ${ART[key].label}`} /><img src={`${BASE}${ART[key].rabbit}`} alt={`Male rabbit stall, ${ART[key].label}`} /></div>
-              <span><b>{ART[key].label}</b><small>{ART[key].note}</small><i>{selected === key ? 'IN USE' : 'USE THIS PAIR'}</i></span>
-            </button>
-          </article>
-        ))}
-      </div>
-      <p className="art-note">All other game artwork remains procedural or placeholder pending approval of these stalls.</p>
     </section>
   )
 }

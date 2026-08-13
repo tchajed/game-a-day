@@ -10,11 +10,7 @@ The two playable stalls now use independent background and character layers:
 
 The fox is female and wears a modest high-necked blouse. The rabbit is male and has a small healed notch in one ear. Betting outcomes cross-fade and translate between neutral, player-win, and player-loss poses. Backgrounds use artificial evening lighting and different camera views. The game contains each 3:2 artboard inside the available viewport rather than cropping it.
 
-## Earlier art study
-
-Three paired daylight directions remain under `public/art/stall-concepts/` and can be reviewed using **Art Study** in the HUD. They are retained as direction history, not used as the live stall scene.
-
-All other visual assets remain code-native placeholders until the stall direction is approved.
+All other visual assets remain code-native placeholders pending further art passes.
 
 ## Generation
 
