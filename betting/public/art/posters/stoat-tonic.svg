@@ -1,11 +1,11 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 960">
   <defs><filter id="paper"><feTurbulence baseFrequency=".019" numOctaves="4" seed="31" result="n"/><feBlend in="SourceGraphic" in2="n" mode="multiply"/></filter><filter id="wobble"><feTurbulence baseFrequency=".008" numOctaves="2" seed="13" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="3"/></filter></defs>
-  <path d="M20 20L614 14 624 321 613 628 625 941 414 946 25 938 15 649 25 344Z" fill="#e5d29b" stroke="#292832" stroke-width="12" filter="url(#paper)"/>
-  <g fill="none" stroke="#386b62" stroke-width="8" filter="url(#wobble)"><path d="M50 52Q176 73 320 51T590 54M50 907Q181 886 320 906T590 906"/><path d="M56 82Q89 94 97 128M584 82Q551 94 543 128M56 877Q89 865 97 831M584 877Q551 865 543 831"/></g>
+  <path d="M20 20L614 14 624 321 613 628 625 941 414 946 25 938 15 649 25 344Z" fill="#e5d29b" stroke="#292832" stroke-width="12"/>
+  <g fill="none" stroke="#386b62" stroke-width="8"><path d="M50 52Q176 73 320 51T590 54M50 907Q181 886 320 906T590 906"/><path d="M56 82Q89 94 97 128M584 82Q551 94 543 128M56 877Q89 865 97 831M584 877Q551 865 543 831"/></g>
   <text x="320" y="126" text-anchor="middle" fill="#8b3632" font-family="Georgia,serif" font-weight="900" font-size="70">DR. STOAT'S</text>
   <text x="320" y="202" text-anchor="middle" fill="#292832" font-family="Georgia,serif" font-weight="900" font-size="88" letter-spacing="7">TONIC</text>
   <path d="M82 230Q320 249 558 230" fill="none" stroke="#386b62" stroke-width="7"/>
-  <g filter="url(#wobble)" stroke="#292832" stroke-width="9" stroke-linejoin="round">
+  <g stroke="#292832" stroke-width="9" stroke-linejoin="round">
     <path d="M130 672Q128 492 196 404 240 346 311 358 365 368 384 436 405 515 361 639L326 743 172 733Z" fill="#d8b98c"/>
     <path d="M184 409Q162 311 217 284 261 264 299 310L333 371" fill="#d8b98c"/>
     <path d="M193 313L143 252Q218 242 240 287M250 289L277 226Q325 270 296 327" fill="#d8b98c"/>
