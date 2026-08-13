@@ -19,6 +19,7 @@ Programmatic playtesting is available from the browser console:
 window.__BAD_BET__.getState()
 window.__BAD_BET__.travel(21, 27)
 window.__BAD_BET__.open('fox')
+window.__BAD_BET__.play('fox', 10)
 ```
 
 Core loop:

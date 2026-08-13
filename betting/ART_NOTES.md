@@ -10,7 +10,7 @@ The two playable stalls now use independent background and character layers:
 
 The fox is female and wears a modest high-necked blouse. The rabbit is male and has a small healed notch in one ear. Betting outcomes cross-fade and translate between neutral, player-win, and player-loss poses. Backgrounds use artificial evening lighting and different camera views. The game contains each 3:2 artboard inside the available viewport rather than cropping it.
 
-All other visual assets remain code-native placeholders pending further art passes.
+The overworld is now a code-native Phaser 2.5D diorama: angled booth faces, depth-scaled characters, y-sorted occlusion, compressed paths, scenery layers, and foreground fencing create a physical three-quarter space without external assets. Shop screens remain code-native pending further art passes.
 
 ## Generation
 
