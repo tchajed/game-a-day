@@ -35,5 +35,5 @@ Core loop:
 6. After 5 manual plays at a stall, toggle ×5 and confirm the main play button changes to `PLAY ×5`; after 10 manual plays, repeat for ×10. Batch plays must not advance either unlock counter.
 7. Approach an ordinary notice board and deliberately inspect it to read its hand-drawn advertisement; the advertised shop then materializes.
 8. Buy the ledger to reveal observed rates at both stalls.
-9. Buy a Moon Portrait and return to the midway. The player sprite should gain a tiny face and two coat buttons while retaining its original silhouette.
+9. Buy a Moon Portrait. Verify that one hour passes, the finished stick-figure likeness appears inside the studio's ornate easel frame, and returning to the midway reveals a tiny face and two coat buttons on the player sprite without changing its silhouette.
 10. Make as much money as possible before three days elapse.

@@ -7,6 +7,7 @@ const DEBUG = params.get('debug') === 'true'
 const MUSIC_DISABLED = params.get('music') === 'off'
 const MAX_MINUTES = 3 * 12 * 60
 const BET_MINUTES = 5
+const PORTRAIT_MINUTES = 60
 const TEXT_RESOLUTION = Math.min(window.devicePixelRatio || 1, 2)
 const FONTS = {
   display: 'Rye, Georgia, serif',
@@ -193,6 +194,7 @@ class BadBetScene extends Phaser.Scene {
     this.load.image('poster-ad-tonic', `${BASE}art/posters/stoat-tonic.png`)
     this.load.image('shop-ledger', `${BASE}art/shops/practical-ledgers-evening.webp`)
     this.load.image('shop-portrait', `${BASE}art/shops/moon-portraits-evening.webp`)
+    this.load.image('shop-portrait-finished', `${BASE}art/shops/moon-portrait-finished.svg`)
     this.load.image('shop-tonic', `${BASE}art/shops/stoat-tonic-evening.webp`)
     this.load.image('carnival-welcome', `${BASE}art/entrance/bad-bet-welcome.webp`)
   }
@@ -1104,6 +1106,7 @@ class BadBetScene extends Phaser.Scene {
     const artH = artW / 1.5
     const artX = width / 2, artY = this.top + 6 + artH / 2
     this.add.image(artX, artY, `shop-${type}`).setDisplaySize(artW, artH)
+    if (type === 'portrait' && owned) this.add.image(artX, artY, 'shop-portrait-finished').setDisplaySize(artW, artH)
     this.add.rectangle(artX, artY, artW, artH, 0x170d21, .12).setStrokeStyle(4, COLORS.gold)
 
     const short = artH < 470
@@ -1151,7 +1154,8 @@ class BadBetScene extends Phaser.Scene {
     if (this.state.balance < cost || this.state[type]) return
     this.state.balance -= cost
     this.state[type] = true
-    this.state.result = type === 'ledger' ? 'LEDGER EQUIPPED' : type === 'portrait' ? 'LIKENESS APPLIED · YOU FEEL ODDLY MORE DETAILED' : 'THOROUGHLY INVIGORATED'
+    if (type === 'portrait') this.state.minutes = Math.min(MAX_MINUTES, this.state.minutes + PORTRAIT_MINUTES)
+    this.state.result = type === 'ledger' ? 'LEDGER EQUIPPED' : type === 'portrait' ? 'ONE HOUR LATER · YOU FEEL ODDLY MORE DETAILED' : 'THOROUGHLY INVIGORATED'
     this.renderMode()
   }
 
