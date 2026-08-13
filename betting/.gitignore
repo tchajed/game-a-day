@@ -4,3 +4,7 @@ dist/
 *.tsbuildinfo
 # Preserve unedited image-generation originals locally; named concept exports are tracked.
 public/art/stall-concepts/019ffbf7-8a1d-7226-8a11-44301ec79a52/
+public/art/stall-concepts/daytime-v2/
+public/art/stalls/layers/
+tmp/
+.pi-agent-browser/
