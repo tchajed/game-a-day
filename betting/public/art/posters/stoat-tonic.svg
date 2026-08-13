@@ -1,24 +1,106 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 960">
-  <defs><filter id="paper"><feTurbulence baseFrequency=".019" numOctaves="4" seed="31" result="n"/><feBlend in="SourceGraphic" in2="n" mode="multiply"/></filter><filter id="wobble"><feTurbulence baseFrequency=".008" numOctaves="2" seed="13" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="3"/></filter></defs>
-  <path d="M20 20L614 14 624 321 613 628 625 941 414 946 25 938 15 649 25 344Z" fill="#e5d29b" stroke="#292832" stroke-width="12"/>
-  <g fill="none" stroke="#386b62" stroke-width="8"><path d="M50 52Q176 73 320 51T590 54M50 907Q181 886 320 906T590 906"/><path d="M56 82Q89 94 97 128M584 82Q551 94 543 128M56 877Q89 865 97 831M584 877Q551 865 543 831"/></g>
-  <text x="320" y="126" text-anchor="middle" fill="#8b3632" font-family="Georgia,serif" font-weight="900" font-size="70">DR. STOAT'S</text>
-  <text x="320" y="202" text-anchor="middle" fill="#292832" font-family="Georgia,serif" font-weight="900" font-size="88" letter-spacing="7">TONIC</text>
-  <path d="M82 230Q320 249 558 230" fill="none" stroke="#386b62" stroke-width="7"/>
-  <g stroke="#292832" stroke-width="9" stroke-linejoin="round">
-    <path d="M130 672Q128 492 196 404 240 346 311 358 365 368 384 436 405 515 361 639L326 743 172 733Z" fill="#d8b98c"/>
-    <path d="M184 409Q162 311 217 284 261 264 299 310L333 371" fill="#d8b98c"/>
-    <path d="M193 313L143 252Q218 242 240 287M250 289L277 226Q325 270 296 327" fill="#d8b98c"/>
-    <path d="M218 414Q254 376 290 414" fill="none"/><circle cx="233" cy="414" r="9" fill="#292832"/><circle cx="279" cy="414" r="9" fill="#292832"/>
-    <path d="M244 444L258 458 272 443" fill="#8b3632"/>
-    <path d="M318 519Q383 472 433 525L405 574 337 569Z" fill="#d8b98c"/>
-    <path d="M410 669L398 526 433 485 433 410 490 410 490 485 523 526 514 713Q463 746 412 713Z" fill="#3e776e"/>
-    <path d="M433 410L442 369 482 369 490 410Z" fill="#8b3632"/>
-    <path d="M418 577Q463 553 508 577L507 665Q462 687 414 664Z" fill="#e8d59f"/>
-    <path d="M440 620Q463 590 486 620 463 651 440 620Z" fill="#8b3632"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 960" role="img" aria-labelledby="title desc">
+  <title id="title">Dr. Stoat's Tonic carnival broadside</title>
+  <desc id="desc">A vintage hand-printed advertisement showing a bespectacled stoat in a waistcoat presenting a bottle of tonic.</desc>
+  <defs>
+    <pattern id="paper-flecks" width="73" height="61" patternUnits="userSpaceOnUse">
+      <path d="M8 13l19-2M45 49l14 1M36 26l7-1" fill="none" stroke="#8d7048" stroke-width="1.4" stroke-linecap="round" opacity=".22"/>
+      <circle cx="61" cy="17" r="1.2" fill="#8d7048" opacity=".2"/>
+      <circle cx="19" cy="43" r=".9" fill="#8d7048" opacity=".18"/>
+    </pattern>
+    <filter id="ink-wobble" x="-3%" y="-3%" width="106%" height="106%">
+      <feTurbulence type="fractalNoise" baseFrequency=".009" numOctaves="2" seed="13" result="noise"/>
+      <feDisplacementMap in="SourceGraphic" in2="noise" scale="2.2" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+  </defs>
+
+  <path d="M22 20L613 15 622 238 615 471 624 941 430 947 235 940 23 948 16 716 23 482 15 197Z" fill="#e7d39b" stroke="#292832" stroke-width="12"/>
+  <path d="M33 34Q193 26 320 31T605 29L608 925Q460 917 321 925T37 921Z" fill="none" stroke="#397066" stroke-width="5"/>
+  <path d="M31 32H609V928H31Z" fill="url(#paper-flecks)"/>
+
+  <g fill="none" stroke="#973b37" stroke-width="7" stroke-linecap="round" filter="url(#ink-wobble)">
+    <path d="M55 57Q174 77 319 57T585 58"/>
+    <path d="M56 82Q89 91 101 125M584 83Q551 92 540 126"/>
+    <path d="M54 915Q180 899 319 916T587 915"/>
+    <path d="M56 875Q90 865 101 831M584 875Q551 865 540 832"/>
   </g>
-  <g fill="none" stroke="#386b62" stroke-width="6"><circle cx="545" cy="397" r="11"/><circle cx="529" cy="338" r="7"/><circle cx="92" cy="475" r="10"/><path d="M518 760q27-43 51 0M84 758q28-48 57-2"/></g>
-  <text x="320" y="813" text-anchor="middle" fill="#292832" font-family="Georgia,serif" font-weight="700" font-size="29" letter-spacing="2">CONFIDENCE, VIGOROUSLY BOTTLED</text>
-  <path d="M80 840Q320 861 560 840" fill="none" stroke="#8b3632" stroke-width="5"/>
-  <text x="320" y="880" text-anchor="middle" fill="#386b62" font-family="Georgia,serif" font-style="italic" font-size="26">No specific claims available</text>
+
+  <g text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" filter="url(#ink-wobble)">
+    <text x="320" y="122" fill="#963a36" font-size="66" font-weight="900" letter-spacing="1">DR. STOAT'S</text>
+    <text x="320" y="204" fill="#292832" font-size="94" font-weight="900" letter-spacing="8">TONIC</text>
+    <path d="M82 226Q318 240 558 224" fill="none" stroke="#397066" stroke-width="7"/>
+    <text x="320" y="257" fill="#397066" font-size="20" font-weight="700" letter-spacing="4">AN EXHILARATING ELIXIR</text>
+  </g>
+
+  <!-- radiating salesmanship behind the bottle -->
+  <g fill="none" stroke="#b78c42" stroke-width="5" stroke-linecap="round" opacity=".88">
+    <path d="M472 321l4-36M527 340l24-28M553 388l36-8M545 442l32 17M423 321l-10-31"/>
+  </g>
+  <g fill="#b78c42" stroke="#292832" stroke-width="3">
+    <path d="M569 302l5 12 14 2-11 10 3 14-13-7-12 7 3-14-11-10 14-2Z"/>
+    <path d="M90 315l4 10 11 2-9 8 3 11-10-6-10 6 3-11-9-8 11-2Z"/>
+  </g>
+
+  <!-- Dr. Stoat -->
+  <g stroke="#292832" stroke-linecap="round" stroke-linejoin="round" filter="url(#ink-wobble)">
+    <!-- tail and body -->
+    <path d="M200 612Q126 653 105 611 94 586 123 566 98 600 132 601 160 602 188 574" fill="none" stroke="#292832" stroke-width="15"/>
+    <path d="M154 705Q151 593 184 509 204 457 256 449 313 443 347 489 382 536 377 704Z" fill="#c18d62" stroke-width="10"/>
+    <!-- shirt and waistcoat -->
+    <path d="M206 485Q253 515 303 482L331 704 186 704Z" fill="#f0dfb0" stroke-width="8"/>
+    <path d="M185 502Q207 523 245 539L230 704H171Q164 593 185 502Z" fill="#713844" stroke-width="8"/>
+    <path d="M306 498Q287 523 254 539L276 704H341Q353 581 306 498Z" fill="#713844" stroke-width="8"/>
+    <path d="M245 537l10 32 14-33-14-15Z" fill="#397066" stroke-width="5"/>
+    <circle cx="269" cy="584" r="5" fill="#d5ad55" stroke-width="3"/>
+    <circle cx="272" cy="629" r="5" fill="#d5ad55" stroke-width="3"/>
+    <path d="M189 705h173" fill="none" stroke-width="10"/>
+
+    <!-- long stoat neck and head -->
+    <path d="M210 494Q192 448 195 388 198 320 237 291 268 267 306 282 346 298 356 341 366 384 338 426 318 456 305 500 256 527 210 494Z" fill="#c99568" stroke-width="10"/>
+    <!-- ears -->
+    <path d="M217 323L181 273Q229 265 247 299" fill="#c99568" stroke-width="9"/>
+    <path d="M303 294l24-31q32 27 13 59" fill="#c99568" stroke-width="9"/>
+    <path d="M207 289l20 28M326 276l-12 30" fill="none" stroke="#963a36" stroke-width="6"/>
+    <!-- pale stoat markings -->
+    <path d="M211 360Q238 321 269 347 303 316 339 352L331 413Q300 455 257 456 217 452 201 416Z" fill="#f2e3b7" stroke-width="7"/>
+    <!-- spectacles -->
+    <circle cx="241" cy="374" r="29" fill="none" stroke="#397066" stroke-width="8"/>
+    <circle cx="306" cy="372" r="29" fill="none" stroke="#397066" stroke-width="8"/>
+    <path d="M270 371q6-8 12 0M212 364l-27-11M335 361l22-11" fill="none" stroke="#397066" stroke-width="7"/>
+    <circle cx="246" cy="378" r="7" fill="#292832" stroke="none"/>
+    <circle cx="301" cy="376" r="7" fill="#292832" stroke="none"/>
+    <path d="M258 404l16 12 15-13-15-10Z" fill="#963a36" stroke-width="5"/>
+    <path d="M274 417q-5 24 24 23" fill="none" stroke-width="5"/>
+    <path d="M224 423l-47 7M226 435l-43 19M318 420l40 4M317 434l38 16" fill="none" stroke="#6d533c" stroke-width="3"/>
+
+    <!-- presenting arm -->
+    <path d="M315 525Q360 489 412 516L420 572Q371 574 329 557Z" fill="#c99568" stroke-width="9"/>
+    <path d="M397 514q33-8 49 14l-12 44-20 1Z" fill="#f0dfb0" stroke-width="8"/>
+
+    <!-- tonic bottle -->
+    <path d="M430 386L440 351H492L501 386V474L526 503 519 686Q474 718 424 687L418 503 440 474V386Z" fill="#397c71" stroke-width="10"/>
+    <path d="M440 351l5-35h41l6 35Z" fill="#963a36" stroke-width="9"/>
+    <path d="M443 319h42" fill="none" stroke="#292832" stroke-width="12"/>
+    <path d="M432 539Q471 517 513 539L511 647Q470 672 428 647Z" fill="#eedb9f" stroke-width="8"/>
+    <path d="M449 566h44M449 620h44" fill="none" stroke="#963a36" stroke-width="4"/>
+    <text x="471" y="590" text-anchor="middle" fill="#292832" stroke="none" font-family="Georgia,serif" font-size="20" font-weight="900">DR. S</text>
+    <text x="471" y="614" text-anchor="middle" fill="#397066" stroke="none" font-family="Georgia,serif" font-size="15" font-weight="900" letter-spacing="1">TONIC</text>
+    <path d="M448 486q23 12 47 0" fill="none" stroke="#8fc0a3" stroke-width="4" opacity=".7"/>
+  </g>
+
+  <!-- bubbles -->
+  <g fill="none" stroke="#397066" stroke-width="5">
+    <circle cx="551" cy="527" r="11"/><circle cx="563" cy="484" r="6"/><circle cx="92" cy="489" r="10"/>
+    <circle cx="112" cy="534" r="5"/>
+  </g>
+
+  <!-- promise banner -->
+  <g filter="url(#ink-wobble)">
+    <path d="M73 746Q321 731 568 747L550 833Q321 846 89 832Z" fill="#963a36" stroke="#292832" stroke-width="8" stroke-linejoin="round"/>
+    <path d="M91 758Q321 747 550 759L540 818Q321 829 100 817Z" fill="#f0dfa9" stroke="#d1aa52" stroke-width="4"/>
+    <text x="320" y="785" text-anchor="middle" fill="#292832" font-family="Georgia,serif" font-size="26" font-weight="900" letter-spacing="3">CONFIDENCE</text>
+    <text x="320" y="813" text-anchor="middle" fill="#397066" font-family="Georgia,serif" font-size="18" font-weight="700" letter-spacing="3">VIGOROUSLY BOTTLED</text>
+  </g>
+
+  <text x="320" y="870" text-anchor="middle" fill="#292832" font-family="Georgia,serif" font-size="19" font-weight="700" letter-spacing="2">RESULTS MAY FEEL IMMEDIATE</text>
+  <text x="320" y="897" text-anchor="middle" fill="#397066" font-family="Georgia,serif" font-size="18" font-style="italic">No specific claims available</text>
 </svg>
