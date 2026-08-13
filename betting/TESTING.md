@@ -38,5 +38,6 @@ Core loop:
 7. Approach an ordinary notice board and deliberately inspect its hand-drawn advertisement. Leaving before five continuous seconds must not unlock it. At five seconds, verify that fifteen in-game minutes pass, “Something stirs” appears, and the advertised shop materializes.
 8. Buy the ledger to reveal observed rates at both stalls.
 9. Buy a Moon Portrait. Verify that one hour passes, the finished stick-figure likeness appears inside the studio's ornate easel frame, and returning to the midway reveals a tiny face and two coat buttons on the player sprite without changing its silhouette.
-10. Verify the clock is visible in stalls and shops. Use `setTime` or debug controls to compare each game's bright morning background, the filtered afternoon treatment, the 5–6 PM cross-fade into its separate night background, and the overworld night lighting.
-11. Make as much money as possible before the single day ends at 9 PM.
+10. Verify the clock is visible in stalls and shops. Use `setTime` or debug controls to compare every game and advertisement-summoned shop's bright morning background, filtered afternoon treatment, and 5–6 PM cross-fade into its separate night background; also verify the overworld night lighting.
+11. Buy Dr. Stoat's Tonic and verify a small tonic-bottle icon appears in the top HUD on both desktop and narrow layouts, while the purchase still has no gameplay effect.
+12. Make as much money as possible before the single day ends at 9 PM.

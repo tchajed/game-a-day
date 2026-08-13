@@ -11,6 +11,8 @@ The two playable stalls now use independent background and character layers:
 
 The fox is female and wears a modest high-necked blouse. The rabbit is male and has a small healed notch in one ear. Betting outcomes cross-fade and translate between neutral, player-win, and player-loss poses. Each stall now has genuinely different morning and night artwork. Phaser color-matrix filters shift the morning painting through the afternoon, then cross-fade to the native night painting between 5 and 6 PM. The game contains each 3:2 artboard inside the available viewport rather than cropping it.
 
+The three advertisement-summoned shops use the same treatment: `public/art/shops/*-morning.webp` provides bright, naturally lit counterparts to the original `*-evening.webp` scenes. Their bulbs and lanterns are unlit by day, while the existing painted night scenes retain their artificial glow. `public/art/ui/tonic-bottle.svg` is the small inventory bottle shown in the HUD after buying Dr. Stoat's deliberately ineffective tonic.
+
 The overworld is now a code-native Phaser 2.5D diorama: angled booth faces, depth-scaled characters, y-sorted occlusion, branching packed-earth paths, an arrival gate, a larger big top, scenery layers, and open foreground fencing create a physical three-quarter space without external assets. The playable booths dominate the rear midway, while the notice-board advertisements sit near the entrance and summon their shops at distinct locations farther inside.
 
 ## Notice-board advertisements
@@ -33,4 +35,4 @@ The responsive Phaser overlay keeps purchasing copy and controls independent of 
 
 ## Generation
 
-Artwork was generated using Pi's `codex_generate_image` tool with the GPT Image 2 backend. Character layers were requested on flat chroma-key green, then converted locally to alpha PNGs. Prompts preserved the first sunny fox and rabbit identities while separating them from compact, character-free evening carnival backgrounds. The shop scenes referenced their matching broadsides and existing stall backgrounds to maintain the same mysterious evening storybook style.
+Artwork was generated using Pi's `codex_generate_image` tool with the GPT Image 2 backend. Character layers were requested on flat chroma-key green, then converted locally to alpha PNGs. Prompts preserved the first sunny fox and rabbit identities while separating them from compact, character-free evening carnival backgrounds. The shop scenes referenced their matching broadsides and existing stall backgrounds to maintain the same mysterious storybook style; their morning variants are lighting-and-weather edits of the evening originals.

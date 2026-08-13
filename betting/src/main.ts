@@ -218,10 +218,13 @@ class BadBetScene extends Phaser.Scene {
     this.load.image('poster-ad-ledger', `${BASE}art/posters/practical-ledgers.png`)
     this.load.image('poster-ad-portrait', `${BASE}art/posters/moon-portraits.png`)
     this.load.image('poster-ad-tonic', `${BASE}art/posters/stoat-tonic.png`)
-    this.load.image('shop-ledger', `${BASE}art/shops/practical-ledgers-evening.webp`)
-    this.load.image('shop-portrait', `${BASE}art/shops/moon-portraits-evening.webp`)
+    const shopArt = { ledger: 'practical-ledgers', portrait: 'moon-portraits', tonic: 'stoat-tonic' }
+    for (const [shop, file] of Object.entries(shopArt)) {
+      this.load.image(`shop-${shop}-morning`, `${BASE}art/shops/${file}-morning.webp`)
+      this.load.image(`shop-${shop}-night`, `${BASE}art/shops/${file}-evening.webp`)
+    }
     this.load.image('shop-portrait-finished', `${BASE}art/shops/moon-portrait-finished.svg`)
-    this.load.image('shop-tonic', `${BASE}art/shops/stoat-tonic-evening.webp`)
+    this.load.image('tonic-bottle-icon', `${BASE}art/ui/tonic-bottle.svg`)
     this.load.image('carnival-welcome', `${BASE}art/entrance/bad-bet-welcome.webp`)
   }
 
@@ -356,9 +359,15 @@ class BadBetScene extends Phaser.Scene {
       fontFamily: FONTS.ui, fontSize: compact ? '12px' : '14px', fontStyle: 'bold', color: '#ffffff', letterSpacing: 0.5,
     }).setOrigin(0.5).setDepth(10002)
 
-    this.add.text(width - (compact ? 78 : 190), h / 2, compact ? money(this.state.balance) : `PURSE  ${money(this.state.balance)}`, {
+    const purseX = width - (compact ? 78 : this.state.tonic ? 215 : 190)
+    this.add.text(purseX, h / 2, compact ? money(this.state.balance) : `PURSE  ${money(this.state.balance)}`, {
       fontFamily: FONTS.body, fontSize: compact ? '22px' : '28px', color: '#21182f',
     }).setOrigin(0.5).setDepth(10002)
+    if (this.state.tonic) {
+      const tonicX = compact ? width - 23 : width - 119
+      graphics.fillStyle(COLORS.ink, .13).fillCircle(tonicX, h / 2, compact ? 20 : 22)
+      this.add.image(tonicX, h / 2, 'tonic-bottle-icon').setDisplaySize(compact ? 25 : 28, compact ? 34 : 38).setDepth(10002).setName('tonicIcon')
+    }
     if (!compact) this.button(width - 53, h / 2 - 2, 90, 31, MUSIC_DISABLED ? 'MUSIC OFF' : this.music.on ? 'MUSIC ON' : 'MUSIC OFF', () => {
       if (!MUSIC_DISABLED) this.music.toggle()
       this.renderMode()
@@ -474,13 +483,13 @@ class BadBetScene extends Phaser.Scene {
     })
   }
 
-  private renderStallBackground(game: GameKey, x: number, y: number, width: number, height: number) {
+  private renderTimedBackground(key: string, x: number, y: number, width: number, height: number) {
     const duskStart = NIGHT_MINUTES - DUSK_TRANSITION_MINUTES
     if (this.state.minutes < NIGHT_MINUTES) {
-      this.applySceneLighting(this.add.image(x, y, `${game}-background-morning`).setDisplaySize(width, height))
+      this.applySceneLighting(this.add.image(x, y, `${key}-morning`).setDisplaySize(width, height))
     }
     if (this.state.minutes >= duskStart) {
-      const night = this.add.image(x, y, `${game}-background-night`).setDisplaySize(width, height)
+      const night = this.add.image(x, y, `${key}-night`).setDisplaySize(width, height)
       if (this.state.minutes < NIGHT_MINUTES) night.setAlpha(clamp((this.state.minutes - duskStart) / DUSK_TRANSITION_MINUTES, 0, 1))
       else this.applySceneLighting(night)
     }
@@ -753,7 +762,7 @@ class BadBetScene extends Phaser.Scene {
     const artW = Math.min(width - 24, availableH * 1.5)
     const artH = artW / 1.5
     const artX = width / 2, artY = this.top + 10 + artH / 2
-    this.renderStallBackground(game, artX, artY, artW, artH)
+    this.renderTimedBackground(`${game}-background`, artX, artY, artW, artH)
     const character = this.applySceneLighting(this.add.image(fox ? artX + artW * .25 : artX - artW * .25, artY + artH * .1, `${game}-${this.state.reaction}`).setName('dealer'))
     character.setDisplaySize(character.width / character.height * artH * .9, artH * .9)
     this.add.rectangle(0, this.top, width, height - this.top, 0x160d26, .13).setOrigin(0)
@@ -1230,7 +1239,7 @@ class BadBetScene extends Phaser.Scene {
     const artW = Math.min(width - 20, availableH * 1.5)
     const artH = artW / 1.5
     const artX = width / 2, artY = this.top + 6 + artH / 2
-    this.applySceneLighting(this.add.image(artX, artY, `shop-${type}`).setDisplaySize(artW, artH))
+    this.renderTimedBackground(`shop-${type}`, artX, artY, artW, artH)
     if (type === 'portrait' && owned) this.applySceneLighting(this.add.image(artX, artY, 'shop-portrait-finished').setDisplaySize(artW, artH))
     this.add.rectangle(artX, artY, artW, artH, 0x170d21, .12).setStrokeStyle(4, COLORS.gold)
 
