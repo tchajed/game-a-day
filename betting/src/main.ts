@@ -14,7 +14,7 @@ const FONTS = {
   ui: '"Barlow Condensed", Arial, sans-serif',
 }
 
-type Mode = 'world' | 'fox' | 'rabbit' | 'ledger' | 'portrait' | 'tonic' | 'ending'
+type Mode = 'world' | 'fox' | 'rabbit' | 'ledger' | 'portrait' | 'tonic' | 'poster' | 'ending'
 type GameKey = 'fox' | 'rabbit'
 type Reaction = 'neutral' | 'win' | 'lose'
 type Point = { x: number; y: number }
@@ -48,6 +48,7 @@ type State = {
   revealed: string[]
   player: Point
   target: Point | null
+  poster: 'ad-ledger' | 'ad-portrait' | 'ad-tonic' | null
 }
 
 const COLORS = {
@@ -67,9 +68,9 @@ const basePlaces: Place[] = [
   { id: 'closed', x: 39, y: 25, title: 'Turtle Derby', subtitle: 'CLOSED', kind: 'closed' },
   { id: 'closed', x: 61, y: 29, title: "Crow's High Striker", subtitle: 'CLOSED', kind: 'closed' },
   { id: 'closed', x: 50, y: 49, title: 'The Lucky Lantern', subtitle: 'CLOSED', kind: 'closed' },
-  { id: 'ad-ledger', x: 17, y: 70, title: 'Practical Ledgers', subtitle: 'KEEP WATCHING', kind: 'ad' },
-  { id: 'ad-portrait', x: 50, y: 77, title: 'Moon Portraits', subtitle: 'KEEP WATCHING', kind: 'ad' },
-  { id: 'ad-tonic', x: 83, y: 68, title: "Dr. Stoat's Tonic", subtitle: 'KEEP WATCHING', kind: 'ad' },
+  { id: 'ad-ledger', x: 17, y: 70, title: 'Weathered Notice Board', subtitle: 'OLD NOTICES & LOCAL NEWS', kind: 'ad' },
+  { id: 'ad-portrait', x: 50, y: 77, title: 'Town Notice Board', subtitle: 'PINS, PAPER & OLD INK', kind: 'ad' },
+  { id: 'ad-tonic', x: 83, y: 68, title: 'Crooked Notice Board', subtitle: 'NOTICES OF UNCERTAIN IMPORTANCE', kind: 'ad' },
 ]
 
 const initialStats = (): Stats => ({
@@ -82,7 +83,7 @@ const initialState = (): State => ({
   result: 'Pick a game. Press your luck.', stats: initialStats(),
   histories: { fox: [], rabbit: [] }, betCounts: { fox: 1, rabbit: 1 }, nextResultId: 1,
   ledger: false, portrait: false, tonic: false, revealed: [],
-  player: { x: 50, y: 56 }, target: null,
+  player: { x: 50, y: 56 }, target: null, poster: null,
 })
 
 const clamp = (value: number, min: number, max: number) => Math.max(min, Math.min(max, value))
@@ -146,7 +147,6 @@ class BadBetScene extends Phaser.Scene {
   private playerContainer?: Phaser.GameObjects.Container
   private caption?: Phaser.GameObjects.Text
   private nearestKey = ''
-  private gaze: { id: string; progress: number } | null = null
   private elapsed = 0
   private historyScroll: Record<GameKey, number> = { fox: 0, rabbit: 0 }
   private historyViews = new Map<GameKey, { strip: Phaser.GameObjects.Container; chips: Phaser.GameObjects.Container[]; latestX: number; maxOffset: number; left: number; right: number; top: number; bottom: number }>()
@@ -161,6 +161,9 @@ class BadBetScene extends Phaser.Scene {
         this.load.image(`${game}-${reaction}`, `${BASE}art/stalls/characters/${game}-${reaction}.png`)
       }
     }
+    this.load.image('poster-ad-ledger', `${BASE}art/posters/practical-ledgers.png`)
+    this.load.image('poster-ad-portrait', `${BASE}art/posters/moon-portraits.png`)
+    this.load.image('poster-ad-tonic', `${BASE}art/posters/stoat-tonic.png`)
   }
 
   create() {
@@ -198,7 +201,6 @@ class BadBetScene extends Phaser.Scene {
       if (nearest) this.enter(nearest)
     }
 
-    const wasTargeting = Boolean(this.state.target)
     let next = this.state.player
     let walking = false
     if (dx || dy) {
@@ -224,7 +226,6 @@ class BadBetScene extends Phaser.Scene {
     if (walking) this.state.player = this.resolveCollision(this.state.player, next)
     this.updatePlayerVisual(walking, dx)
     this.updateProximity()
-    this.updateGaze(delta, walking || wasTargeting)
   }
 
   private get top() { return this.scale.height < 620 ? 64 : 76 }
@@ -253,6 +254,7 @@ class BadBetScene extends Phaser.Scene {
     this.caption = undefined
     if (this.state.mode === 'world') this.renderWorld()
     else if (this.state.mode === 'fox' || this.state.mode === 'rabbit') this.renderStall(this.state.mode)
+    else if (this.state.mode === 'poster') this.renderPoster()
     else if (this.state.mode === 'ending') this.renderEnding()
     else this.renderShop(this.state.mode)
     this.renderHud()
@@ -274,15 +276,17 @@ class BadBetScene extends Phaser.Scene {
     this.button(compact ? 45 : 70, h / 2 - 2, compact ? 76 : 112, 40, 'BAD BET', () => this.go('world'), {
       fill: COLORS.red, font: compact ? 17 : 21, family: FONTS.display, depth: 10001,
     })
-    const timeX = compact ? 92 : 136
-    const timeW = compact ? Math.min(210, width * 0.38) : Math.min(360, width * 0.34)
-    const timeY = h / 2 - 15
-    graphics.fillStyle(0x352340).fillRect(timeX, timeY, timeW, 30)
-    graphics.lineStyle(2, COLORS.ink).strokeRect(timeX, timeY, timeW, 30)
-    graphics.fillStyle(COLORS.red).fillRect(timeX + 2, timeY + 2, (timeW - 4) * Math.min(1, this.state.minutes / MAX_MINUTES), 26)
-    this.add.text(timeX + timeW / 2, h / 2, timeLabel(this.state.minutes), {
-      fontFamily: FONTS.ui, fontSize: compact ? '12px' : '14px', fontStyle: 'bold', color: '#ffffff', letterSpacing: 0.5,
-    }).setOrigin(0.5).setDepth(10002)
+    if (DEBUG) {
+      const timeX = compact ? 92 : 136
+      const timeW = compact ? Math.min(210, width * 0.38) : Math.min(360, width * 0.34)
+      const timeY = h / 2 - 15
+      graphics.fillStyle(0x352340).fillRect(timeX, timeY, timeW, 30)
+      graphics.lineStyle(2, COLORS.ink).strokeRect(timeX, timeY, timeW, 30)
+      graphics.fillStyle(COLORS.red).fillRect(timeX + 2, timeY + 2, (timeW - 4) * Math.min(1, this.state.minutes / MAX_MINUTES), 26)
+      this.add.text(timeX + timeW / 2, h / 2, timeLabel(this.state.minutes), {
+        fontFamily: FONTS.ui, fontSize: compact ? '12px' : '14px', fontStyle: 'bold', color: '#ffffff', letterSpacing: 0.5,
+      }).setOrigin(0.5).setDepth(10002)
+    }
 
     this.add.text(width - (compact ? 78 : 190), h / 2, compact ? money(this.state.balance) : `PURSE  ${money(this.state.balance)}`, {
       fontFamily: FONTS.body, fontSize: compact ? '22px' : '28px', color: '#21182f',
@@ -382,6 +386,7 @@ class BadBetScene extends Phaser.Scene {
     container.setScale(scale)
     const highlight = this.add.graphics().lineStyle(4, 0xfff2a8, .95).strokeEllipse(0, -2, place.kind === 'ad' ? 78 : 116, place.kind === 'ad' ? 24 : 31)
     highlight.fillStyle(0xffef96, .13).fillEllipse(0, -2, place.kind === 'ad' ? 78 : 116, place.kind === 'ad' ? 24 : 31).setName('highlight')
+    highlight.setVisible(false)
     const art = this.add.graphics().fillStyle(0x173e3a, .45).fillEllipse(4, 2, place.kind === 'ad' ? 72 : 105, place.kind === 'ad' ? 20 : 28)
     if (place.kind === 'ad') this.drawBillboard(art, place, index)
     else this.drawBooth(art, place, index)
@@ -390,13 +395,12 @@ class BadBetScene extends Phaser.Scene {
       fontFamily: FONTS.body, fontSize: place.kind === 'ad' ? '16px' : '18px',
       color: '#fff2ca', backgroundColor: '#241a32ee', padding: { x: 8, y: 4 }, align: 'center', wordWrap: { width: 168 },
     }).setOrigin(.5).setName('title')
+    title.setVisible(place.kind !== 'ad')
     const subtitle = this.add.text(0, 18, place.subtitle, {
       fontFamily: FONTS.ui, fontSize: '13px', fontStyle: 'bold', color: '#291d32', backgroundColor: '#ffe5a8f2',
       padding: { x: 8, y: 4 }, align: 'center', letterSpacing: 0.5,
     }).setOrigin(.5, 0).setName('subtitle')
-    const gazeBack = this.add.rectangle(0, 35, 84, 7, 0x24182e).setName('gazeBack')
-    const gazeFill = this.add.rectangle(-40, 35, 0, 3, 0xffef83).setOrigin(0, .5).setName('gazeFill')
-    container.add([title, subtitle, gazeBack, gazeFill])
+    container.add([title, subtitle])
     this.placeContainers.set(`${placeKey(place)}:${index}`, container)
   }
 
@@ -430,12 +434,22 @@ class BadBetScene extends Phaser.Scene {
     }
   }
 
-  private drawBillboard(g: Phaser.GameObjects.Graphics, place: Place, index: number) {
-    g.fillStyle(0x4b3a35).fillRect(-31, -58, 6, 58).fillRect(26, -58, 6, 58)
-    g.fillStyle(0x2c252d).fillPoints([new Phaser.Math.Vector2(-42, -97), new Phaser.Math.Vector2(34, -97), new Phaser.Math.Vector2(46, -88), new Phaser.Math.Vector2(-31, -88)], true)
-    g.fillStyle(index % 2 ? 0x7a3152 : COLORS.gold).fillRect(-42, -91, 78, 48)
-    g.fillStyle(0xe8d7ad).fillRect(-34, -83, 62, 31).lineStyle(4, COLORS.ink).strokeRect(-42, -91, 78, 48)
-    g.lineStyle(2, place.id === 'ad-tonic' ? COLORS.teal : COLORS.red).strokeCircle(-3, -67, 11).lineBetween(-16, -50, 11, -84)
+  private drawBillboard(g: Phaser.GameObjects.Graphics, _place: Place, index: number) {
+    g.fillStyle(0x4b3228).fillRect(-39, -62, 7, 65).fillRect(31, -62, 7, 65)
+    g.fillStyle(0x271d24).fillPoints([new Phaser.Math.Vector2(-49, -101), new Phaser.Math.Vector2(41, -101), new Phaser.Math.Vector2(50, -91), new Phaser.Math.Vector2(-40, -91)], true)
+    g.fillStyle(0x70503a).fillRect(-46, -94, 88, 58).lineStyle(4, COLORS.ink).strokeRect(-46, -94, 88, 58)
+    const papers = [
+      { x: -35, y: -86, w: 28, h: 39, color: 0xdbc894 },
+      { x: -4, y: -88, w: 36, h: 45, color: index % 2 ? 0xc9b57c : 0xe7d9a8 },
+      { x: 18, y: -81, w: 19, h: 32, color: 0xb8a171 },
+    ]
+    papers.forEach((paper, paperIndex) => {
+      g.fillStyle(paper.color).fillRect(paper.x, paper.y, paper.w, paper.h)
+      g.lineStyle(2, 0x49373a).strokeRect(paper.x, paper.y, paper.w, paper.h)
+      g.fillStyle(paperIndex === 1 ? 0x8d3438 : 0x3c5f58).fillCircle(paper.x + paper.w / 2, paper.y + 4, 2)
+      g.lineStyle(1, 0x59453d, .8).lineBetween(paper.x + 4, paper.y + 12, paper.x + paper.w - 4, paper.y + 12)
+        .lineBetween(paper.x + 4, paper.y + 18, paper.x + paper.w - 7, paper.y + 18)
+    })
   }
 
   private createPlayer() {
@@ -469,35 +483,12 @@ class BadBetScene extends Phaser.Scene {
     this.nearestKey = key
     this.placeContainers.forEach((container, containerKey) => {
       const near = Boolean(key && containerKey.startsWith(`${key}:`))
+      const place = this.places().find((item) => containerKey.startsWith(`${placeKey(item)}:`))
       ;(container.getByName('highlight') as Phaser.GameObjects.Graphics | null)?.setVisible(near)
+      ;(container.getByName('title') as Phaser.GameObjects.Text | null)?.setVisible(near || place?.kind !== 'ad')
       ;(container.getByName('subtitle') as Phaser.GameObjects.Text | null)?.setVisible(near)
     })
     this.caption?.setText(this.captionCopy())
-  }
-
-  private updateGaze(delta: number, moving: boolean) {
-    const ad = this.places().find((place) => place.kind === 'ad' && distance(this.state.player, place) < 9 && !this.state.revealed.includes(place.id))
-    if (!ad || moving || this.state.target) this.gaze = null
-    else if (!this.gaze || this.gaze.id !== ad.id) this.gaze = { id: ad.id, progress: 0 }
-    else {
-      this.gaze.progress += delta / 25
-      if (this.gaze.progress >= 100) {
-        this.state.revealed.push(ad.id)
-        this.state.result = 'A new shop opens on the midway.'
-        this.gaze = null
-        this.renderMode()
-        return
-      }
-    }
-    this.placeContainers.forEach((container, key) => {
-      const place = this.places().find((item) => key.startsWith(`${placeKey(item)}:`))
-      const active = Boolean(place && this.gaze?.id === place.id)
-      const back = container.getByName('gazeBack') as Phaser.GameObjects.Rectangle | null
-      const fill = container.getByName('gazeFill') as Phaser.GameObjects.Rectangle | null
-      back?.setVisible(active)
-      fill?.setVisible(active)
-      if (fill && active) fill.width = 80 * (this.gaze?.progress ?? 0) / 100
-    })
   }
 
   private nearestPlace() {
@@ -507,7 +498,7 @@ class BadBetScene extends Phaser.Scene {
 
   private captionCopy() {
     const nearest = this.nearestPlace()
-    if (nearest?.kind === 'ad' && !this.state.revealed.includes(nearest.id)) return 'KEEP WATCHING…'
+    if (nearest?.kind === 'ad' && !this.state.revealed.includes(nearest.id)) return 'E  ·  INSPECT NOTICE BOARD'
     if (nearest?.kind === 'closed') return `${nearest.title}  ·  CLOSED`
     if (nearest) return `E  ·  ENTER ${nearest.title.toUpperCase()}`
     return this.state.result
@@ -535,7 +526,14 @@ class BadBetScene extends Phaser.Scene {
   }
 
   private enter(place: Place) {
-    if (place.kind === 'closed' || place.kind === 'ad') return
+    if (place.kind === 'closed') return
+    if (place.kind === 'ad') {
+      this.state.poster = place.id as State['poster']
+      this.state.mode = 'poster'
+      this.state.target = null
+      this.renderMode()
+      return
+    }
     this.state.mode = place.id as Mode
     this.state.reaction = 'neutral'
     this.state.result = place.id === 'fox' || place.id === 'rabbit' ? 'PLACE YOUR BET' : ''
@@ -778,6 +776,33 @@ class BadBetScene extends Phaser.Scene {
     }
   }
 
+  private renderPoster() {
+    const id = this.state.poster
+    if (!id) return this.go('world')
+    const { width, height } = this.scale
+    const newlyRead = !this.state.revealed.includes(id)
+    if (newlyRead) {
+      this.state.revealed.push(id)
+      this.state.result = 'A new stall is being assembled somewhere nearby.'
+    }
+    this.add.rectangle(0, 0, width, height, 0x17101f).setOrigin(0)
+    const boardW = Math.min(width * .92, 760)
+    const boardH = Math.min(height - this.top - 30, 690)
+    this.add.rectangle(width / 2, this.top + 15, boardW, boardH, 0x6d4935).setOrigin(.5, 0).setStrokeStyle(9, 0x2c2026)
+    for (let i = 0; i < 18; i++) {
+      const y = this.top + 34 + i * (boardH - 38) / 18
+      this.add.line(0, 0, width / 2 - boardW / 2 + 12, y, width / 2 + boardW / 2 - 12, y + (i % 3 - 1) * 3, 0x3f2b29, .45).setOrigin(0)
+    }
+    const posterH = Math.min(boardH - 70, 610)
+    const posterW = posterH * 2 / 3
+    this.add.image(width / 2, this.top + 31 + posterH / 2, `poster-${id}`).setDisplaySize(posterW, posterH).setRotation(id === 'ad-portrait' ? .014 : id === 'ad-tonic' ? -.012 : .008)
+    this.add.circle(width / 2, this.top + 45, 7, id === 'ad-tonic' ? COLORS.teal : COLORS.red).setStrokeStyle(2, COLORS.ink)
+    this.button(width / 2 - boardW / 2 + 82, this.top + 48, 128, 40, '← STEP BACK', () => this.go('world'), { fill: COLORS.ink, stroke: COLORS.cream, font: 13, depth: 20 })
+    if (newlyRead) this.add.text(width / 2, this.top + boardH - 28, 'Something stirs elsewhere on the midway.', {
+      fontFamily: FONTS.body, fontSize: '17px', color: '#fff0c9', backgroundColor: '#21182fdd', padding: { x: 12, y: 6 },
+    }).setOrigin(.5).setDepth(20)
+  }
+
   private renderShop(type: 'ledger' | 'portrait' | 'tonic') {
     const data = {
       ledger: { icon: '▦', title: 'Practical Ledgers', keeper: 'OWL, SOLE PROPRIETOR', cost: 10, copy: 'Tracks wagers, wins, and return.', buy: 'BUY LEDGER  ·  $10' },
@@ -853,7 +878,6 @@ class BadBetScene extends Phaser.Scene {
   private reset() {
     this.state = initialState()
     this.randomSeed = Number(params.get('seed')) || 481516
-    this.gaze = null
     this.historyScroll = { fox: 0, rabbit: 0 }
     this.renderMode()
     this.installDebugApi()
