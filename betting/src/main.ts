@@ -44,6 +44,7 @@ type State = {
   bet: number
   rabbitSide: CoinSide
   rabbitDialogueStep: number
+  foxDialogueStep: number
   foxBet: FoxBet
   foxDialogueOpen: boolean
   foxDialogueTopic: FoxDialogueTopic
@@ -84,6 +85,12 @@ const CARD_RANKS = [
   { rank: '10', value: 10 }, { rank: 'J', value: 11 }, { rank: 'Q', value: 12 }, { rank: 'K', value: 13 }, { rank: 'A', value: 14 },
 ]
 
+const FOX_DIALOGUE = [
+  { speech: 'Welcome to the Silver Draw. I offer two games: Silver Pair and Silver Run.', option: 'HOW ARE THE TWO GAMES DIFFERENT?' },
+  { speech: 'Silver Pair draws five cards. Silver Run draws three. Each rewards a different kind of hand and pays its own prize.', option: 'AND THE DECK?' },
+  { speech: 'Both use one ordinary 52-card deck. I return every card and reshuffle the full deck before each wager.', option: 'LET ME ASK ABOUT EACH GAME' },
+] as const
+
 const RABBIT_DIALOGUE = [
   { speech: 'Welcome to my Generous Toss. You may call heads or tails—but between us, heads lands four times in five.', option: 'WHAT DOES A CORRECT CALL PAY?' },
   { speech: 'Name your wager, call a side, and I toss the coin. Call it right and I return twice your stake.', option: 'AND IF I CALL IT WRONG?' },
@@ -107,7 +114,7 @@ const initialStats = (): Stats => ({
 
 const initialState = (): State => ({
   mode: 'welcome', balance: 100, minutes: 0, bet: 5, rabbitSide: 'heads', rabbitDialogueStep: 0,
-  foxBet: 'pair', foxDialogueOpen: true, foxDialogueTopic: 'menu', foxPairExplained: false, foxRunExplained: false, reaction: 'neutral',
+  foxDialogueStep: 0, foxBet: 'pair', foxDialogueOpen: true, foxDialogueTopic: 'menu', foxPairExplained: false, foxRunExplained: false, reaction: 'neutral',
   result: 'Pick a game. Press your luck.', stats: initialStats(), foxStats: { pair: initialStats().fox, run: initialStats().fox },
   histories: { fox: [], rabbit: [] }, betCounts: { fox: 1, rabbit: 1 }, nextResultId: 1,
   ledger: false, portrait: false, tonic: false, revealed: [],
@@ -766,14 +773,15 @@ class BadBetScene extends Phaser.Scene {
     const { width, height } = this.scale
     const compact = width < 760
     const topic = this.state.foxDialogueTopic
+    const intro = FOX_DIALOGUE[this.state.foxDialogueStep]
     const panelW = Math.min(width * .92, 760)
     const panelH = compact ? 304 : 270
     const panelY = height - panelH - 16
-    const speech = topic === 'pair'
+    const speech = intro?.speech ?? (topic === 'pair'
       ? 'I deal five cards. Exactly one pair wins; two pair, three of a kind, and every other hand lose. Silver Pair pays four times your stake. I make its chance about one hand in three.'
       : topic === 'run'
         ? 'I deal three cards. Consecutive ranks win regardless of suit. Ace may sit below two or above king, but never wraps around. Silver Run pays one hundred times. Perhaps one hand in fifty.'
-        : 'Two wagers from one ordinary 52-card deck. I return every card and reshuffle before each wager. Which would you like me to explain?'
+        : 'Those are the two games. Which would you like me to explain?')
 
     this.add.rectangle(width / 2, panelY, panelW, panelH, 0x1a1126, .97).setOrigin(.5, 0).setDepth(30).setStrokeStyle(3, COLORS.gold)
     this.add.text(width / 2, panelY + 20, 'FOX', {
@@ -783,6 +791,14 @@ class BadBetScene extends Phaser.Scene {
       fontFamily: FONTS.body, fontSize: `${clamp(width / 44, 17, 23)}px`, color: '#fff4cf', align: 'center',
       wordWrap: { width: panelW - 56 }, lineSpacing: 4,
     }).setOrigin(.5, 0).setDepth(31)
+
+    if (intro) {
+      this.button(width / 2, panelY + panelH - 38, Math.min(340, panelW - 40), 42, intro.option, () => {
+        this.state.foxDialogueStep++
+        this.renderMode()
+      }, { fill: COLORS.red, stroke: COLORS.cream, font: compact ? 12 : 14, depth: 32 })
+      return
+    }
 
     if (topic !== 'menu') {
       this.button(width / 2, panelY + panelH - 38, Math.min(300, panelW - 40), 42, '← ASK ABOUT BOTH GAMES', () => {
@@ -1272,6 +1288,7 @@ class BadBetScene extends Phaser.Scene {
           this.state.rabbitDialogueStep = RABBIT_DIALOGUE.length
           if (selection === 'heads' || selection === 'tails') this.state.rabbitSide = selection
         } else {
+          this.state.foxDialogueStep = FOX_DIALOGUE.length
           if (selection === 'pair' || selection === 'run') this.state.foxBet = selection
           this.state.foxPairExplained = true
           this.state.foxRunExplained = true
