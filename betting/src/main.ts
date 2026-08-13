@@ -93,7 +93,7 @@ const CARD_RANKS = [
 
 const FOX_DIALOGUE = [
   {
-    speech: 'Welcome to the Silver Draw. I offer two wagers from a freshly shuffled 52-card deck. Silver Pair deals five cards: exactly one pair pays four times your stake. Silver Run deals three: consecutive ranks pay one hundred times. Every card goes back before the next wager.',
+    speech: 'Welcome to the Silver Draw. I offer two wagers from a perfectly ordinary 52-card deck. Silver Pair deals five cards: exactly one pair pays four times your stake. Silver Run is high risk and high reward: I deal three cards, and if you get a straight you get 100 times your stake.',
     option: 'TELL ME THE DETAILS',
   },
 ] as const
