@@ -54,7 +54,6 @@ Additional stalls make the carnival feel larger while keeping the prototype focu
 
 - Turtle Derby
 - The Lucky Lantern
-- Crow's High Striker
 
 These stalls cannot be opened or played in the prototype.
 
