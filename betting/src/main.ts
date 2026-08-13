@@ -144,9 +144,9 @@ class BadBetScene extends Phaser.Scene {
         this.load.image(`${game}-${reaction}`, `${BASE}art/stalls/characters/${game}-${reaction}.png`)
       }
     }
-    this.load.image('poster-ad-ledger', `${BASE}art/posters/practical-ledgers.svg`)
-    this.load.image('poster-ad-portrait', `${BASE}art/posters/moon-portraits.svg`)
-    this.load.image('poster-ad-tonic', `${BASE}art/posters/stoat-tonic.svg`)
+    this.load.image('poster-ad-ledger', `${BASE}art/posters/practical-ledgers.png`)
+    this.load.image('poster-ad-portrait', `${BASE}art/posters/moon-portraits.png`)
+    this.load.image('poster-ad-tonic', `${BASE}art/posters/stoat-tonic.png`)
   }
 
   create() {
