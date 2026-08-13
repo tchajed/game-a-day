@@ -142,7 +142,7 @@ class BadBetScene extends Phaser.Scene {
   private music = new CarnivalMusic()
   private randomSeed = Number(params.get('seed')) || 481516
   private cursors?: Phaser.Types.Input.Keyboard.CursorKeys
-  private keys?: Record<'w' | 'a' | 's' | 'd' | 'e' | 'enter', Phaser.Input.Keyboard.Key>
+  private keys?: Record<'w' | 'a' | 's' | 'd' | 'e' | 'enter' | 'escape', Phaser.Input.Keyboard.Key>
   private placeContainers = new Map<string, Phaser.GameObjects.Container>()
   private playerContainer?: Phaser.GameObjects.Container
   private caption?: Phaser.GameObjects.Text
@@ -176,7 +176,8 @@ class BadBetScene extends Phaser.Scene {
       w: Phaser.Input.Keyboard.KeyCodes.W, a: Phaser.Input.Keyboard.KeyCodes.A,
       s: Phaser.Input.Keyboard.KeyCodes.S, d: Phaser.Input.Keyboard.KeyCodes.D,
       e: Phaser.Input.Keyboard.KeyCodes.E, enter: Phaser.Input.Keyboard.KeyCodes.ENTER,
-    }) as Record<'w' | 'a' | 's' | 'd' | 'e' | 'enter', Phaser.Input.Keyboard.Key>
+      escape: Phaser.Input.Keyboard.KeyCodes.ESC,
+    }) as Record<'w' | 'a' | 's' | 'd' | 'e' | 'enter' | 'escape', Phaser.Input.Keyboard.Key>
     this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => this.handleWorldPointer(pointer))
     this.input.on('wheel', (pointer: Phaser.Input.Pointer, _objects: Phaser.GameObjects.GameObject[], _deltaX: number, deltaY: number) => {
       const game = this.state.mode === 'fox' || this.state.mode === 'rabbit' ? this.state.mode : null
@@ -190,7 +191,12 @@ class BadBetScene extends Phaser.Scene {
   }
 
   update(_time: number, delta: number) {
-    if (this.state.mode !== 'world' || !this.playerContainer || !this.keys) return
+    if (!this.keys) return
+    if (Phaser.Input.Keyboard.JustDown(this.keys.escape) && !['welcome', 'world', 'ending'].includes(this.state.mode)) {
+      this.go('world')
+      return
+    }
+    if (this.state.mode !== 'world' || !this.playerContainer) return
     const dt = Math.min(delta, 32) / 1000
     this.elapsed += delta
     let dx = 0
