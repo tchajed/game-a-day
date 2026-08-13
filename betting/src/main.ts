@@ -5,9 +5,13 @@ const BASE = import.meta.env.BASE_URL
 const params = new URLSearchParams(location.search)
 const DEBUG = params.get('debug') === 'true'
 const MUSIC_DISABLED = params.get('music') === 'off'
-const MAX_MINUTES = 3 * 12 * 60
+const MAX_MINUTES = 12 * 60
 const BET_MINUTES = 5
+const AD_MINUTES = 15
+const AD_HOLD_MS = 5_000
 const PORTRAIT_MINUTES = 60
+const AFTERNOON_MINUTES = 3 * 60
+const NIGHT_MINUTES = 9 * 60
 const TEXT_RESOLUTION = Math.min(window.devicePixelRatio || 1, 2)
 const FONTS = {
   display: 'Rye, Georgia, serif',
@@ -18,6 +22,7 @@ const FONTS = {
 type Mode = 'welcome' | 'world' | 'fox' | 'rabbit' | 'ledger' | 'portrait' | 'tonic' | 'poster' | 'ending'
 type GameKey = 'fox' | 'rabbit'
 type Reaction = 'neutral' | 'win' | 'lose'
+type DayPhase = 'MORNING' | 'AFTERNOON' | 'NIGHT'
 type Point = { x: number; y: number }
 type Place = {
   id: Mode | 'ad-ledger' | 'ad-portrait' | 'ad-tonic' | 'closed'
@@ -30,7 +35,7 @@ type Place = {
 type BetCount = 1 | 5 | 10
 type CoinSide = 'heads' | 'tails'
 type FoxBet = 'pair' | 'run'
-type FoxDialogueTopic = 'menu' | FoxBet
+type FoxDialogueTopic = 'menu' | 'odds' | FoxBet
 type CardSuit = '♠' | '♥' | '♦' | '♣'
 type DealtCard = { rank: string; value: number; suit: CardSuit }
 type BetResult = { id: number; won: boolean; wager: number; payout: number; streak: number; call?: CoinSide; outcome?: CoinSide; foxBet?: FoxBet; hand?: DealtCard[] }
@@ -50,6 +55,7 @@ type State = {
   foxDialogueTopic: FoxDialogueTopic
   foxPairExplained: boolean
   foxRunExplained: boolean
+  foxOddsExplained: boolean
   reaction: Reaction
   result: string
   stats: Stats
@@ -86,9 +92,10 @@ const CARD_RANKS = [
 ]
 
 const FOX_DIALOGUE = [
-  { speech: 'Welcome to the Silver Draw. I offer two games: Silver Pair and Silver Run.', option: 'HOW ARE THE TWO GAMES DIFFERENT?' },
-  { speech: 'Silver Pair draws five cards. Silver Run draws three. Each rewards a different kind of hand and pays its own prize.', option: 'AND THE DECK?' },
-  { speech: 'Both use one ordinary 52-card deck. I return every card and reshuffle the full deck before each wager.', option: 'LET ME ASK ABOUT EACH GAME' },
+  {
+    speech: 'Welcome to the Silver Draw. I offer two wagers from a freshly shuffled 52-card deck. Silver Pair deals five cards: exactly one pair pays four times your stake. Silver Run deals three: consecutive ranks pay one hundred times. Every card goes back before the next wager.',
+    option: 'TELL ME THE DETAILS',
+  },
 ] as const
 
 const RABBIT_DIALOGUE = [
@@ -114,7 +121,7 @@ const initialStats = (): Stats => ({
 
 const initialState = (): State => ({
   mode: 'welcome', balance: 100, minutes: 0, bet: 5, rabbitSide: 'heads', rabbitDialogueStep: 0,
-  foxDialogueStep: 0, foxBet: 'pair', foxDialogueOpen: true, foxDialogueTopic: 'menu', foxPairExplained: false, foxRunExplained: false, reaction: 'neutral',
+  foxDialogueStep: 0, foxBet: 'pair', foxDialogueOpen: true, foxDialogueTopic: 'menu', foxPairExplained: false, foxRunExplained: false, foxOddsExplained: false, reaction: 'neutral',
   result: 'Pick a game. Press your luck.', stats: initialStats(), foxStats: { pair: initialStats().fox, run: initialStats().fox },
   histories: { fox: [], rabbit: [] }, betCounts: { fox: 1, rabbit: 1 }, nextResultId: 1,
   ledger: false, portrait: false, tonic: false, revealed: [],
@@ -127,12 +134,18 @@ const money = (value: number) => `$${value.toFixed(0)}`
 const signedMoney = (value: number) => `${value >= 0 ? '+' : '−'}${money(Math.abs(value))}`
 const placeKey = (place?: Place) => place ? `${place.id}:${place.title}` : ''
 
-function timeLabel(minutes: number) {
-  if (minutes >= MAX_MINUTES) return 'Carnival closed'
-  const day = Math.floor(minutes / 720) + 1
-  const total = 9 * 60 + minutes % 720
+function dayPhase(minutes: number): DayPhase {
+  if (minutes < AFTERNOON_MINUTES) return 'MORNING'
+  if (minutes < NIGHT_MINUTES) return 'AFTERNOON'
+  return 'NIGHT'
+}
+
+function timeLabel(minutes: number, compact = false) {
+  if (minutes >= MAX_MINUTES) return compact ? 'CLOSED' : 'CARNIVAL CLOSED'
+  const total = 9 * 60 + minutes
   const hour = Math.floor(total / 60)
-  return `DAY ${day} · ${hour > 12 ? hour - 12 : hour}:${String(total % 60).padStart(2, '0')} ${hour >= 12 ? 'PM' : 'AM'}`
+  const clock = `${hour > 12 ? hour - 12 : hour}:${String(total % 60).padStart(2, '0')} ${hour >= 12 ? 'PM' : 'AM'}`
+  return compact ? clock : `${clock} · ${dayPhase(minutes)}`
 }
 
 class CarnivalMusic {
@@ -186,6 +199,10 @@ class BadBetScene extends Phaser.Scene {
   private historyScroll: Record<GameKey, number> = { fox: 0, rabbit: 0 }
   private historyViews = new Map<GameKey, { strip: Phaser.GameObjects.Container; chips: Phaser.GameObjects.Container[]; latestX: number; maxOffset: number; left: number; right: number; top: number; bottom: number }>()
   private resultContainers = new Map<number, Phaser.GameObjects.Container>()
+  private posterHoldStartedAt: number | null = null
+  private posterProgress?: Phaser.GameObjects.Graphics
+  private posterProgressText?: Phaser.GameObjects.Text
+  private posterJustUnlocked: State['poster'] = null
 
   constructor() { super('BadBet') }
 
@@ -226,7 +243,8 @@ class BadBetScene extends Phaser.Scene {
     this.installDebugApi()
   }
 
-  update(_time: number, delta: number) {
+  update(time: number, delta: number) {
+    this.updatePosterHold(time)
     if (!this.keys) return
     if (Phaser.Input.Keyboard.JustDown(this.keys.escape) && !['welcome', 'world', 'ending'].includes(this.state.mode)) {
       this.go('world')
@@ -298,6 +316,8 @@ class BadBetScene extends Phaser.Scene {
     this.resultContainers.clear()
     this.playerContainer = undefined
     this.caption = undefined
+    this.posterProgress = undefined
+    this.posterProgressText = undefined
     if (this.state.mode === 'welcome') this.renderWelcome()
     else if (this.state.mode === 'world') this.renderWorld()
     else if (this.state.mode === 'fox' || this.state.mode === 'rabbit') this.renderStall(this.state.mode)
@@ -323,17 +343,16 @@ class BadBetScene extends Phaser.Scene {
     this.button(compact ? 45 : 70, h / 2 - 2, compact ? 76 : 112, 40, 'BAD BET', () => this.go('world'), {
       fill: COLORS.red, font: compact ? 17 : 21, family: FONTS.display, depth: 10001,
     })
-    if (DEBUG) {
-      const timeX = compact ? 92 : 136
-      const timeW = compact ? Math.min(210, width * 0.38) : Math.min(360, width * 0.34)
-      const timeY = h / 2 - 15
-      graphics.fillStyle(0x352340).fillRect(timeX, timeY, timeW, 30)
-      graphics.lineStyle(2, COLORS.ink).strokeRect(timeX, timeY, timeW, 30)
-      graphics.fillStyle(COLORS.red).fillRect(timeX + 2, timeY + 2, (timeW - 4) * Math.min(1, this.state.minutes / MAX_MINUTES), 26)
-      this.add.text(timeX + timeW / 2, h / 2, timeLabel(this.state.minutes), {
-        fontFamily: FONTS.ui, fontSize: compact ? '12px' : '14px', fontStyle: 'bold', color: '#ffffff', letterSpacing: 0.5,
-      }).setOrigin(0.5).setDepth(10002)
-    }
+    const timeX = compact ? 92 : 136
+    const timeW = compact ? Math.min(210, width * 0.38) : Math.min(360, width * 0.34)
+    const timeY = h / 2 - 15
+    graphics.fillStyle(0x352340).fillRect(timeX, timeY, timeW, 30)
+    graphics.lineStyle(2, COLORS.ink).strokeRect(timeX, timeY, timeW, 30)
+    graphics.fillStyle(dayPhase(this.state.minutes) === 'NIGHT' ? 0x3d447f : COLORS.red)
+      .fillRect(timeX + 2, timeY + 2, (timeW - 4) * Math.min(1, this.state.minutes / MAX_MINUTES), 26)
+    this.add.text(timeX + timeW / 2, h / 2, timeLabel(this.state.minutes, compact), {
+      fontFamily: FONTS.ui, fontSize: compact ? '12px' : '14px', fontStyle: 'bold', color: '#ffffff', letterSpacing: 0.5,
+    }).setOrigin(0.5).setDepth(10002)
 
     this.add.text(width - (compact ? 78 : 190), h / 2, compact ? money(this.state.balance) : `PURSE  ${money(this.state.balance)}`, {
       fontFamily: FONTS.body, fontSize: compact ? '22px' : '28px', color: '#21182f',
@@ -359,7 +378,7 @@ class BadBetScene extends Phaser.Scene {
       fontFamily: FONTS.display, fontSize: `${clamp(artW / 24, 28, 58)}px`, color: '#3a2030',
       align: 'center', wordWrap: { width: panelW }, stroke: '#f3dba7', strokeThickness: 1,
     }).setOrigin(.5)
-    this.add.text(artX, titleY + clamp(artH * .12, 50, 92), 'OPEN THREE NIGHTS ONLY\nCASH PRIZES · ALL WAGERS FINAL', {
+    this.add.text(artX, titleY + clamp(artH * .12, 50, 92), 'HERE TODAY · GONE TONIGHT\nCASH PRIZES · ALL WAGERS FINAL', {
       fontFamily: FONTS.body, fontSize: `${clamp(artW / 58, 17, 27)}px`, color: '#4e3030',
       align: 'center', lineSpacing: 6, wordWrap: { width: panelW * .88 },
     }).setOrigin(.5)
@@ -375,6 +394,7 @@ class BadBetScene extends Phaser.Scene {
     this.drawScenery()
     this.places().forEach((place, index) => this.createPlace(place, index))
     this.createPlayer()
+    this.drawWorldLighting()
     const panel = this.add.rectangle(0, this.scale.height - this.bottom, this.scale.width, this.bottom, COLORS.ink).setOrigin(0).setDepth(9000)
     panel.setStrokeStyle(5, COLORS.gold)
     this.caption = this.add.text(28, this.scale.height - this.bottom / 2, this.captionCopy(), {
@@ -434,6 +454,41 @@ class BadBetScene extends Phaser.Scene {
       const x = w * (.41 + (i % 5) * .045), y = h * (.72 + Math.floor(i / 5) * .045)
       g.lineStyle(1.5, 0x6a4c35, .38).strokeEllipse(x, y, 4, 8)
     }
+  }
+
+  private drawWorldLighting() {
+    const { width } = this.scale
+    const phase = dayPhase(this.state.minutes)
+    const daylightProgress = clamp(this.state.minutes / NIGHT_MINUTES, 0, 1)
+    const nightProgress = clamp((this.state.minutes - NIGHT_MINUTES) / (MAX_MINUTES - NIGHT_MINUTES), 0, 1)
+    const overlay = this.add.rectangle(0, this.top, width, this.worldHeight, phase === 'MORNING' ? 0xffdca0 : phase === 'AFTERNOON' ? 0xe69254 : 0x15294f,
+      phase === 'MORNING' ? .06 * (1 - daylightProgress) : phase === 'AFTERNOON' ? .06 + daylightProgress * .12 : .28 + nightProgress * .22)
+      .setOrigin(0).setDepth(8500).setBlendMode(Phaser.BlendModes.MULTIPLY)
+    overlay.setName('lightingFilter')
+    if (phase !== 'NIGHT') return
+    this.places().filter((place) => place.kind === 'stall' || place.kind === 'shop').forEach((place) => {
+      this.add.circle(place.x / 100 * width, this.top + (place.y - 4) / 100 * this.worldHeight, 30 + nightProgress * 18, 0xffc35a, .12 + nightProgress * .08)
+        .setDepth(8501).setBlendMode(Phaser.BlendModes.ADD)
+    })
+  }
+
+  private applySceneLighting(image: Phaser.GameObjects.Image) {
+    const minutes = this.state.minutes
+    const phase = dayPhase(minutes)
+    const matrix = phase === 'MORNING'
+      ? [1.16, 0, 0, 0, 30, 0, 1.12, 0, 0, 27, 0, 0, .98, 0, 18, 0, 0, 0, 1, 0]
+      : phase === 'AFTERNOON'
+        ? (() => {
+            const t = clamp((minutes - AFTERNOON_MINUTES) / (NIGHT_MINUTES - AFTERNOON_MINUTES), 0, 1)
+            return [1.18 - t * .18, 0, 0, 0, 30 - t * 30, 0, 1.1 - t * .1, 0, 0, 23 - t * 23, 0, 0, .92 + t * .08, 0, 12 - t * 12, 0, 0, 0, 1, 0]
+          })()
+        : (() => {
+            const t = clamp((minutes - NIGHT_MINUTES) / (MAX_MINUTES - NIGHT_MINUTES), 0, 1)
+            return [1 - t * .22, 0, 0, 0, 0, 0, 1 - t * .16, 0, 0, 0, 0, 0, 1 - t * .04, 0, 4 * t, 0, 0, 0, 1, 0]
+          })()
+    image.enableFilters()
+    image.filters!.internal.addColorMatrix().colorMatrix.set(matrix)
+    return image
   }
 
   private drawScenery() {
@@ -664,6 +719,8 @@ class BadBetScene extends Phaser.Scene {
       this.state.poster = place.id as State['poster']
       this.state.mode = 'poster'
       this.state.target = null
+      this.posterJustUnlocked = null
+      this.posterHoldStartedAt = this.state.revealed.includes(place.id) ? null : this.time.now
       this.renderMode()
       return
     }
@@ -683,15 +740,18 @@ class BadBetScene extends Phaser.Scene {
     const artW = Math.min(width - 24, availableH * 1.5)
     const artH = artW / 1.5
     const artX = width / 2, artY = this.top + 10 + artH / 2
-    this.add.image(artX, artY, `${game}-background`).setDisplaySize(artW, artH)
-    const character = this.add.image(fox ? artX + artW * .25 : artX - artW * .25, artY + artH * .1, `${game}-${this.state.reaction}`).setName('dealer')
+    this.applySceneLighting(this.add.image(artX, artY, `${game}-background`).setDisplaySize(artW, artH))
+    const character = this.applySceneLighting(this.add.image(fox ? artX + artW * .25 : artX - artW * .25, artY + artH * .1, `${game}-${this.state.reaction}`).setName('dealer'))
     character.setDisplaySize(character.width / character.height * artH * .9, artH * .9)
     this.add.rectangle(0, this.top, width, height - this.top, 0x160d26, .13).setOrigin(0)
     this.button(72, this.top + 38, 122, 42, '← MIDWAY', () => this.go('world'), { fill: COLORS.cream, color: '#21182f', stroke: COLORS.ink, font: 14, depth: 50 })
     this.add.text(width / 2, this.top + 22, fox ? 'THE SILVER DRAW' : "RABBIT'S GENEROUS TOSS", {
       fontFamily: FONTS.ui, fontSize: '15px', fontStyle: 'bold', letterSpacing: 1.2, color: '#f3c15b', backgroundColor: '#2b1730dd', padding: { x: 12, y: 6 },
     }).setOrigin(.5, 0).setDepth(20)
-    this.add.text(width / 2, this.top + 64, fox ? '“Pairs: 1 in 3. Runs: 1 in 50.”' : '“Heads: 4/5!”', {
+    const salesClaim = fox
+      ? (this.state.foxOddsExplained ? '“Pairs: 1 in 3. Runs: 1 in 50.”' : '“Two silver games. Two handsome prizes.”')
+      : '“Heads: 4/5!”'
+    this.add.text(width / 2, this.top + 64, salesClaim, {
       fontFamily: FONTS.body, fontSize: `${clamp(width / 30, 28, 46)}px`, color: '#fff0c9',
       stroke: '#160b1c', strokeThickness: 5, align: 'center', wordWrap: { width: width * .72 },
     }).setOrigin(.5, 0).setDepth(20)
@@ -778,10 +838,12 @@ class BadBetScene extends Phaser.Scene {
     const panelH = compact ? 304 : 270
     const panelY = height - panelH - 16
     const speech = intro?.speech ?? (topic === 'pair'
-      ? 'I deal five cards. Exactly one pair wins; two pair, three of a kind, and every other hand lose. Silver Pair pays four times your stake. I make its chance about one hand in three.'
+      ? 'For Silver Pair, I deal five cards. You win with exactly one pair: two cards of one rank, plus three cards of three different ranks. Two pair, three of a kind, and every other hand lose.'
       : topic === 'run'
-        ? 'I deal three cards. Consecutive ranks win regardless of suit. Ace may sit below two or above king, but never wraps around. Silver Run pays one hundred times. Perhaps one hand in fifty.'
-        : 'Those are the two games. Which would you like me to explain?')
+        ? 'For Silver Run, I deal three cards. All three ranks must be consecutive; suits do not matter. Ace may be low in A–2–3 or high in Q–K–A, but the sequence never wraps.'
+        : topic === 'odds'
+          ? 'By my reckoning, Silver Pair wins about one hand in three. Silver Run is rarer: about one hand in fifty.'
+          : 'What else would you like to know before we draw?')
 
     this.add.rectangle(width / 2, panelY, panelW, panelH, 0x1a1126, .97).setOrigin(.5, 0).setDepth(30).setStrokeStyle(3, COLORS.gold)
     this.add.text(width / 2, panelY + 20, 'FOX', {
@@ -801,7 +863,7 @@ class BadBetScene extends Phaser.Scene {
     }
 
     if (topic !== 'menu') {
-      this.button(width / 2, panelY + panelH - 38, Math.min(300, panelW - 40), 42, '← ASK ABOUT BOTH GAMES', () => {
+      this.button(width / 2, panelY + panelH - 38, Math.min(300, panelW - 40), 42, '← ASK ANOTHER QUESTION', () => {
         this.state.foxDialogueTopic = 'menu'
         this.renderMode()
       }, { fill: COLORS.red, stroke: COLORS.cream, font: compact ? 13 : 14, depth: 32 })
@@ -809,14 +871,16 @@ class BadBetScene extends Phaser.Scene {
     }
 
     const options: Array<{ label: string; action: () => void }> = [
-      { label: `${this.state.foxPairExplained ? '✓ ' : ''}ASK ABOUT SILVER PAIR`, action: () => { this.state.foxPairExplained = true; this.state.foxDialogueTopic = 'pair' } },
-      { label: `${this.state.foxRunExplained ? '✓ ' : ''}ASK ABOUT SILVER RUN`, action: () => { this.state.foxRunExplained = true; this.state.foxDialogueTopic = 'run' } },
+      { label: `${this.state.foxPairExplained ? '✓ ' : ''}WHAT EXACTLY WINS SILVER PAIR?`, action: () => { this.state.foxPairExplained = true; this.state.foxDialogueTopic = 'pair' } },
+      { label: `${this.state.foxRunExplained ? '✓ ' : ''}WHAT EXACTLY WINS SILVER RUN?`, action: () => { this.state.foxRunExplained = true; this.state.foxDialogueTopic = 'run' } },
+      { label: `${this.state.foxOddsExplained ? '✓ ' : ''}WHAT ARE MY CHANCES?`, action: () => { this.state.foxOddsExplained = true; this.state.foxDialogueTopic = 'odds' } },
     ]
-    if (this.state.foxPairExplained && this.state.foxRunExplained) {
+    if (this.state.foxPairExplained && this.state.foxRunExplained && this.state.foxOddsExplained) {
       options.push({ label: 'I’VE HEARD ENOUGH · OPEN THE TABLE', action: () => { this.state.foxDialogueOpen = false } })
     }
-    const startY = panelY + (options.length === 3 ? 146 : 168)
-    options.forEach((option, index) => this.button(width / 2, startY + index * 46, Math.min(360, panelW - 40), 39, option.label, () => {
+    const startY = panelY + (options.length === 4 ? 104 : 146)
+    const optionGap = options.length === 4 ? 42 : 46
+    options.forEach((option, index) => this.button(width / 2, startY + index * optionGap, Math.min(360, panelW - 40), 39, option.label, () => {
       option.action()
       this.renderMode()
     }, { fill: index === options.length - 1 && options.length === 3 ? COLORS.gold : COLORS.red, color: index === options.length - 1 && options.length === 3 ? '#21182f' : '#fff6da', stroke: COLORS.cream, font: compact ? 12 : 13, depth: 32 }))
@@ -1085,11 +1149,7 @@ class BadBetScene extends Phaser.Scene {
     const id = this.state.poster
     if (!id) return this.go('world')
     const { width, height } = this.scale
-    const newlyRead = !this.state.revealed.includes(id)
-    if (newlyRead) {
-      this.state.revealed.push(id)
-      this.state.result = 'A new stall is being assembled somewhere nearby.'
-    }
+    const unlocked = this.state.revealed.includes(id)
     this.add.rectangle(0, 0, width, height, 0x17101f).setOrigin(0)
     const boardW = Math.min(width * .92, 760)
     const boardH = Math.min(height - this.top - 30, 690)
@@ -1103,9 +1163,45 @@ class BadBetScene extends Phaser.Scene {
     this.add.image(width / 2, this.top + 31 + posterH / 2, `poster-${id}`).setDisplaySize(posterW, posterH).setRotation(id === 'ad-portrait' ? .014 : id === 'ad-tonic' ? -.012 : .008)
     this.add.circle(width / 2, this.top + 45, 7, id === 'ad-tonic' ? COLORS.teal : COLORS.red).setStrokeStyle(2, COLORS.ink)
     this.button(width / 2 - boardW / 2 + 82, this.top + 48, 128, 40, '← STEP BACK', () => this.go('world'), { fill: COLORS.ink, stroke: COLORS.cream, font: 13, depth: 20 })
-    if (newlyRead) this.add.text(width / 2, this.top + boardH - 28, 'Something stirs elsewhere on the midway.', {
-      fontFamily: FONTS.body, fontSize: '17px', color: '#fff0c9', backgroundColor: '#21182fdd', padding: { x: 12, y: 6 },
-    }).setOrigin(.5).setDepth(20)
+    const statusY = this.top + boardH - 28
+    if (this.posterJustUnlocked === id) {
+      this.add.text(width / 2, statusY, `15 minutes pass. Something stirs elsewhere on the midway.`, {
+        fontFamily: FONTS.body, fontSize: '17px', color: '#fff0c9', backgroundColor: '#21182fdd', padding: { x: 12, y: 6 },
+      }).setOrigin(.5).setDepth(20)
+    } else if (!unlocked) {
+      this.posterProgress = this.add.graphics().setDepth(20)
+      this.posterProgressText = this.add.text(width / 2, statusY, 'KEEP READING · 0.0 / 5.0 SECONDS', {
+        fontFamily: FONTS.ui, fontSize: '14px', fontStyle: 'bold', color: '#fff0c9', backgroundColor: '#21182fdd',
+        padding: { x: 12, y: 7 }, letterSpacing: .5,
+      }).setOrigin(.5).setDepth(21)
+      this.drawPosterProgress(0)
+    }
+  }
+
+  private drawPosterProgress(progress: number) {
+    if (!this.posterProgress || !this.posterProgressText) return
+    const width = Math.min(320, this.scale.width * .62)
+    const x = this.scale.width / 2 - width / 2
+    const y = this.posterProgressText.y + 18
+    this.posterProgress.clear()
+      .fillStyle(0x21182f, .95).fillRect(x, y, width, 6)
+      .fillStyle(COLORS.gold, 1).fillRect(x, y, width * progress, 6)
+  }
+
+  private updatePosterHold(time: number) {
+    const id = this.state.poster
+    if (this.state.mode !== 'poster' || !id || this.state.revealed.includes(id) || this.posterHoldStartedAt === null) return
+    const elapsed = time - this.posterHoldStartedAt
+    const progress = clamp(elapsed / AD_HOLD_MS, 0, 1)
+    this.posterProgressText?.setText(`KEEP READING · ${(elapsed / 1000).toFixed(1)} / 5.0 SECONDS`)
+    this.drawPosterProgress(progress)
+    if (progress < 1) return
+    this.state.revealed.push(id)
+    this.state.minutes = Math.min(MAX_MINUTES, this.state.minutes + AD_MINUTES)
+    this.state.result = 'A new stall is being assembled somewhere nearby.'
+    this.posterJustUnlocked = id
+    this.posterHoldStartedAt = null
+    this.renderMode()
   }
 
   private renderShop(type: 'ledger' | 'portrait' | 'tonic') {
@@ -1121,8 +1217,8 @@ class BadBetScene extends Phaser.Scene {
     const artW = Math.min(width - 20, availableH * 1.5)
     const artH = artW / 1.5
     const artX = width / 2, artY = this.top + 6 + artH / 2
-    this.add.image(artX, artY, `shop-${type}`).setDisplaySize(artW, artH)
-    if (type === 'portrait' && owned) this.add.image(artX, artY, 'shop-portrait-finished').setDisplaySize(artW, artH)
+    this.applySceneLighting(this.add.image(artX, artY, `shop-${type}`).setDisplaySize(artW, artH))
+    if (type === 'portrait' && owned) this.applySceneLighting(this.add.image(artX, artY, 'shop-portrait-finished').setDisplaySize(artW, artH))
     this.add.rectangle(artX, artY, artW, artH, 0x170d21, .12).setStrokeStyle(4, COLORS.gold)
 
     const short = artH < 470
@@ -1183,7 +1279,7 @@ class BadBetScene extends Phaser.Scene {
     const cardW = Math.min(720, width * .92), cardH = Math.min(570, height - this.top - 30)
     const card = this.add.rectangle(width / 2, this.top + 15, cardW, cardH, 0xf8e9bd).setOrigin(.5, 0)
     card.setStrokeStyle(7, COLORS.ink)
-    this.add.text(width / 2, this.top + 42, 'AFTER THREE PERFECTLY REASONABLE DAYS', { fontFamily: FONTS.ui, fontSize: '14px', fontStyle: 'bold', letterSpacing: 1, color: '#9c4a3f' }).setOrigin(.5, 0)
+    this.add.text(width / 2, this.top + 42, 'AFTER ONE PERFECTLY REASONABLE DAY', { fontFamily: FONTS.ui, fontSize: '14px', fontStyle: 'bold', letterSpacing: 1, color: '#9c4a3f' }).setOrigin(.5, 0)
     this.add.text(width / 2, this.top + 78, 'The tents are gone.', { fontFamily: FONTS.display, fontSize: `${clamp(width / 20, 36, 58)}px`, color: '#25162c' }).setOrigin(.5, 0)
     this.add.text(width / 2, this.top + 155, money(this.state.balance), { fontFamily: FONTS.body, fontSize: `${clamp(width / 10, 70, 120)}px`, color: '#b13437' }).setOrigin(.5, 0)
     this.add.text(width / 2, this.top + 270, verdict, { fontFamily: FONTS.ui, fontSize: '16px', fontStyle: 'bold', letterSpacing: .6, color: '#25162c', align: 'center', wordWrap: { width: cardW * .8 } }).setOrigin(.5, 0)
@@ -1248,6 +1344,11 @@ class BadBetScene extends Phaser.Scene {
   }
 
   private go(mode: Mode) {
+    if (this.state.mode === 'poster' && mode !== 'poster') {
+      this.posterHoldStartedAt = null
+      this.posterJustUnlocked = null
+    }
+    if (mode === 'world' && this.state.minutes >= MAX_MINUTES) mode = 'ending'
     this.state.mode = mode
     this.state.target = null
     this.renderMode()
@@ -1257,6 +1358,8 @@ class BadBetScene extends Phaser.Scene {
     this.state = initialState()
     this.randomSeed = Number(params.get('seed')) || 481516
     this.historyScroll = { fox: 0, rabbit: 0 }
+    this.posterHoldStartedAt = null
+    this.posterJustUnlocked = null
     this.renderMode()
     this.installDebugApi()
   }
@@ -1266,7 +1369,8 @@ class BadBetScene extends Phaser.Scene {
     let x = this.scale.width - 34
     const actions: Array<[string, () => void, number]> = [
       ['END', () => this.go('ending'), 50],
-      ['+1 DAY', () => { this.state.minutes = Math.min(MAX_MINUTES, this.state.minutes + 720); this.renderMode() }, 68],
+      ['NIGHT', () => { this.state.minutes = NIGHT_MINUTES; this.renderMode() }, 58],
+      ['+1 HR', () => { this.state.minutes = Math.min(MAX_MINUTES, this.state.minutes + 60); this.renderMode() }, 58],
       ['REVEAL', () => { this.state.revealed = ['ad-ledger', 'ad-portrait', 'ad-tonic']; this.renderMode() }, 65],
       ['+$100', () => { this.state.balance += 100; this.renderMode() }, 58],
     ]
@@ -1281,7 +1385,12 @@ class BadBetScene extends Phaser.Scene {
       getState: () => structuredClone(this.state),
       travel: (x, y) => { this.state.player = { x, y }; if (this.state.mode === 'world') this.updatePlayerVisual(false, 0) },
       open: (mode) => this.go(mode),
+      inspect: (id) => {
+        const place = basePlaces.find((item) => item.id === id)
+        if (place) this.enter(place)
+      },
       buy: (type) => this.buy(type, { ledger: 10, portrait: 15, tonic: 20 }[type]),
+      setTime: (minutes) => { this.state.minutes = clamp(minutes, 0, MAX_MINUTES); this.renderMode() },
       play: (game, count = 1, selection) => {
         this.state.mode = game
         if (game === 'rabbit') {
@@ -1292,6 +1401,7 @@ class BadBetScene extends Phaser.Scene {
           if (selection === 'pair' || selection === 'run') this.state.foxBet = selection
           this.state.foxPairExplained = true
           this.state.foxRunExplained = true
+          this.state.foxOddsExplained = true
           this.state.foxDialogueOpen = false
         }
         this.playBets(game, count)
@@ -1323,7 +1433,9 @@ declare global {
       getState: () => State
       travel: (x: number, y: number) => void
       open: (mode: Mode) => void
+      inspect: (id: 'ad-ledger' | 'ad-portrait' | 'ad-tonic') => void
       buy: (type: 'ledger' | 'portrait' | 'tonic') => void
+      setTime: (minutes: number) => void
       play: (game: GameKey, count?: number, selection?: CoinSide | FoxBet) => void
     }
   }

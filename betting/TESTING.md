@@ -27,7 +27,7 @@ window.__BAD_BET__.play('rabbit', 1, 'tails')
 
 Core loop:
 
-1. Walk or click to visit the fox and rabbit stalls. At the fox, click through her three-part introduction; she must name Silver Pair and Silver Run before offering separate inquiries about them. The table must remain unavailable until both game explanations have been read. At the rabbit, click through his three linear rule explanations.
+1. Walk or click to visit the fox and rabbit stalls. The fox must immediately pitch both games with their hand sizes, basic winning conditions, payouts, and freshly shuffled 52-card deck, then offer mechanics-focused questions about each winning hand plus a specific question about the odds. Her 1/3 Pair and 1/50 Run estimates must appear only after asking about your chances. The table must remain unavailable until all three answers have been read. At the rabbit, click through his three linear rule explanations.
 2. At the Silver Draw, switch between Pair and Run and verify that the selected game, example hand, rules, and payout update. Pair deals five cards, accepts exactly one pair, and pays 4×. Run deals three cards, accepts A-2-3 through Q-K-A regardless of suit, and pays 100×. Every result must show the actual cards dealt.
 3. Verify the fox advertises Pair at 1/3 and Run at 1/50. Their actual chances are about 42.26% and 3.48%, respectively; the ledger must track the selected fox bet separately.
 4. At Rabbit's Generous Toss, verify the advertised 4/5 claim, switch between heads and tails before wagering, and confirm that each result reports which side landed. Its hidden actual heads chance is 65%.

@@ -22,7 +22,7 @@ The overworld is a simple 2D, top-down carnival of tents, booths, paths, lights,
 
 ### The Silver Draw
 
-A kind fox offers two wagers from an ordinary 52-card deck. Silver Pair deals five cards and wins only with exactly one pair. Silver Run deals three cards and wins when all three ranks are consecutive, regardless of suit. She returns every card and reshuffles the full deck between wagers. Before opening the table, the player must ask her about each game through a small dialogue tree. The fox appears sincere but gives inaccurate odds for both bets, whose true chances can be calculated without collecting results.
+A kind fox offers two wagers from an ordinary 52-card deck. Silver Pair deals five cards and wins only with exactly one pair. Silver Run deals three cards and wins when all three ranks are consecutive, regardless of suit. She returns every card and reshuffles the full deck between wagers. Before opening the table, the player must ask her about each game's exact winning hand and specifically ask for her estimated odds through a small dialogue tree. The fox appears sincere but gives inaccurate odds for both bets, whose true chances can be calculated without collecting results.
 
 ### Rabbit's Generous Toss
 
