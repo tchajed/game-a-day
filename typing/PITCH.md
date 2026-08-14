@@ -8,6 +8,6 @@ You are the only human still working the night shift, and your raven supervisor 
 
 ## Screenshots
 
-![The night shift begins with a memo and one watchful supervisor.](public/screenshots/opening.png)
+![The night shift begins with a memo and one watchful supervisor.](screenshots/opening.png)
 
-![Upper Management occupies the office and surrounding skyline.](public/screenshots/upper-management.png)
+![Upper Management occupies the office and surrounding skyline.](screenshots/upper-management.png)
