@@ -1,0 +1,3 @@
+* { box-sizing: border-box; }
+html, body, #root { min-height: 100%; margin: 0; }
+body { background: #10151d; color: #e9e2ca; font-family: Georgia, serif; }
