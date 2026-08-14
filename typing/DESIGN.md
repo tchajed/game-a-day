@@ -2,11 +2,11 @@
 
 ## Concept
 
-**Upper Management** is a five-minute typing game about accuracy, corporate obedience, and an executive board composed entirely of ravens.
+**Upper Management** is a five-minute typing game about accuracy and ravens.
 
 The player is the only human employee working late in a high-rise office. A raven—their immediate supervisor—perches beside the keyboard and dictates memos addressed to Upper Management. Nobody acknowledges that this arrangement is unusual.
 
-As the player completes each sentence, its corporate euphemisms become real in the office and surrounding skyline. Mistakes attract attention: the supervisor stops dictating and stares, then more ravens appear and join it. By the end of the shift, the city itself has become part of the company.
+As the player completes sentences, its corporate euphemisms become real in the office and surrounding skyline. Sentences that have an effect are mixed in with others that are ordinary, or ominous. Mistakes attract attention: the supervisor stops dictating and stares, then more ravens appear and join it. By the end of the shift, the city itself has become part of the company.
 
 The ravens do not need a rational explanation. Their presence should be treated as ordinary corporate procedure, making the situation funnier and more unsettling.
 
@@ -16,14 +16,14 @@ The game has one primary mechanic: type the dictated memo as accurately as possi
 
 - The supervisor raven presents one sentence at a time.
 - Correct characters appear on the memo.
-- A wrong key briefly flashes red and counts against the player's accuracy.
+- A wrong key flashes red, adds a blot to the memo when corrected, and counts against the player's accuracy.
 - The cursor waits for the correct character, so mistakes never block progression.
 - Completing a sentence enacts its contents in the environment.
 - Every mistake causes a visible reaction from the ravens.
-- There is no timer, failure state, or final moral choice.
-- The full experience should last no more than five minutes.
+- There's a persistent timer and wpm counter but these are never acknowledged or relevant to the game.
+- The full experience should last five minutes, so there should be at least 400 words worth of text.
 
-The player's accuracy controls how quickly the ravens' scrutiny escalates, but every player sees the main environmental progression and reaches the ending.
+The player's accuracy controls how quickly the ravens' scrutiny escalates, but every player sees the main environmental progression and reaches the ending if they do all the typing.
 
 ## Progression
 
