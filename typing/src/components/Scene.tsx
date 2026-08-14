@@ -2,6 +2,9 @@ import type { GameState } from '../game/engine'
 import { Memo } from './Memo'
 import { Raven } from './Raven'
 
+const SUPERVISOR_RAVEN = `${import.meta.env.BASE_URL}assets/supervisor-raven.png`
+const WATCHER_RAVEN = `${import.meta.env.BASE_URL}assets/watcher-raven.png`
+
 const BUILDINGS = [
   { className: 'western', windows: 30 },
   { className: 'needle', windows: 18 },
@@ -50,27 +53,35 @@ export function Scene({ state }: { state: GameState }) {
         ))}
       </div>
       <div className="detached-shadows">
-        {Array.from({ length: 3 }, (_, index) => <i key={index} />)}
+        {Array.from({ length: 6 }, (_, index) => <i key={index} />)}
+      </div>
+      <div className="office-shadows" aria-hidden="true">
+        {['tall', 'round', 'angular', 'crouched', 'tall', 'angular', 'round', 'crouched'].map((shape, index) => (
+          <i className={`office-shadow shadow-${shape}`} key={`${shape}-${index}`} />
+        ))}
       </div>
       <div className="window-frame frame-left" />
       <div className="window-frame frame-right" />
       <div className="window-frame frame-top" />
-      <div className="window-raven-wrap">
-        <Raven className="window-raven" stare={collective} />
+      <div className={`window-raven-wrap ${collective ? 'generated-stare' : ''}`}>
+        <img className="window-raven generated-raven" src={WATCHER_RAVEN} alt="" />
         <i className="tap-mark">tap</i>
       </div>
       <div className="rear-office">
         {Array.from({ length: 4 }, (_, index) => (
           <div className={`rear-desk rear-${index + 1}`} key={index}>
             <div className="rear-monitor" />
-            <Raven className="rear-raven" stare={collective} />
+            {index % 2 === 1
+              ? <img className={`rear-raven generated-raven ${collective ? 'generated-stare' : ''}`} src={WATCHER_RAVEN} alt="" />
+              : <Raven className="rear-raven" stare={collective} />}
           </div>
         ))}
       </div>
-      <div className="fluorescent-light" />
       <div className="foreground">
         <div className="desk-edge" />
+        <div className="desk-light-pool" />
         <div className="monitor">
+          <div className="monitor-light-bar" aria-hidden="true"><i /><span /></div>
           <div className="monitor-screen"><Memo state={state} /></div>
           <div className="monitor-neck" />
           <div className="monitor-foot" />
@@ -83,10 +94,11 @@ export function Scene({ state }: { state: GameState }) {
           <i /><i /><i />
         </div>
         <div className="supervisor-perch">
-          <Raven
-            className={`supervisor ${state.errorPulse ? 'reacting' : ''} ${state.completionPulse ? 'approving' : ''}`}
-            stare={state.mistakes > 0}
-            label="Your raven supervisor"
+          <img
+            key={`supervisor-${state.errorPulse}-${state.completionPulse}`}
+            className={`supervisor supervisor-image ${state.phase === 'playing' && state.currentMistakes > 0 ? 'reacting' : ''} ${state.phase === 'transition' ? 'approving' : ''} ${state.mistakes > 0 ? 'watchful' : ''}`}
+            src={SUPERVISOR_RAVEN}
+            alt="Your raven supervisor"
           />
         </div>
         <div className="final-typist"><Raven stare /><span className="final-wing">.</span></div>

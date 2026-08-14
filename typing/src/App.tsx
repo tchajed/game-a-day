@@ -28,11 +28,15 @@ function formatTime(ms: number) {
   return `${String(Math.floor(total / 60)).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`
 }
 
+type Feedback = { id: number | string; kind: 'error' | 'success'; text: string }
+
 export default function App() {
   const [state, dispatch] = useReducer(gameReducer, undefined, createGameState)
   const stateRef = useRef(state)
   const [now, setNow] = useState(Date.now())
   const [audioEnabled, setAudioEnabled] = useState(AUDIO_DEFAULT)
+  const [feedback, setFeedback] = useState<Feedback | null>(null)
+  const feedbackTimeout = useRef<number | undefined>(undefined)
   const audio = useMemo(() => new OfficeAudio(AUDIO_DEFAULT), [])
   stateRef.current = state
 
@@ -40,6 +44,23 @@ export default function App() {
     const interval = window.setInterval(() => setNow(Date.now()), 250)
     return () => window.clearInterval(interval)
   }, [])
+
+  useEffect(() => () => window.clearTimeout(feedbackTimeout.current), [])
+
+  useEffect(() => {
+    if (state.errorPulse === 0) return
+    window.clearTimeout(feedbackTimeout.current)
+    setFeedback({ id: state.errorPulse, kind: 'error', text: 'PATTERN LOGGED // REVIEW SCHEDULED' })
+    feedbackTimeout.current = window.setTimeout(() => setFeedback(null), 3400)
+  }, [state.errorPulse])
+
+  useEffect(() => {
+    if (state.phase !== 'transition') return
+    window.clearTimeout(feedbackTimeout.current)
+    const detail = state.currentMistakes === 0 ? ` // CLEAN STREAK ${state.streak}` : ''
+    setFeedback({ id: state.current.id, kind: 'success', text: `MEMO ACCEPTED${detail}` })
+    feedbackTimeout.current = window.setTimeout(() => setFeedback(null), 3400)
+  }, [state.phase, state.current.id, state.currentMistakes, state.streak])
 
   useEffect(() => {
     const handleKey = (event: KeyboardEvent) => {
@@ -129,14 +150,9 @@ export default function App() {
       <div className="shift-progress" aria-label={`${Math.round(progress)}% of dictation complete`}>
         <i style={{ width: `${progress}%` }} />
       </div>
-      {state.currentMistakes > 0 && state.phase === 'playing' && (
-        <div className="game-feedback error-feedback" key={`error-${state.errorPulse}`}>
-          PATTERN LOGGED // REVIEW SCHEDULED
-        </div>
-      )}
-      {state.phase === 'transition' && (
-        <div className="game-feedback success-feedback" key={`success-${state.completionPulse}`}>
-          MEMO ACCEPTED {state.currentMistakes === 0 ? `// CLEAN STREAK ${state.streak}` : ''}
+      {feedback && (
+        <div className={`game-feedback ${feedback.kind}-feedback`} key={`${feedback.kind}-${feedback.id}`}>
+          {feedback.text}
         </div>
       )}
       {!state.startedAt && state.phase === 'playing' && (
