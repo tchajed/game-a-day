@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useReducer, useRef, useState } from 'react'
 import { DebugPanel } from './components/DebugPanel'
 import { Scene } from './components/Scene'
-import { STAGE_NAMES } from './game/content'
+import { AUTHORED_MEMOS, STAGE_NAMES } from './game/content'
 import { OfficeAudio } from './game/audio'
 import { accuracy, createGameState, gameReducer, type GameState, wpm } from './game/engine'
 
@@ -90,6 +90,10 @@ export default function App() {
   const elapsed = state.startedAt ? (state.finishedAt ?? now) - state.startedAt : 0
   const accuracyValue = accuracy(state)
   const titleStage = Math.min(5, state.current.stage)
+  const memoFraction = state.current.kind === 'practice'
+    ? state.authoredIndex / AUTHORED_MEMOS.length
+    : (state.authoredIndex + state.charIndex / state.current.text.length) / AUTHORED_MEMOS.length
+  const progress = Math.min(100, memoFraction * 100)
 
   const toggleAudio = () => {
     const next = !audioEnabled
@@ -108,6 +112,7 @@ export default function App() {
         </div>
         <div className="metrics" aria-label="Typing metrics">
           <div><span>ACCURACY</span><strong>{accuracyValue.toFixed(1)}%</strong></div>
+          <div><span>STREAK</span><strong>{state.streak}</strong></div>
           <div><span>WPM</span><strong>{Math.round(wpm(state, now))}</strong></div>
           <div><span>SHIFT</span><strong data-testid="timer">{formatTime(elapsed)}</strong></div>
           <button className="audio-toggle" onClick={toggleAudio} aria-label={`${audioEnabled ? 'Mute' : 'Enable'} office ambience`}>
@@ -116,9 +121,25 @@ export default function App() {
         </div>
       </header>
       <aside className="stage-label">
-        <span>MEMORANDUM {String(state.authoredIndex + 1).padStart(2, '0')}</span>
+        <span>DICTATION {String(state.authoredIndex + 1).padStart(2, '0')} / {String(AUTHORED_MEMOS.length).padStart(2, '0')}</span>
         <strong>{STAGE_NAMES[titleStage]}</strong>
+        <div className="stage-pips" aria-label={`Section ${titleStage + 1} of 6`}>
+          {STAGE_NAMES.map((name, index) => <i key={name} className={index <= titleStage ? 'active' : ''} />)}
+        </div>
       </aside>
+      <div className="shift-progress" aria-label={`${Math.round(progress)}% of dictation complete`}>
+        <i style={{ width: `${progress}%` }} />
+      </div>
+      {state.currentMistakes > 0 && state.phase === 'playing' && (
+        <div className="game-feedback error-feedback" key={`error-${state.errorPulse}`}>
+          PATTERN LOGGED // REVIEW SCHEDULED
+        </div>
+      )}
+      {state.phase === 'transition' && (
+        <div className="game-feedback success-feedback" key={`success-${state.completionPulse}`}>
+          MEMO ACCEPTED {state.currentMistakes === 0 ? `// CLEAN STREAK ${state.streak}` : ''}
+        </div>
+      )}
       {!state.startedAt && state.phase === 'playing' && (
         <div className="start-prompt"><span>Begin typing the memorandum.</span><i /></div>
       )}

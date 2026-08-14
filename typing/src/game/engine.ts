@@ -19,6 +19,8 @@ export type GameState = {
   attempts: number
   mistakes: number
   currentMistakes: number
+  streak: number
+  bestStreak: number
   scrutiny: number
   enactedStage: number
   startedAt: number | null
@@ -52,6 +54,8 @@ export function createGameState(): GameState {
     attempts: 0,
     mistakes: 0,
     currentMistakes: 0,
+    streak: 0,
+    bestStreak: 0,
     scrutiny: 0,
     enactedStage: 0,
     startedAt: null,
@@ -147,6 +151,7 @@ function registerMistake(state: GameState, now: number): GameState {
     attempts: state.attempts + 1,
     mistakes: mistakeNumber,
     currentMistakes: state.currentMistakes + 1,
+    streak: 0,
     scrutiny: Math.min(7, Math.max(state.scrutiny, Math.ceil(mistakeNumber / 2))),
     weaknesses: addWeaknesses(state.weaknesses, weaknessKeys(state.current.text, state.charIndex)),
     blots: [
@@ -170,11 +175,14 @@ function typeKey(state: GameState, key: string, now: number): GameState {
   if (key !== expected) return registerMistake(state, now)
 
   const nextIndex = state.charIndex + 1
+  const streak = state.streak + 1
   const progressed = {
     ...state,
     startedAt: state.startedAt ?? now,
     attempts: state.attempts + 1,
     correct: state.correct + 1,
+    streak,
+    bestStreak: Math.max(state.bestStreak, streak),
     charIndex: nextIndex,
   }
 

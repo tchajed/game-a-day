@@ -17,6 +17,12 @@ describe('typing engine', () => {
     const correct = gameReducer(wrong, { type: 'key', key: initial.current.text[0]!, now: 200 })
     expect(correct.charIndex).toBe(1)
     expect(correct.correct).toBe(1)
+    expect(correct.streak).toBe(1)
+    expect(correct.bestStreak).toBe(1)
+
+    const reset = gameReducer(correct, { type: 'key', key: 'x', now: 300 })
+    expect(reset.streak).toBe(0)
+    expect(reset.bestStreak).toBe(1)
   })
 
   it('records weaknesses and increases scrutiny after mistakes', () => {

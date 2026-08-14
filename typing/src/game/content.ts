@@ -24,40 +24,41 @@ const authored = (id: string, stage: number, text: string, effect = false): Memo
 })
 
 export const AUTHORED_MEMOS: Memo[] = [
-  authored('r1', 0, 'Please be advised that the western offices will remain dark for the duration of the migration.', true),
-  authored('r2', 0, 'Facilities has confirmed that movement behind the unlit windows is consistent with normal settling procedures.'),
+  authored('intro', 0, 'I am ready to take dictation.'),
+  authored('r1', 0, 'Please be advised: the western offices will remain dark for the duration of the migration.', true),
+  authored('r2', 0, 'The lights may fail. This does not indicate that movement behind the windows has stopped.'),
   authored('r3', 0, 'Staff assigned to the evening shift should disregard any footsteps arriving from floors above their own.'),
-  authored('r4', 0, 'Coffee service will continue until the machines learn which names no longer require cups.'),
+  authored('r4', 0, 'Coffee service will continue; the machines are learning which names no longer require cups.'),
   authored('r5', 0, 'Kindly leave completed reports face down so the ceiling cameras may review them without distraction.'),
 
   authored('p1', 1, 'Employees who cast unfamiliar shadows should report themselves to Human Resources.', true),
-  authored('p2', 1, 'A shadow traveling without its employee must still display valid identification near the elevators.'),
+  authored('p2', 1, 'A shadow traveling without its employee must display identification near the elevators. Do not assist it.'),
   authored('p3', 1, 'Please remember that separation from a silhouette does not constitute grounds for unscheduled leave.'),
   authored('p4', 1, 'Human Resources will retain all abandoned outlines until a suitable internal position becomes available.'),
   authored('p5', 1, 'Colleagues facing the wrong direction remain eligible for benefits, provided their work remains current.'),
 
   authored('b1', 2, 'Exterior management may enter through any available window.', true),
-  authored('b2', 2, 'The tapping heard along the glass indicates a request for access and should not be interpreted personally.'),
+  authored('b2', 2, 'Is someone tapping on the glass? Please wait for three taps before granting access.'),
   authored('b3', 2, 'Employees nearest the windows are authorized to lower their eyes while the visitors select a workspace.'),
   authored('b4', 2, 'Black feathers found in secure areas are company property and must be returned before sunrise.'),
   authored('b5', 2, 'Roof antennas are now reserved for supervisory personnel awaiting reassignment from the upper air.'),
 
   authored('o1', 3, 'All unoccupied desks are to be filled by members of Upper Management.', true),
   authored('o2', 3, 'New supervisors may decline name badges because their profiles are already familiar to the building.'),
-  authored('o3', 3, 'Should every manager turn at once, employees are expected to continue typing at a professional volume.'),
+  authored('o3', 3, 'If every manager turns at once, remember: remain calm; continue typing at a professional volume.'),
   authored('o4', 3, 'The conference room has reached capacity, although the chairs inside remain visibly empty.'),
   authored('o5', 3, 'Performance concerns should be whispered into the ventilation system during the designated listening period.'),
 
   authored('c1', 4, 'Effective immediately, the surrounding skyline will be considered part of the corporate campus.', true),
   authored('c2', 4, 'Neighboring towers will display the company mark after their windows have accepted the revised arrangement.'),
-  authored('c3', 4, 'Streets that now terminate inside the lobby have been approved as efficient commuter routes.'),
+  authored('c3', 4, 'Several streets now terminate inside the lobby. These are approved, efficient commuter routes.'),
   authored('c4', 4, 'Upper floors may extend beyond structural limits when additional oversight is required by regional leadership.'),
   authored('c5', 4, 'The large shape crossing between buildings is conducting an audit and does not require an escort.'),
   authored('c6', 4, 'City lights will remain synchronized with the blinking schedule issued by this office.'),
 
   authored('f1', 5, 'Please finish the attached notice while your supervisor verifies the view from outside.', true),
   authored('f2', 5, 'Your workstation, memories, and remaining lunch have been transferred to the management account.'),
-  authored('f3', 5, 'No further action is required from the employee previously seated at this desk.'),
+  authored('f3', 5, 'No further action is required from the employee previously seated at this desk. Remain seated.'),
   authored('f4', 5, 'The night shift thanks you for maintaining exceptional composure during the occupancy change.'),
   authored('final', 5, 'Your successful transition into management has been approved.'),
 ]
