@@ -25,10 +25,7 @@ export function Memo({ state }: { state: GameState }) {
 
   return (
     <section className={`memo-card ${state.errorPulse ? 'has-history' : ''}`} data-testid="memo" aria-live="polite">
-      <div className="memo-header">
-        <span>BLACKWING HOLDINGS</span>
-        <span>INTERNAL / {current.id.toUpperCase()}</span>
-      </div>
+      <div className="memo-header">BLACKWING HOLDINGS // NIGHT TRANSCRIPTION</div>
       <div className="memo-rule" />
       <p className="memo-text">
         <span className="typed">{complete}</span>
@@ -40,7 +37,6 @@ export function Memo({ state }: { state: GameState }) {
         <span className="untyped">{remaining}</span>
       </p>
       {current.kind === 'practice' && <span className="training-stamp">SUPPLEMENTAL REVIEW</span>}
-      <div className="signature-line">Dictated on behalf of Upper Management</div>
       <div className="blot-layer" aria-hidden="true">
         {currentBlots.map((blot, index) => <BlotMark key={`${blot.index}-${index}`} blot={blot} textLength={current.text.length} />)}
       </div>

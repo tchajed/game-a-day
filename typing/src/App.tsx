@@ -107,21 +107,20 @@ export default function App() {
       <Scene state={state} />
       <header className="hud">
         <div className="brand-block">
-          <span className="eyebrow">BLACKWING HOLDINGS // NIGHT SHIFT</span>
           <h1>UPPER MANAGEMENT</h1>
         </div>
         <div className="metrics" aria-label="Typing metrics">
-          <div><span>ACCURACY</span><strong>{accuracyValue.toFixed(1)}%</strong></div>
-          <div><span>STREAK</span><strong>{state.streak}</strong></div>
-          <div><span>WPM</span><strong>{Math.round(wpm(state, now))}</strong></div>
-          <div><span>SHIFT</span><strong data-testid="timer">{formatTime(elapsed)}</strong></div>
+          <div className="metric"><b aria-hidden="true">◎</b><span><small>ACCURACY</small><strong>{accuracyValue.toFixed(1)}%</strong></span></div>
+          <div className="metric"><b aria-hidden="true">↟</b><span><small>STREAK</small><strong>{state.streak}</strong></span></div>
+          <div className="metric"><b aria-hidden="true">⌨</b><span><small>WPM</small><strong>{Math.round(wpm(state, now))}</strong></span></div>
+          <div className="metric"><b aria-hidden="true">◷</b><span><small>TIME</small><strong data-testid="timer">{formatTime(elapsed)}</strong></span></div>
           <button className="audio-toggle" onClick={toggleAudio} aria-label={`${audioEnabled ? 'Mute' : 'Enable'} office ambience`}>
-            {audioEnabled ? 'SOUND ON' : 'SOUND OFF'}
+            <b aria-hidden="true">◖</b><span>{audioEnabled ? 'SOUND ON' : 'SOUND OFF'}</span>
           </button>
         </div>
       </header>
       <aside className="stage-label">
-        <span>DICTATION {String(state.authoredIndex + 1).padStart(2, '0')} / {String(AUTHORED_MEMOS.length).padStart(2, '0')}</span>
+        <span>MEMO {String(state.authoredIndex + 1).padStart(2, '0')} / {String(AUTHORED_MEMOS.length).padStart(2, '0')}</span>
         <strong>{STAGE_NAMES[titleStage]}</strong>
         <div className="stage-pips" aria-label={`Section ${titleStage + 1} of 6`}>
           {STAGE_NAMES.map((name, index) => <i key={name} className={index <= titleStage ? 'active' : ''} />)}
@@ -141,7 +140,7 @@ export default function App() {
         </div>
       )}
       {!state.startedAt && state.phase === 'playing' && (
-        <div className="start-prompt"><span>Begin typing the memorandum.</span><i /></div>
+        <div className="start-prompt"><b aria-hidden="true">⌨</b><span>TYPE TO BEGIN</span><i /></div>
       )}
       {state.phase === 'ending' && (
         <div className="ending-copy" data-testid="ending">

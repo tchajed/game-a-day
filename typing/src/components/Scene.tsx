@@ -79,8 +79,7 @@ export function Scene({ state }: { state: GameState }) {
         <div className="keyboard">
           {Array.from({ length: 26 }, (_, index) => <i key={index} />)}
         </div>
-        <div className="clipboard">
-          <span>SHIFT REVIEW</span>
+        <div className="clipboard" aria-hidden="true">
           <i /><i /><i />
         </div>
         <div className="supervisor-perch">
@@ -89,7 +88,6 @@ export function Scene({ state }: { state: GameState }) {
             stare={state.mistakes > 0}
             label="Your raven supervisor"
           />
-          <div className="supervisor-label">IMMEDIATE SUPERVISOR</div>
         </div>
         <div className="final-typist"><Raven stare /><span className="final-wing">.</span></div>
       </div>
