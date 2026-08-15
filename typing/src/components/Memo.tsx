@@ -17,13 +17,12 @@ function BlotMark({ blot, textLength }: { blot: Blot; textLength: number }) {
 
 export function Memo({ state }: { state: GameState }) {
   const { current, charIndex } = state
-  const complete = current.text.slice(0, charIndex)
   const expected = current.text[charIndex] ?? ''
   const displayedKey = state.mistypedKey ?? expected
-  const remaining = current.text.slice(charIndex + 1)
   const currentBlots = state.blots.filter((blot) => blot.memoId === current.id)
   const mistakeIndexes = new Set(currentBlots.map((blot) => blot.index))
   const finalReveal = state.phase === 'ending' || state.phase === 'complete'
+  const tokens = Array.from(current.text.matchAll(/\S+|\s+/g))
 
   return (
     <section className={`memo-card ${state.mistypedKey !== null ? 'has-current-error' : ''}`} data-testid="memo" aria-live="polite">
@@ -36,21 +35,34 @@ export function Memo({ state }: { state: GameState }) {
       </div>
       <div className="memo-rule" />
       <p className="memo-text">
-        <span className="typed">
-          {Array.from(complete).map((character, index) => mistakeIndexes.has(index)
-            ? <mark className="mistake-location" key={index}>{character === ' ' ? '\u00a0' : character}</mark>
-            : character)}
-        </span>
-        {expected && (
-          <span
-            key={`${state.errorPulse}-${charIndex}`}
-            className={`expected ${state.mistypedKey !== null ? 'mistyped-char' : ''}`}
-            data-testid="expected-char"
-          >
-            {finalReveal && current.id === 'final' ? '.' : displayedKey === ' ' ? '\u00a0' : displayedKey}
-          </span>
-        )}
-        <span className="untyped">{remaining}</span>
+        {tokens.map((match) => {
+          const token = match[0]
+          const start = match.index
+          const isWhitespace = /^\s+$/.test(token)
+          return (
+            <span className={isWhitespace ? 'memo-space' : 'memo-word'} key={start}>
+              {Array.from(token).map((character, offset) => {
+                const index = start + offset
+                const isExpected = index === charIndex && expected !== ''
+                const className = isExpected
+                  ? `memo-char expected ${state.mistypedKey !== null ? 'mistyped-char' : ''}`
+                  : `memo-char ${index < charIndex ? 'typed' : 'untyped'} ${mistakeIndexes.has(index) ? 'mistake-location' : ''}`
+                const content = isExpected
+                  ? finalReveal && current.id === 'final' ? '.' : displayedKey
+                  : character
+                return (
+                  <span
+                    className={className}
+                    data-testid={isExpected ? 'expected-char' : undefined}
+                    key={isExpected ? `${index}-${state.errorPulse}` : index}
+                  >
+                    {content}
+                  </span>
+                )
+              })}
+            </span>
+          )
+        })}
       </p>
       {current.kind === 'practice' && <span className="training-stamp">SUPPLEMENTAL REVIEW</span>}
       <div className="blot-layer" aria-hidden="true">
