@@ -120,8 +120,13 @@ button { font: inherit; }
 .monitor-screen::after { content: ''; position: absolute; inset: 0; pointer-events: none; background: repeating-linear-gradient(0deg, #fff0 0 3px, #0000000d 4px); mix-blend-mode: multiply; }
 .monitor-neck { position: absolute; width: 10%; height: 15%; left: 45%; top: 100%; background: #1b1e1f; }.monitor-foot { position: absolute; width: 32%; height: 5%; left: 34%; top: 113%; background: #101213; border-radius: 50%; }
 .memo-card { position: absolute; inset: 5%; padding: clamp(18px, 2.5vw, 36px); color: var(--ink); background: var(--paper); background-image: linear-gradient(100deg, transparent 0 70%, #a9a58e22 71%), repeating-linear-gradient(0deg, transparent 0 24px, #76746112 25px); box-shadow: inset 0 0 28px #847f6944; overflow: hidden; }
-.memo-header { color: #303430; font-size: clamp(14px, 1.05vw, 16px); font-weight: 600; letter-spacing: .055em; }
-.memo-rule { height: 2px; margin: 8px 0 clamp(14px, 2vh, 28px); background: #3a3d39; }
+.memo-letterhead { display: flex; align-items: center; gap: 10px; width: max-content; color: #303730; opacity: .38; }
+.letterhead-mark { width: clamp(29px, 2.5vw, 38px); height: auto; fill: currentColor; }
+.letterhead-eye { fill: var(--paper); }
+.memo-letterhead > span { display: grid; line-height: 1; }
+.memo-letterhead strong { font-size: clamp(12px, .95vw, 15px); font-weight: 600; letter-spacing: .15em; }
+.memo-letterhead small { margin-top: 3px; font-size: clamp(7px, .55vw, 9px); font-weight: 600; letter-spacing: .42em; }
+.memo-rule { height: 1px; margin: 8px 0 clamp(14px, 2vh, 28px); background: #3a3d3966; }
 .memo-text { margin: 0; font-family: 'IBM Plex Mono', ui-monospace, monospace; font-size: clamp(22px, 1.95vw, 31px); font-weight: 500; line-height: 1.38; letter-spacing: -.025em; }
 .typed { color: #171a17; }.untyped { color: #6f7065; }
 .expected { position: relative; color: #151713; background: #ada98f; border-bottom: 2px solid #282b27; animation: cursor 1.05s steps(1) infinite; }
@@ -188,7 +193,7 @@ button { font: inherit; }
 @media (max-width: 760px) {
   .hud { padding: 9px 12px; }.brand-block h1 { display: none; }.metrics { width: 100%; justify-content: space-between; gap: 5px; }.metric { min-width: 0; gap: 4px; }.metric > b { font-size: 16px; }.metric small { font-size: 8px; }.metric strong { font-size: 14px; }.audio-toggle { padding: 7px; }.audio-toggle span { display: none; }.audio-toggle b { font-size: 17px; }
   .stage-label { top: 9%; left: 14px; }
-  .monitor { width: 92vw; height: 51vh; bottom: 15%; }.memo-card { inset: 3%; padding: 17px; }.memo-header { font-size: clamp(11px, 3vw, 14px); }.memo-text { font-size: clamp(20px, 5vw, 25px); line-height: 1.34; }
+  .monitor { width: 92vw; height: 51vh; bottom: 15%; }.memo-card { inset: 3%; padding: 17px; }.memo-letterhead strong { font-size: clamp(11px, 3vw, 14px); }.memo-text { font-size: clamp(20px, 5vw, 25px); line-height: 1.34; }
   .supervisor-perch { left: -1%; bottom: 3%; width: 150px; }.clipboard { display: none; }.keyboard { width: 74vw; bottom: 3%; }
   .skyline { left: -20%; right: -20%; }.rear-office { display: none; }.window-raven-wrap { right: 0; top: 14%; transform: scale(.7) translateX(100px); }.stage-3 .window-raven-wrap, .stage-4 .window-raven-wrap, .stage-5 .window-raven-wrap, .stage-6 .window-raven-wrap { transform: scale(.7); }
   .shift-progress { left: 14px; right: 14px; width: auto; top: 58px; }.stage-label { top: 12%; }.game-feedback { top: 17%; max-width: 92vw; overflow: hidden; text-overflow: ellipsis; font-size: 9px; }

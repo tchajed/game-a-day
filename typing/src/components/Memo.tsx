@@ -27,7 +27,13 @@ export function Memo({ state }: { state: GameState }) {
 
   return (
     <section className={`memo-card ${state.mistypedKey !== null ? 'has-current-error' : ''}`} data-testid="memo" aria-live="polite">
-      <div className="memo-header">BLACKWING HOLDINGS // NIGHT TRANSCRIPTION</div>
+      <div className="memo-letterhead" aria-label="Blackwing Holdings">
+        <svg className="letterhead-mark" viewBox="0 0 52 42" aria-hidden="true">
+          <path d="M5 31 21 7l4 13L40 4l-7 19 14-6-18 20-6-10-8 9 2-12Z" />
+          <path className="letterhead-eye" d="m27 19 4-2-2 4Z" />
+        </svg>
+        <span><strong>BLACKWING</strong><small>HOLDINGS</small></span>
+      </div>
       <div className="memo-rule" />
       <p className="memo-text">
         <span className="typed">
