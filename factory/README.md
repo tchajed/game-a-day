@@ -13,3 +13,14 @@ Eventually I want to have simple conditionals in the programs to react to someth
 You should make sure there is a solution. Debug mode should provide controls for skipping to a specific point in the simulation as well as loading up the solution.
 
 Make sure to make the UI game-like and usable. I think this should be done in Phaser as a result, but it might also be cool to have the programming UI be in React and the simulation and art in Phaser. We should have readable text sizes and fonts, minimize the use of text in general. The fonts should match the style.
+
+## Prototype
+
+**Shift Protocol** is a single-level React + Phaser prototype. Program the robot's 20-beat route, time its movement across two cycling presses, open the blast door, and deliver the crate to the OUT bay.
+
+```bash
+bun install
+bun run dev
+```
+
+Use the timeline or keyboard shortcuts: arrows move, `Space` holds, `G` grabs, `S` uses the switch, `D` drops, and `Enter` runs the tape. Add `?music=off` to silence audio. Add `?debug=true` to reveal controls for loading the verified solution and seeking to any beat; programmatic playtests can also use `window.factoryDebug`.
