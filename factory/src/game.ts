@@ -14,11 +14,23 @@ const ORIGIN_X = 36;
 const ORIGIN_Y = 34;
 const WIDTH = 768;
 const HEIGHT = 570;
+const keyOf = (x: number, y: number): string => `${x},${y}`;
+
+type LooseLevelMechanics = {
+  weight?: unknown;
+  weights?: unknown;
+  weightStart?: unknown;
+  plate?: unknown;
+  plates?: unknown;
+};
 
 export class FactoryScene extends Phaser.Scene {
   private ink!: Phaser.GameObjects.Graphics;
+  private fog!: Phaser.GameObjects.Graphics;
   private labels: Phaser.GameObjects.Text[] = [];
   private state: SimState | null = null;
+  private explored: ReadonlySet<string> | undefined;
+  private planning = false;
   private readonly onReady: (scene: FactoryScene) => void;
 
   constructor(onReady: (scene: FactoryScene) => void) {
@@ -27,13 +39,20 @@ export class FactoryScene extends Phaser.Scene {
   }
 
   create(): void {
-    this.cameras.main.setBackgroundColor("#0a0d14");
-    this.ink = this.add.graphics();
+    this.cameras.main.setBackgroundColor("#070910");
+    this.ink = this.add.graphics().setDepth(5);
+    this.fog = this.add.graphics().setDepth(80);
     this.onReady(this);
   }
 
-  showState(state: SimState): void {
+  /**
+   * explored is optional so existing callers continue to reveal the full board.
+   * Keys use the compact "x,y" form. Current vision is always centered on the robot.
+   */
+  showState(state: SimState, explored?: ReadonlySet<string>, planning = false): void {
     this.state = state;
+    this.explored = explored;
+    this.planning = planning;
     if (this.ink) this.draw();
   }
 
@@ -48,7 +67,15 @@ export class FactoryScene extends Phaser.Scene {
     }
   }
 
-  private text(x: number, y: number, value: string, size: number, color: string, align: "left" | "center" = "left"): void {
+  private text(
+    x: number,
+    y: number,
+    value: string,
+    size: number,
+    color: string,
+    align: "left" | "center" = "left",
+    hud = false,
+  ): void {
     const label = this.add.text(x, y, value, {
       fontFamily: '"Arial Black", "Trebuchet MS", sans-serif',
       fontSize: `${size}px`,
@@ -59,7 +86,20 @@ export class FactoryScene extends Phaser.Scene {
     });
     label.setOrigin(align === "center" ? 0.5 : 0, 0.5);
     label.setResolution(2);
+    label.setDepth(hud ? 100 : 20);
     this.labels.push(label);
+  }
+
+  private isVisible(x: number, y: number): boolean {
+    if (!this.explored || !this.state) return true;
+    const dx = Math.abs(x - this.state.robot.x);
+    const dy = Math.abs(y - this.state.robot.y);
+    const radius = this.planning ? 3 : 2;
+    return dx <= radius && dy <= radius && dx + dy <= radius + 1;
+  }
+
+  private isKnown(x: number, y: number): boolean {
+    return this.isVisible(x, y) || this.explored?.has(keyOf(x, y)) === true;
   }
 
   private draw(): void {
@@ -68,133 +108,226 @@ export class FactoryScene extends Phaser.Scene {
     const level = getLevel(state.level);
     const g = this.ink;
     g.clear();
+    this.fog.clear();
     this.labels.forEach((label) => label.destroy());
     this.labels = [];
 
-    g.fillStyle(0x161c27, 1);
-    g.fillRect(12, 10, WIDTH - 24, HEIGHT - 20);
-    g.fillStyle(0x30394a, 1);
-    g.fillRect(18, 16, WIDTH - 36, 6);
-    g.fillRect(18, 16, 6, HEIGHT - 32);
-    g.fillStyle(0x05070b, 1);
-    g.fillRect(24, 22, WIDTH - 48, HEIGHT - 44);
+    // Recessed steel display bay.
+    g.fillStyle(0x121724, 1);
+    g.fillRoundedRect(9, 8, WIDTH - 18, HEIGHT - 16, 9);
+    g.fillStyle(0x343e50, 1);
+    g.fillRect(15, 14, WIDTH - 30, 7);
+    g.fillRect(15, 14, 7, HEIGHT - 28);
+    g.fillStyle(0x070a10, 1);
+    g.fillRect(22, 21, WIDTH - 44, HEIGHT - 42);
+    g.lineStyle(2, 0x56647a, 0.55);
+    g.strokeRect(18, 17, WIDTH - 36, HEIGHT - 34);
 
     for (let y = 0; y < GRID.height; y += 1) {
-      for (let x = 0; x < GRID.width; x += 1) {
-        const px = ORIGIN_X + x * TILE;
-        const py = ORIGIN_Y + y * TILE;
-        g.fillStyle((x + y) % 2 === 0 ? 0x18202b : 0x151b25, 1);
-        g.fillRect(px, py, TILE - 2, TILE - 2);
-        g.fillStyle(0x222c3b, 0.75);
-        g.fillRect(px + 5, py + 5, 3, 3);
-        g.fillRect(px + TILE - 10, py + TILE - 10, 3, 3);
-      }
+      for (let x = 0; x < GRID.width; x += 1) this.drawFloor(x, y);
     }
 
-    level.conveyors.forEach((belt) => this.drawConveyor(belt.x, belt.y, belt.direction, state.beat));
-    this.drawTarget(level.target);
-
-    level.walls.forEach((wall) => {
-      if (!level.door || !this.same(wall, level.door) || !state.doorOpen) this.drawWall(wall.x, wall.y);
+    level.conveyors.forEach((belt) => {
+      if (this.isKnown(belt.x, belt.y)) this.drawConveyor(belt.x, belt.y, belt.direction, state.beat);
     });
-    if (level.door) this.drawDoor(level.door, state.doorOpen);
-    if (level.panel) this.drawPanel(level.panel, state.doorOpen);
+    if (this.isKnown(level.target.x, level.target.y)) this.drawTarget(level.target);
+
+    const mechanics = level as unknown as LooseLevelMechanics;
+    this.pointsFrom(mechanics.plates ?? mechanics.plate).forEach((plate, index) => {
+      if (this.isKnown(plate.x, plate.y)) this.drawPlate(plate, index, state);
+    });
 
     level.presses.forEach((press, index) => {
-      const active = isPressActive(index, state.beat, state.level);
-      const px = ORIGIN_X + press.x * TILE;
-      const py = ORIGIN_Y + press.y * TILE;
-      g.fillStyle(active ? 0x661d29 : 0x31232b, 1);
-      g.fillRect(px + 3, py + 3, TILE - 8, TILE - 8);
-      g.lineStyle(3, active ? 0xff4154 : 0x96505a, 1);
-      g.strokeRect(px + 6, py + 6, TILE - 14, TILE - 14);
-      for (let stripe = 0; stripe < 4; stripe += 1) {
-        g.fillStyle(active ? 0xffb02e : 0x71532d, 1);
-        g.fillRect(px + 10 + stripe * 11, py + 10, 5, TILE - 22);
-      }
-      if (active) {
-        g.fillStyle(0xd5dbe4, 1);
-        g.fillRect(px + 9, py + 8, TILE - 20, TILE - 18);
-        g.fillStyle(0x758194, 1);
-        g.fillRect(px + 14, py + 14, TILE - 30, TILE - 30);
-      }
-      this.text(px + TILE / 2, py - 7, active ? "CRUSH" : `P${index + 1} SAFE`, 9, active ? "#ff5b66" : "#8b97a8", "center");
+      if (this.isKnown(press.x, press.y)) this.drawPress(press, index, state);
     });
 
+    level.walls.forEach((wall) => {
+      if (this.isKnown(wall.x, wall.y) && (!level.door || !this.same(wall, level.door) || !state.doorOpen)) {
+        this.drawWall(wall.x, wall.y);
+      }
+    });
+    if (level.door && this.isKnown(level.door.x, level.door.y)) this.drawDoor(level.door, state.doorOpen);
+    if (level.panel && this.isKnown(level.panel.x, level.panel.y)) this.drawPanel(level.panel, state.doorOpen);
+
+    const looseState = state as unknown as Record<string, unknown>;
+    this.pointsFrom(looseState.weight ?? mechanics.weights ?? mechanics.weight ?? mechanics.weightStart).forEach((weight) => {
+      if (this.isKnown(weight.x, weight.y)) this.drawWeight(weight.x, weight.y);
+    });
+
+    // Moving hazards are not left as misleading map-memory ghosts.
     level.enemies.forEach((enemy) => {
       const position = enemyPosition(enemy, state.beat);
-      this.drawEnemy(position.x, position.y);
+      if (this.isVisible(position.x, position.y)) this.drawEnemy(position.x, position.y);
     });
 
-    if (state.crate) this.drawCrate(state.crate.x, state.crate.y, state.status === "won");
-    this.drawRobot(state);
-
-    for (let index = 0; index < 4; index += 1) {
-      g.fillStyle(state.beat % 4 === index ? 0xffbd3f : 0x303744, 1);
-      g.fillRect(ORIGIN_X + index * 19, 19, 12, 7);
+    if (state.crate && this.isKnown(state.crate.x, state.crate.y)) {
+      this.drawCrate(state.crate.x, state.crate.y, state.status === "won");
     }
-    this.text(WIDTH - 65, 24, `L${state.level + 1} B${String(state.beat).padStart(2, "0")}`, 13, "#f3c75f", "center");
+    this.drawRobot(state);
+    this.drawFog();
+
+    // HUD sits above fog and keeps the four-beat rhythm readable.
+    g.fillStyle(0x090c13, 1);
+    g.fillRect(27, 14, 98, 15);
+    for (let index = 0; index < 4; index += 1) {
+      g.fillStyle(state.beat % 4 === index ? 0xffd34e : 0x344052, 1);
+      g.fillRect(34 + index * 21, 18, 15, 7);
+      if (state.beat % 4 === index) {
+        g.fillStyle(0xfff0a6, 1);
+        g.fillRect(36 + index * 21, 19, 11, 2);
+      }
+    }
+    this.text(WIDTH - 76, 24, `SHIFT ${state.level + 1} · B${String(state.beat).padStart(2, "0")}`, 12, "#f5cf69", "center", true);
+  }
+
+  private drawFloor(x: number, y: number): void {
+    const px = ORIGIN_X + x * TILE;
+    const py = ORIGIN_Y + y * TILE;
+    const g = this.ink;
+    const top = (x + y) % 2 === 0 ? 0x202a37 : 0x1c2531;
+    g.fillStyle(0x080b11, 1);
+    g.fillRect(px, py, TILE - 2, TILE - 2);
+    g.fillStyle(top, 1);
+    g.fillPoints([
+      new Phaser.Math.Vector2(px + TILE / 2, py + 3),
+      new Phaser.Math.Vector2(px + TILE - 5, py + TILE / 2),
+      new Phaser.Math.Vector2(px + TILE / 2, py + TILE - 5),
+      new Phaser.Math.Vector2(px + 3, py + TILE / 2),
+    ], true);
+    // Four bevel facets make each slab read as a low diamond.
+    g.fillStyle(0x303c4b, 0.8);
+    g.fillTriangle(px + 3, py + TILE / 2, px + TILE / 2, py + 3, px + TILE / 2, py + 8);
+    g.fillStyle(0x121924, 0.9);
+    g.fillTriangle(px + TILE / 2, py + TILE - 5, px + TILE - 5, py + TILE / 2, px + TILE / 2, py + TILE - 10);
+    g.fillStyle(0x526075, 0.55);
+    g.fillRect(px + 8, py + 26, 4, 4);
+    g.fillStyle(0x090c12, 0.8);
+    g.fillRect(px + TILE - 13, py + 27, 4, 4);
+
+    // Utility pipes and occasional embedded guide lights.
+    if ((x + y * 3) % 7 === 0) {
+      g.fillStyle(0x0f141d, 1);
+      g.fillRect(px + 8, py + 43, 42, 5);
+      g.fillStyle(0x5a6879, 1);
+      g.fillRect(px + 8, py + 43, 42, 2);
+      g.fillStyle(0xd38c36, 1);
+      g.fillRect(px + 15, py + 41, 5, 9);
+      g.fillRect(px + 39, py + 41, 5, 9);
+    } else if ((x * 5 + y) % 9 === 0) {
+      g.fillStyle(0x173b42, 1);
+      g.fillRect(px + 23, py + 22, 12, 7);
+      g.fillStyle(0x62e6d5, 0.85);
+      g.fillRect(px + 25, py + 23, 8, 3);
+    }
   }
 
   private same(a: Point, b: Point): boolean {
     return a.x === b.x && a.y === b.y;
   }
 
+  private pointsFrom(value: unknown): Point[] {
+    const values = Array.isArray(value) ? value : value ? [value] : [];
+    return values.filter((item): item is Point => {
+      if (!item || typeof item !== "object") return false;
+      const point = item as Partial<Point>;
+      return typeof point.x === "number" && typeof point.y === "number";
+    });
+  }
+
   private drawTarget(target: Point): void {
     const tx = ORIGIN_X + target.x * TILE;
     const ty = ORIGIN_Y + target.y * TILE;
     const g = this.ink;
-    g.fillStyle(0x122c2e, 1);
-    g.fillRect(tx + 2, ty + 2, TILE - 6, TILE - 6);
-    g.lineStyle(3, 0x42e8c1, 1);
-    g.strokeRect(tx + 4, ty + 4, TILE - 10, TILE - 10);
-    for (let offset = 9; offset < TILE - 8; offset += 12) {
-      g.fillStyle(0x2e8b80, 1);
-      g.fillRect(tx + offset, ty + 11, 5, TILE - 24);
-      g.fillStyle(0x79f8d9, 1);
-      g.fillRect(tx + offset, ty + 13, 2, TILE - 28);
+    g.fillStyle(0x0a171a, 1);
+    g.fillPoints([
+      new Phaser.Math.Vector2(tx + 29, ty + 5), new Phaser.Math.Vector2(tx + 52, ty + 28),
+      new Phaser.Math.Vector2(tx + 29, ty + 51), new Phaser.Math.Vector2(tx + 6, ty + 28),
+    ], true);
+    g.lineStyle(3, 0x52e8bd, 1);
+    g.strokePoints([
+      new Phaser.Math.Vector2(tx + 29, ty + 6), new Phaser.Math.Vector2(tx + 51, ty + 28),
+      new Phaser.Math.Vector2(tx + 29, ty + 50), new Phaser.Math.Vector2(tx + 7, ty + 28),
+    ], true);
+    for (let offset = 0; offset < 3; offset += 1) {
+      g.fillStyle(offset === 1 ? 0x8bffe1 : 0x287c70, 1);
+      g.fillTriangle(tx + 17 + offset * 10, ty + 21, tx + 23 + offset * 10, ty + 28, tx + 17 + offset * 10, ty + 35);
     }
-    this.text(tx + TILE / 2 - 1, ty - 8, "OUT", 10, "#62f2d0", "center");
+    if (this.isVisible(target.x, target.y)) this.text(tx + 29, ty + 8, "DISPATCH", 8, "#78f7d4", "center");
   }
 
   private drawConveyor(x: number, y: number, direction: Facing, beat: number): void {
     const px = ORIGIN_X + x * TILE;
     const py = ORIGIN_Y + y * TILE;
     const g = this.ink;
-    g.fillStyle(0x192f3b, 1);
-    g.fillRect(px + 2, py + 5, TILE - 6, TILE - 12);
-    g.lineStyle(2, 0x52798a, 1);
-    g.strokeRect(px + 3, py + 6, TILE - 8, TILE - 14);
-    const offset = (beat % 3) * 6;
-    for (let stripe = -10 + offset; stripe < TILE; stripe += 18) {
-      g.fillStyle(0x55c4cf, 0.8);
-      if (direction === "right") g.fillTriangle(px + stripe, py + 18, px + stripe + 10, py + 28, px + stripe, py + 38);
-      else if (direction === "left") g.fillTriangle(px + stripe + 10, py + 18, px + stripe, py + 28, px + stripe + 10, py + 38);
-      else if (direction === "up") g.fillTriangle(px + 18, py + stripe + 10, px + 28, py + stripe, px + 38, py + stripe + 10);
-      else g.fillTriangle(px + 18, py + stripe, px + 28, py + stripe + 10, px + 38, py + stripe);
+    g.fillStyle(0x0a1018, 1);
+    g.fillRect(px + 3, py + 9, TILE - 8, TILE - 17);
+    g.fillStyle(0x334b59, 1);
+    g.fillRect(px + 5, py + 12, TILE - 12, TILE - 23);
+    g.lineStyle(3, 0x7893a0, 1);
+    g.strokeRect(px + 4, py + 10, TILE - 10, TILE - 19);
+    for (let roller = 0; roller < 4; roller += 1) {
+      g.fillStyle(roller === beat % 4 ? 0x66e4dd : 0x172b35, 1);
+      if (direction === "left" || direction === "right") g.fillRect(px + 10 + roller * 11, py + 18, 6, 23);
+      else g.fillRect(px + 17, py + 14 + roller * 9, 24, 5);
     }
+    const cx = px + 29;
+    const cy = py + 29;
+    g.fillStyle(0xc9f8ed, 1);
+    if (direction === "right") g.fillTriangle(cx - 7, cy - 7, cx + 8, cy, cx - 7, cy + 7);
+    else if (direction === "left") g.fillTriangle(cx + 7, cy - 7, cx - 8, cy, cx + 7, cy + 7);
+    else if (direction === "up") g.fillTriangle(cx - 7, cy + 7, cx, cy - 8, cx + 7, cy + 7);
+    else g.fillTriangle(cx - 7, cy - 7, cx, cy + 8, cx + 7, cy - 7);
+  }
+
+  private drawPress(press: Point, index: number, state: SimState): void {
+    const active = isPressActive(index, state.beat, state.level);
+    const px = ORIGIN_X + press.x * TILE;
+    const py = ORIGIN_Y + press.y * TILE;
+    const g = this.ink;
+    g.fillStyle(0x08090d, 0.8);
+    g.fillEllipse(px + 29, py + 47, 51, 13);
+    g.fillStyle(active ? 0x7b1e2b : 0x332830, 1);
+    g.fillRect(px + 5, py + 8, 47, 36);
+    g.fillStyle(active ? 0xe94752 : 0x62434a, 1);
+    g.fillRect(px + 8, py + 5, 41, 8);
+    g.fillStyle(0x151922, 1);
+    g.fillRect(px + 8, py + 36, 41, 10);
+    for (let stripe = 0; stripe < 4; stripe += 1) {
+      g.fillStyle(active ? 0xffc23d : 0x8c6730, 1);
+      g.fillRect(px + 11 + stripe * 10, py + 17, 5, 16);
+    }
+    g.fillStyle(active ? 0xff5a64 : 0x5a2028, 1);
+    g.fillRect(px + 14, py + 2, 29, 4);
+    if (this.isVisible(press.x, press.y)) this.text(px + 29, py + 7, active ? "CRUSH" : `PRESS ${index + 1}`, 8, active ? "#fff0b1" : "#b8a274", "center");
   }
 
   private drawDoor(door: Point, open: boolean): void {
     const dx = ORIGIN_X + door.x * TILE;
     const dy = ORIGIN_Y + door.y * TILE;
     const g = this.ink;
+    g.fillStyle(0x080b11, 0.8);
+    g.fillRect(dx + 2, dy + 48, 54, 8);
+    g.fillStyle(0x252f3e, 1);
+    g.fillRect(dx + 3, dy - 7, 9, 59);
+    g.fillRect(dx + 46, dy - 7, 9, 59);
+    g.fillStyle(0x69788c, 1);
+    g.fillRect(dx + 6, dy - 4, 3, 50);
+    g.fillRect(dx + 49, dy - 4, 3, 50);
     if (!open) {
-      g.fillStyle(0x3c4658, 1);
-      g.fillRect(dx + 5, dy, TILE - 12, TILE - 2);
-      for (let stripe = -12; stripe < TILE; stripe += 17) {
-        g.fillStyle(0xe8a83b, 1);
-        g.fillTriangle(dx + stripe, dy + TILE - 3, dx + stripe + 9, dy + TILE - 3, dx + stripe + 26, dy + 1);
+      g.fillStyle(0x3d495a, 1);
+      g.fillRect(dx + 11, dy - 4, 35, 51);
+      for (let stripe = -8; stripe < 50; stripe += 16) {
+        g.fillStyle(0xe3a13a, 1);
+        g.fillTriangle(dx + 11, dy + stripe, dx + 11, dy + stripe + 9, dx + 46, dy + stripe + 28);
       }
       g.lineStyle(3, 0x111722, 1);
-      g.strokeRect(dx + 5, dy + 2, TILE - 12, TILE - 7);
+      g.strokeRect(dx + 11, dy - 3, 35, 49);
+      g.fillStyle(0xaec1d2, 1);
+      g.fillRect(dx + 27, dy + 10, 3, 25);
     } else {
-      g.fillStyle(0x1f2936, 1);
-      g.fillRect(dx + 4, dy, 8, TILE - 2);
-      g.fillRect(dx + TILE - 14, dy, 8, TILE - 2);
-      g.fillStyle(0x48e5ae, 1);
-      g.fillRect(dx + 7, dy + 8, 3, 14);
-      g.fillRect(dx + TILE - 11, dy + 8, 3, 14);
+      g.fillStyle(0x55efb5, 1);
+      g.fillRect(dx + 6, dy + 5, 4, 13);
+      g.fillRect(dx + 48, dy + 5, 4, 13);
     }
   }
 
@@ -202,95 +335,255 @@ export class FactoryScene extends Phaser.Scene {
     const px = ORIGIN_X + panel.x * TILE;
     const py = ORIGIN_Y + panel.y * TILE;
     const g = this.ink;
-    g.fillStyle(0x353e4e, 1);
-    g.fillRect(px + 12, py + 7, 34, 38);
-    g.fillStyle(open ? 0x47ef9d : 0xf04e55, 1);
-    g.fillRect(px + 19, py + 14, 20, 13);
-    g.fillStyle(0x0c1119, 1);
-    g.fillRect(px + 25, py + 31, 8, 9);
-    this.text(px + TILE / 2, py - 7, "GATE", 9, open ? "#5ff1ae" : "#f47070", "center");
+    g.fillStyle(0x080a0e, 0.75);
+    g.fillRect(px + 13, py + 17, 37, 35);
+    g.fillStyle(0x414d60, 1);
+    g.fillRect(px + 10, py + 6, 36, 39);
+    g.fillStyle(0x67758a, 1);
+    g.fillRect(px + 13, py + 9, 30, 5);
+    g.fillStyle(0x0b1217, 1);
+    g.fillRect(px + 17, py + 17, 22, 14);
+    g.fillStyle(open ? 0x54f2aa : 0xf45660, 1);
+    g.fillRect(px + 20, py + 20, 16, 5);
+    g.fillStyle(0xf1c759, 1);
+    g.fillCircle(px + 20, py + 37, 3);
+    g.fillStyle(0x1b222d, 1);
+    g.fillCircle(px + 33, py + 37, 3);
   }
 
   private drawWall(x: number, y: number): void {
     const px = ORIGIN_X + x * TILE;
     const py = ORIGIN_Y + y * TILE;
     const g = this.ink;
-    g.fillStyle(0x30394a, 1);
-    g.fillRect(px + 3, py, TILE - 8, TILE - 2);
-    g.fillStyle(0x4a566a, 1);
-    g.fillRect(px + 7, py + 5, TILE - 16, 7);
-    g.fillStyle(0x121722, 1);
-    g.fillRect(px + 8, py + TILE - 11, TILE - 18, 6);
-    g.fillStyle(0x8d98aa, 1);
-    g.fillRect(px + 10, py + 16, 4, 4);
-    g.fillRect(px + TILE - 17, py + TILE - 18, 4, 4);
+    // A raised block with a bright top and deep front face.
+    g.fillStyle(0x080a0f, 0.75);
+    g.fillRect(px + 6, py + 49, TILE - 7, 8);
+    g.fillStyle(0x1b222e, 1);
+    g.fillRect(px + 4, py + 8, TILE - 8, 43);
+    g.fillStyle(0x3c485a, 1);
+    g.fillPoints([
+      new Phaser.Math.Vector2(px + 4, py + 8), new Phaser.Math.Vector2(px + 12, py),
+      new Phaser.Math.Vector2(px + TILE - 4, py), new Phaser.Math.Vector2(px + TILE - 4, py + 42),
+      new Phaser.Math.Vector2(px + TILE - 12, py + 50), new Phaser.Math.Vector2(px + 4, py + 50),
+    ], true);
+    g.fillStyle(0x59677c, 1);
+    g.fillPoints([
+      new Phaser.Math.Vector2(px + 5, py + 8), new Phaser.Math.Vector2(px + 13, py + 1),
+      new Phaser.Math.Vector2(px + TILE - 5, py + 1), new Phaser.Math.Vector2(px + TILE - 13, py + 8),
+    ], true);
+    g.fillStyle(0x242d3b, 1);
+    g.fillRect(px + 9, py + 12, TILE - 22, 31);
+    g.fillStyle(0x0e131b, 1);
+    g.fillRect(px + 13, py + 33, TILE - 30, 6);
+    g.fillStyle(0x91a1b5, 1);
+    g.fillRect(px + 12, py + 16, 4, 4);
+    g.fillRect(px + TILE - 19, py + 16, 4, 4);
+    g.fillStyle(0xb96d32, 1);
+    g.fillRect(px + 8, py + 44, TILE - 20, 3);
+  }
+
+  private drawPlate(plate: Point, index: number, state: SimState): void {
+    const px = ORIGIN_X + plate.x * TILE;
+    const py = ORIGIN_Y + plate.y * TILE;
+    const rawState = state as unknown as Record<string, unknown>;
+    const pressedList = rawState.pressedPlates;
+    const weights = this.pointsFrom(rawState.weight ?? rawState.weights);
+    const active = rawState.plateActive === true
+      || (Array.isArray(pressedList) && pressedList.includes(index))
+      || weights.some((weight) => this.same(weight, plate));
+    const g = this.ink;
+    g.fillStyle(0x0b0e14, 1);
+    g.fillEllipse(px + 29, py + 34, 43, 25);
+    g.fillStyle(active ? 0x397d67 : 0x46505c, 1);
+    g.fillEllipse(px + 29, py + 29, 41, 23);
+    g.lineStyle(3, active ? 0x79f0bd : 0xa3afba, 1);
+    g.strokeEllipse(px + 29, py + 29, 41, 23);
+    g.fillStyle(active ? 0x9bffd8 : 0xd2a443, 1);
+    g.fillRect(px + 25, py + 25, 8, 8);
+  }
+
+  private drawWeight(x: number, y: number): void {
+    const px = ORIGIN_X + x * TILE;
+    const py = ORIGIN_Y + y * TILE;
+    const g = this.ink;
+    g.fillStyle(0x07090e, 0.8);
+    g.fillEllipse(px + 29, py + 44, 43, 13);
+    g.fillStyle(0x293340, 1);
+    g.fillRect(px + 11, py + 19, 36, 25);
+    g.fillStyle(0x66758a, 1);
+    g.fillRect(px + 15, py + 14, 28, 7);
+    g.fillStyle(0xaeb8c4, 1);
+    g.fillRect(px + 19, py + 18, 5, 18);
+    g.fillStyle(0xe1a741, 1);
+    g.fillRect(px + 31, py + 26, 9, 6);
   }
 
   private drawCrate(x: number, y: number, shipped = false): void {
-    const px = ORIGIN_X + x * TILE + 10;
-    const py = ORIGIN_Y + y * TILE + 10;
+    const px = ORIGIN_X + x * TILE;
+    const py = ORIGIN_Y + y * TILE;
     const g = this.ink;
-    g.fillStyle(shipped ? 0x55d7a8 : 0xc57b31, 1);
-    g.fillRect(px, py, TILE - 22, TILE - 22);
-    g.fillStyle(shipped ? 0xa2f3d5 : 0xf2b34d, 1);
-    g.fillRect(px + 4, py + 4, TILE - 30, 6);
-    g.fillRect(px + 5, py + 12, 6, TILE - 35);
-    g.lineStyle(3, 0x5b351f, 1);
-    g.strokeRect(px + 2, py + 2, TILE - 26, TILE - 26);
-    g.lineBetween(px + 7, py + 7, px + TILE - 29, py + TILE - 29);
-    g.lineBetween(px + TILE - 29, py + 7, px + 7, py + TILE - 29);
+    g.fillStyle(0x07090d, 0.8);
+    g.fillEllipse(px + 29, py + 46, 43, 12);
+    g.fillStyle(shipped ? 0x358e72 : 0x8c542d, 1);
+    g.fillRect(px + 10, py + 17, 38, 29);
+    g.fillStyle(shipped ? 0x7ce3bd : 0xd68a3b, 1);
+    g.fillPoints([
+      new Phaser.Math.Vector2(px + 10, py + 17), new Phaser.Math.Vector2(px + 17, py + 10),
+      new Phaser.Math.Vector2(px + 50, py + 10), new Phaser.Math.Vector2(px + 48, py + 17),
+    ], true);
+    g.fillStyle(0xf3bc58, 1);
+    g.fillRect(px + 15, py + 20, 5, 20);
+    g.fillRect(px + 39, py + 20, 5, 20);
+    g.lineStyle(2, 0x4f2c1d, 1);
+    g.strokeRect(px + 10, py + 17, 38, 29);
+    g.fillStyle(0xf6dd9a, 1);
+    g.fillRect(px + 24, py + 24, 11, 8);
+    g.fillStyle(0x7d4028, 1);
+    g.fillRect(px + 26, py + 26, 7, 2);
+  }
+
+  private drawContactMarker(x: number, y: number): void {
+    const px = ORIGIN_X + x * TILE;
+    const py = ORIGIN_Y + y * TILE;
+    const g = this.ink;
+    // High-contrast bracketed diamond remains readable under the oversized sprite.
+    g.fillStyle(0x26080e, 0.9);
+    g.fillPoints([
+      new Phaser.Math.Vector2(px + 29, py + 7), new Phaser.Math.Vector2(px + 52, py + 29),
+      new Phaser.Math.Vector2(px + 29, py + 52), new Phaser.Math.Vector2(px + 6, py + 29),
+    ], true);
+    g.lineStyle(4, 0xff4057, 1);
+    g.strokePoints([
+      new Phaser.Math.Vector2(px + 29, py + 6), new Phaser.Math.Vector2(px + 52, py + 29),
+      new Phaser.Math.Vector2(px + 29, py + 52), new Phaser.Math.Vector2(px + 6, py + 29),
+    ], true);
+    g.fillStyle(0xffd84b, 1);
+    g.fillRect(px + 25, py + 47, 8, 5);
   }
 
   private drawEnemy(x: number, y: number): void {
-    const cx = ORIGIN_X + x * TILE + TILE / 2 - 1;
-    const cy = ORIGIN_Y + y * TILE + TILE / 2 + 4;
+    this.drawContactMarker(x, y);
+    const cx = ORIGIN_X + x * TILE + 29;
+    const cy = ORIGIN_Y + y * TILE + 28;
     const g = this.ink;
-    g.fillStyle(0x05070b, 0.7);
-    g.fillEllipse(cx, cy + 14, 43, 12);
-    g.fillStyle(0x4e141e, 1);
-    g.fillEllipse(cx, cy, 45, 28);
-    g.lineStyle(4, 0xef4554, 1);
-    g.strokeEllipse(cx, cy, 45, 28);
-    g.fillStyle(0xffbd3f, 1);
-    g.fillRect(cx - 11, cy - 6, 22, 7);
-    g.fillStyle(0xff5562, 1);
-    g.fillCircle(cx, cy - 13, 5);
+    g.fillStyle(0x030407, 0.85);
+    g.fillEllipse(cx, cy + 24, 66, 18);
+    // Tall, brutal forklift-like patrol; intentionally larger than one tile.
+    g.fillStyle(0x1b202a, 1);
+    g.fillRect(cx - 31, cy - 8, 62, 31);
+    g.fillStyle(0x671923, 1);
+    g.fillRect(cx - 27, cy - 26, 54, 42);
+    g.fillStyle(0xa52b38, 1);
+    g.fillPoints([
+      new Phaser.Math.Vector2(cx - 27, cy - 26), new Phaser.Math.Vector2(cx - 17, cy - 35),
+      new Phaser.Math.Vector2(cx + 24, cy - 35), new Phaser.Math.Vector2(cx + 27, cy - 26),
+    ], true);
+    g.fillStyle(0xe04450, 1);
+    g.fillRect(cx - 21, cy - 22, 42, 6);
+    g.fillStyle(0x080b10, 1);
+    g.fillRect(cx - 17, cy - 12, 34, 15);
+    g.fillStyle(0xffc83d, 1);
+    g.fillRect(cx - 12, cy - 8, 8, 6);
+    g.fillRect(cx + 5, cy - 8, 8, 6);
+    g.fillStyle(0x090b10, 1);
+    g.fillRect(cx - 28, cy + 16, 13, 12);
+    g.fillRect(cx + 15, cy + 16, 13, 12);
+    g.fillStyle(0xd23c49, 1);
+    g.fillRect(cx - 25, cy + 18, 7, 7);
+    g.fillRect(cx + 18, cy + 18, 7, 7);
+    g.fillStyle(0xff5a64, 1);
+    g.fillRect(cx - 4, cy - 42, 8, 8);
+    g.fillStyle(0x7b2831, 1);
+    g.fillRect(cx - 2, cy - 35, 4, 8);
   }
 
   private drawRobot(state: SimState): void {
-    const cx = ORIGIN_X + state.robot.x * TILE + TILE / 2 - 1;
-    const cy = ORIGIN_Y + state.robot.y * TILE + TILE / 2 + 7;
+    const cx = ORIGIN_X + state.robot.x * TILE + 29;
+    const cy = ORIGIN_Y + state.robot.y * TILE + 30;
     const g = this.ink;
 
-    // A squat autonomous floor cleaner: wheels are tucked under one low shell.
-    g.fillStyle(0x05070b, 0.75);
-    g.fillEllipse(cx, cy + 13, 48, 13);
-    g.fillStyle(0x172b38, 1);
-    g.fillRect(cx - 23, cy - 5, 5, 17);
-    g.fillRect(cx + 18, cy - 5, 5, 17);
-    g.fillStyle(0x276d7c, 1);
-    g.fillEllipse(cx, cy, 47, 29);
-    g.lineStyle(4, 0x79e5df, 1);
-    g.strokeEllipse(cx, cy, 47, 29);
-    g.fillStyle(0x163e4d, 1);
-    g.fillEllipse(cx, cy - 4, 31, 15);
-    g.fillStyle(0x9af7ea, 1);
-    g.fillCircle(cx, cy - 10, 5);
+    // Friendly food-delivery bot: visible wheels, tall insulated cabinet, face display and antenna.
+    g.fillStyle(0x030508, 0.8);
+    g.fillEllipse(cx, cy + 24, 55, 15);
+    g.fillStyle(0x111924, 1);
+    g.fillRect(cx - 24, cy + 7, 8, 22);
+    g.fillRect(cx + 16, cy + 7, 8, 22);
+    g.fillStyle(0x36485b, 1);
+    g.fillRect(cx - 22, cy + 12, 6, 12);
+    g.fillRect(cx + 16, cy + 12, 6, 12);
+
+    g.fillStyle(0x2a7c88, 1);
+    g.fillRect(cx - 20, cy - 27, 40, 47);
+    g.fillStyle(0x66d8d0, 1);
+    g.fillPoints([
+      new Phaser.Math.Vector2(cx - 20, cy - 27), new Phaser.Math.Vector2(cx - 14, cy - 33),
+      new Phaser.Math.Vector2(cx + 19, cy - 33), new Phaser.Math.Vector2(cx + 20, cy - 27),
+    ], true);
+    g.fillStyle(0x174e5b, 1);
+    g.fillRect(cx - 15, cy - 22, 30, 24);
+    g.lineStyle(2, 0xa4fff0, 1);
+    g.strokeRect(cx - 15, cy - 22, 30, 24);
+    g.fillStyle(0x0b1820, 1);
+    g.fillRect(cx - 12, cy - 18, 24, 11);
+    g.fillStyle(0x8ff5de, 1);
+    g.fillRect(cx - 7, cy - 15, 4, 4);
+    g.fillRect(cx + 3, cy - 15, 4, 4);
+    g.fillStyle(0x5acdbf, 1);
+    g.fillRect(cx - 3, cy - 9, 6, 2);
+    g.fillStyle(0xf2c550, 1);
+    g.fillRect(cx - 13, cy + 6, 26, 5);
+    g.fillStyle(0x163e49, 1);
+    g.fillRect(cx - 10, cy + 14, 20, 4);
+
+    // Antenna and warm locator lamp reinforce the upright courier silhouette.
+    g.fillStyle(0x728b9d, 1);
+    g.fillRect(cx + 10, cy - 42, 3, 10);
+    g.fillStyle(0xffd454, 1);
+    g.fillRect(cx + 8, cy - 46, 7, 6);
+    g.fillStyle(0xfff2a2, 1);
+    g.fillRect(cx + 10, cy - 45, 3, 2);
 
     const marker: Record<Facing, Point> = {
-      up: { x: 0, y: -12 }, right: { x: 18, y: 0 }, down: { x: 0, y: 10 }, left: { x: -18, y: 0 },
+      up: { x: 0, y: -31 }, right: { x: 21, y: -4 }, down: { x: 0, y: 22 }, left: { x: -21, y: -4 },
     };
-    const eye = marker[state.robot.facing];
+    const facing = marker[state.robot.facing];
     g.fillStyle(0xffd34e, 1);
-    g.fillCircle(cx + eye.x, cy + eye.y, 4);
+    g.fillTriangle(cx + facing.x, cy + facing.y - 4, cx + facing.x + 4, cy + facing.y + 3, cx + facing.x - 4, cy + facing.y + 3);
 
     if (state.carrying) {
-      g.fillStyle(0xc57b31, 1);
-      g.fillRect(cx - 13, cy - 31, 26, 20);
-      g.fillStyle(0xf2b34d, 1);
-      g.fillRect(cx - 9, cy - 27, 18, 4);
-      g.lineStyle(2, 0x5b351f, 1);
-      g.strokeRect(cx - 13, cy - 31, 26, 20);
+      g.fillStyle(0xd88539, 1);
+      g.fillRect(cx - 13, cy - 38, 26, 13);
+      g.fillStyle(0xffc45d, 1);
+      g.fillRect(cx - 9, cy - 35, 18, 3);
+      g.lineStyle(2, 0x56301e, 1);
+      g.strokeRect(cx - 13, cy - 38, 26, 13);
+    }
+  }
+
+  private drawFog(): void {
+    if (!this.explored) return;
+    const f = this.fog;
+    for (let y = 0; y < GRID.height; y += 1) {
+      for (let x = 0; x < GRID.width; x += 1) {
+        if (this.isVisible(x, y)) continue;
+        const px = ORIGIN_X + x * TILE;
+        const py = ORIGIN_Y + y * TILE;
+        if (this.explored.has(keyOf(x, y))) {
+          f.fillStyle(0x070a12, 0.69);
+          f.fillRect(px, py, TILE - 2, TILE - 2);
+          f.fillStyle(0x17202c, 0.2);
+          f.fillTriangle(px + 2, py + 2, px + TILE - 3, py + 2, px + 2, py + TILE - 3);
+        } else {
+          f.fillStyle(0x020307, 0.985);
+          f.fillRect(px - 1, py - 1, TILE, TILE);
+          // Tiny dithering breaks up the black without revealing geometry.
+          if ((x + y) % 2 === 0) {
+            f.fillStyle(0x101622, 0.6);
+            f.fillRect(px + 12, py + 17, 3, 3);
+            f.fillRect(px + 42, py + 39, 2, 2);
+          }
+        }
+      }
     }
   }
 }
@@ -302,7 +595,7 @@ export function createFactoryGame(parent: HTMLElement, onReady: (scene: FactoryS
     parent,
     width: WIDTH,
     height: HEIGHT,
-    backgroundColor: "#0a0d14",
+    backgroundColor: "#070910",
     pixelArt: true,
     antialias: false,
     scene,
