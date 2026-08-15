@@ -45,14 +45,24 @@ export default function App() {
     return () => window.clearInterval(interval)
   }, [])
 
-  useEffect(() => () => window.clearTimeout(feedbackTimeout.current), [])
+  useEffect(() => () => {
+    window.clearTimeout(feedbackTimeout.current)
+    audio.dispose()
+  }, [audio])
+
+  useEffect(() => {
+    const stageTension = state.current.stage / (STAGE_NAMES.length - 1)
+    const scrutinyTension = state.scrutiny / 7
+    audio.setTension(Math.max(stageTension, scrutinyTension, state.phase === 'ending' ? 1 : 0))
+  }, [state.current.stage, state.scrutiny, state.phase, audio])
 
   useEffect(() => {
     if (state.errorPulse === 0) return
+    audio.caw()
     window.clearTimeout(feedbackTimeout.current)
     setFeedback({ id: state.errorPulse, kind: 'error', text: 'PATTERN LOGGED // BACKSPACE REQUIRED' })
     feedbackTimeout.current = window.setTimeout(() => setFeedback(null), 3400)
-  }, [state.errorPulse])
+  }, [state.errorPulse, audio])
 
   useEffect(() => {
     if (state.phase !== 'transition') return
@@ -146,8 +156,8 @@ export default function App() {
           <div className="metric"><b aria-hidden="true">↟</b><span><small>STREAK</small><strong>{state.streak}</strong></span></div>
           <div className="metric"><b aria-hidden="true">⌨</b><span><small>WPM</small><strong>{Math.round(wpm(state, now))}</strong></span></div>
           <div className="metric"><b aria-hidden="true">◷</b><span><small>TIME</small><strong data-testid="timer">{formatTime(elapsed)}</strong></span></div>
-          <button className="audio-toggle" onClick={toggleAudio} aria-label={`${audioEnabled ? 'Mute' : 'Enable'} office ambience`}>
-            <b aria-hidden="true">◖</b><span>{audioEnabled ? 'SOUND ON' : 'SOUND OFF'}</span>
+          <button className="audio-toggle" onClick={toggleAudio} aria-label={`${audioEnabled ? 'Mute' : 'Enable'} music and sound effects`}>
+            <b aria-hidden="true">◖</b><span>{audioEnabled ? 'AUDIO ON' : 'AUDIO OFF'}</span>
           </button>
         </div>
       </header>
