@@ -25,6 +25,8 @@ report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
 # caches
 .eslintcache
 .cache
+.pi-agent-browser
+artifacts
 *.tsbuildinfo
 
 # IntelliJ based IDEs

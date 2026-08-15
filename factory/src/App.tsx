@@ -1,0 +1,378 @@
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { FactoryAudio } from "./audio";
+import { createFactoryGame, type FactoryScene } from "./game";
+import {
+  PROGRAM_LENGTH,
+  SOLUTION,
+  initialState,
+  simulate,
+  step,
+  type Command,
+  type SimState,
+} from "./simulation";
+
+const COMMANDS: Array<{ command: Exclude<Command, null>; icon: string; label: string; key: string }> = [
+  { command: "up", icon: "↑", label: "North", key: "↑" },
+  { command: "right", icon: "→", label: "East", key: "→" },
+  { command: "down", icon: "↓", label: "South", key: "↓" },
+  { command: "left", icon: "←", label: "West", key: "←" },
+  { command: "wait", icon: "Ⅱ", label: "Hold", key: "Space" },
+  { command: "grab", icon: "⌄", label: "Grab", key: "G" },
+  { command: "drop", icon: "⌃", label: "Drop", key: "D" },
+  { command: "switch", icon: "⚡", label: "Switch", key: "S" },
+];
+
+const commandInfo = new Map(COMMANDS.map((entry) => [entry.command, entry]));
+const starterProgram: Command[] = ["right", "grab", "up", "up", ...Array(16).fill(null)];
+const query = new URLSearchParams(window.location.search);
+const debugMode = query.get("debug") === "true";
+const initialMusic = query.get("music") !== "off";
+
+function stateTone(state: SimState): string {
+  if (state.status === "dead") return "danger";
+  if (state.status === "won") return "success";
+  if (state.status === "running") return "active";
+  return "idle";
+}
+
+export default function App() {
+  const mountRef = useRef<HTMLDivElement>(null);
+  const sceneRef = useRef<FactoryScene | null>(null);
+  const timeoutRef = useRef<number | null>(null);
+  const stateRef = useRef<SimState>(initialState());
+  const programRef = useRef<Command[]>(starterProgram);
+  const audioRef = useRef(new FactoryAudio(initialMusic));
+
+  const [program, setProgram] = useState<Command[]>(starterProgram);
+  const [simState, setSimState] = useState<SimState>(stateRef.current);
+  const [selectedBeat, setSelectedBeat] = useState(4);
+  const [attempts, setAttempts] = useState(0);
+  const [music, setMusic] = useState(initialMusic);
+  const [debugBeat, setDebugBeat] = useState(12);
+
+  const stopTimer = useCallback(() => {
+    if (timeoutRef.current !== null) window.clearTimeout(timeoutRef.current);
+    timeoutRef.current = null;
+  }, []);
+
+  const publishState = useCallback((next: SimState) => {
+    stateRef.current = next;
+    setSimState(next);
+    sceneRef.current?.showState(next);
+  }, []);
+
+  useEffect(() => {
+    const mount = mountRef.current;
+    if (!mount) return;
+    const game = createFactoryGame(mount, (scene) => {
+      sceneRef.current = scene;
+      scene.showState(stateRef.current);
+    });
+    return () => {
+      stopTimer();
+      sceneRef.current = null;
+      game.destroy(true);
+      audioRef.current.dispose();
+    };
+  }, [stopTimer]);
+
+  useEffect(() => {
+    programRef.current = program;
+  }, [program]);
+
+  const resetSimulation = useCallback(() => {
+    stopTimer();
+    publishState(initialState());
+  }, [publishState, stopTimer]);
+
+  const executeBeat = useCallback(() => {
+    const current = stateRef.current;
+    const command = programRef.current[current.beat] ?? null;
+    const next = step(current, command);
+    publishState(next);
+    setSelectedBeat(Math.min(next.beat, PROGRAM_LENGTH - 1));
+    sceneRef.current?.pulse(next.status === "dead" ? "impact" : next.status === "won" ? "win" : "beat");
+    void audioRef.current.tick(next.beat, next.status === "dead");
+
+    if (next.status === "won") {
+      stopTimer();
+      void audioRef.current.success();
+    } else if (next.status === "dead") {
+      stopTimer();
+    } else {
+      timeoutRef.current = window.setTimeout(executeBeat, 470);
+    }
+  }, [publishState, stopTimer]);
+
+  const runProgram = useCallback(() => {
+    stopTimer();
+    const ready = initialState("running");
+    ready.message = "TAPE ENGAGED // STAND CLEAR";
+    publishState(ready);
+    setAttempts((value) => value + 1);
+    setSelectedBeat(0);
+    timeoutRef.current = window.setTimeout(executeBeat, 280);
+  }, [executeBeat, publishState, stopTimer]);
+
+  const setCommand = useCallback(
+    (command: Command) => {
+      if (simState.status === "running") return;
+      setProgram((current) => {
+        const next = [...current];
+        next[selectedBeat] = command;
+        return next;
+      });
+      setSelectedBeat((beat) => Math.min(beat + 1, PROGRAM_LENGTH - 1));
+      if (simState.beat !== 0 || simState.status !== "ready") resetSimulation();
+    },
+    [resetSimulation, selectedBeat, simState.beat, simState.status],
+  );
+
+  const clearProgram = useCallback(() => {
+    if (simState.status === "running") return;
+    setProgram(Array(PROGRAM_LENGTH).fill(null));
+    setSelectedBeat(0);
+    resetSimulation();
+  }, [resetSimulation, simState.status]);
+
+  const loadSolution = useCallback(() => {
+    stopTimer();
+    setProgram([...SOLUTION]);
+    setSelectedBeat(0);
+    publishState(initialState());
+  }, [publishState, stopTimer]);
+
+  const seekToBeat = useCallback(
+    (beat: number) => {
+      stopTimer();
+      const targetBeat = Math.max(0, Math.min(PROGRAM_LENGTH, beat));
+      const sought = simulate(programRef.current, targetBeat);
+      if (sought.status === "running") {
+        sought.status = "ready";
+        sought.message = `DEBUG SEEK // BEAT ${targetBeat}`;
+      }
+      publishState(sought);
+      setSelectedBeat(Math.min(targetBeat, PROGRAM_LENGTH - 1));
+    },
+    [publishState, stopTimer],
+  );
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.target instanceof HTMLInputElement) return;
+      if (simState.status === "running") {
+        if (event.key === "Escape") resetSimulation();
+        return;
+      }
+      const keyMap: Record<string, Command> = {
+        ArrowUp: "up",
+        ArrowRight: "right",
+        ArrowDown: "down",
+        ArrowLeft: "left",
+        " ": "wait",
+        g: "grab",
+        G: "grab",
+        d: "drop",
+        D: "drop",
+        s: "switch",
+        S: "switch",
+      };
+      if (event.key in keyMap) {
+        event.preventDefault();
+        setCommand(keyMap[event.key] ?? null);
+      } else if (event.key === "Backspace" || event.key === "Delete") {
+        event.preventDefault();
+        setCommand(null);
+      } else if (event.key === "Enter") {
+        event.preventDefault();
+        runProgram();
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [resetSimulation, runProgram, setCommand, simState.status]);
+
+  useEffect(() => {
+    window.factoryDebug = {
+      getState: () => stateRef.current,
+      getProgram: () => [...programRef.current],
+      loadSolution,
+      runToBeat: seekToBeat,
+      setProgram: (commands: Command[]) => {
+        const normalized = Array.from({ length: PROGRAM_LENGTH }, (_, index) => commands[index] ?? null);
+        setProgram(normalized);
+        programRef.current = normalized;
+        resetSimulation();
+      },
+    };
+    return () => {
+      delete window.factoryDebug;
+    };
+  }, [loadSolution, resetSimulation, seekToBeat]);
+
+  const filledBeats = useMemo(() => program.filter(Boolean).length, [program]);
+
+  return (
+    <main className="app-shell">
+      <header className="topbar">
+        <div className="brand-block">
+          <span className="brand-mark" aria-hidden="true">F//01</span>
+          <div>
+            <h1>SHIFT PROTOCOL</h1>
+            <p>CRATE ROUTING TERMINAL</p>
+          </div>
+        </div>
+        <div className="mission-strip" aria-label="Mission objective">
+          <span className="crate-mini">×</span>
+          <span className="mission-arrow">→</span>
+          <span className="out-mini">OUT</span>
+          <strong>20 BEATS</strong>
+        </div>
+        <button
+          className={`sound-button ${music ? "on" : "off"}`}
+          onClick={() => {
+            const next = !music;
+            setMusic(next);
+            audioRef.current.setEnabled(next);
+          }}
+          aria-label={music ? "Mute music" : "Enable music"}
+        >
+          {music ? "♫ ON" : "♫ OFF"}
+        </button>
+      </header>
+
+      <section className="workbench">
+        <div className="sim-column">
+          <div className={`viewport-frame ${stateTone(simState)}`}>
+            <div className="viewport-label">
+              <span>CAM 03 // SHIPPING FLOOR</span>
+              <span className="live-dot">LIVE</span>
+            </div>
+            <div className="game-mount" ref={mountRef} />
+            <div className="scanlines" aria-hidden="true" />
+            {simState.status === "won" && (
+              <div className="result-card success-card">
+                <span>SHIFT CLEAR</span>
+                <strong>CARGO SHIPPED</strong>
+                <button onClick={resetSimulation}>VIEW ROUTE</button>
+              </div>
+            )}
+            {simState.status === "dead" && (
+              <div className="result-card fail-card">
+                <span>ROUTE FAILED // BEAT {String(simState.beat).padStart(2, "0")}</span>
+                <strong>{simState.message.split(" // ")[0]}</strong>
+                <button onClick={resetSimulation}>EDIT TAPE</button>
+              </div>
+            )}
+          </div>
+          <div className={`status-line ${stateTone(simState)}`}>
+            <div className="status-icon">{simState.status === "won" ? "✓" : simState.status === "dead" ? "!" : "▰"}</div>
+            <div>
+              <span>SYSTEM</span>
+              <strong>{simState.message}</strong>
+            </div>
+            <div className="attempt-counter">RUN {String(attempts).padStart(2, "0")}</div>
+          </div>
+        </div>
+
+        <aside className="program-panel">
+          <div className="panel-heading">
+            <div>
+              <span>ROUTE TAPE</span>
+              <h2>BEAT SCHEDULE</h2>
+            </div>
+            <span className="fill-count">{filledBeats}/{PROGRAM_LENGTH}</span>
+          </div>
+
+          <div className="timeline" aria-label="20 beat command timeline">
+            {program.map((command, index) => {
+              const info = command ? commandInfo.get(command) : undefined;
+              const isPlayhead = simState.status === "running" && simState.beat === index;
+              return (
+                <button
+                  key={index}
+                  className={`beat-slot ${selectedBeat === index ? "selected" : ""} ${isPlayhead ? "playhead" : ""} ${command ? "filled" : "empty"}`}
+                  onClick={() => simState.status !== "running" && setSelectedBeat(index)}
+                  aria-label={`Beat ${index + 1}: ${info?.label ?? "empty"}`}
+                >
+                  <span className="beat-number">{String(index + 1).padStart(2, "0")}</span>
+                  <strong>{info?.icon ?? "·"}</strong>
+                  <span className="beat-label">{info?.label ?? "empty"}</span>
+                  {(index + 1) % 4 === 0 && <i />}
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="command-heading">
+            <span>SET BEAT {String(selectedBeat + 1).padStart(2, "0")}</span>
+            <small>CLICK OR USE KEYS</small>
+          </div>
+          <div className="command-pad">
+            {COMMANDS.map((entry) => (
+              <button
+                key={entry.command}
+                className={program[selectedBeat] === entry.command ? "active" : ""}
+                onClick={() => setCommand(entry.command)}
+                disabled={simState.status === "running"}
+              >
+                <kbd>{entry.key}</kbd>
+                <strong>{entry.icon}</strong>
+                <span>{entry.label}</span>
+              </button>
+            ))}
+          </div>
+
+          <div className="run-controls">
+            <button className="clear-button" onClick={clearProgram} disabled={simState.status === "running"}>
+              CLEAR
+            </button>
+            {simState.status === "running" ? (
+              <button className="run-button stop" onClick={resetSimulation}>■ ABORT</button>
+            ) : (
+              <button className="run-button" onClick={runProgram}>▶ RUN TAPE</button>
+            )}
+          </div>
+
+          <div className="hazard-key">
+            <div><span className="hazard-swatch" /> PRESSES CRUSH FOR 2 BEATS</div>
+            <div className="phase-pips"><i /><i /><i /><i /></div>
+          </div>
+
+          {debugMode && (
+            <div className="debug-panel">
+              <span>DEBUG BAY</span>
+              <button onClick={loadSolution}>LOAD SOLUTION</button>
+              <label>
+                BEAT
+                <input
+                  type="number"
+                  min="0"
+                  max={PROGRAM_LENGTH}
+                  value={debugBeat}
+                  onChange={(event) => setDebugBeat(Number(event.target.value))}
+                />
+              </label>
+              <button onClick={() => seekToBeat(debugBeat)}>SEEK</button>
+            </div>
+          )}
+        </aside>
+      </section>
+      <footer>
+        <span>ARROWS MOVE</span><span>G GRAB</span><span>S SWITCH</span><span>D DROP</span><span>SPACE HOLD</span><span>ENTER RUN</span>
+      </footer>
+    </main>
+  );
+}
+
+declare global {
+  interface Window {
+    factoryDebug?: {
+      getState: () => SimState;
+      getProgram: () => Command[];
+      loadSolution: () => void;
+      runToBeat: (beat: number) => void;
+      setProgram: (commands: Command[]) => void;
+    };
+  }
+}
