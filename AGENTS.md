@@ -9,3 +9,5 @@ Maintain the list of games in README.md and metadata in [`site/games.ts`](site/g
 Games are deployed to a non-root URL (e.g., `/espresso`). Before deploying a game, test that it was written to handle this, in particular that asset handling uses `BASE_URL`.
 
 See [`GAME_GUIDELINES.md`](GAME_GUIDELINES.md) for the shared game-design goals, development constraints, and prototype workflow. Each game's AGENTS.md refers to this.
+
+The game is deployed with Cloudflare Pages to <https://games.chajed.io>. It's automatically built on push (using Cloudflare, not a github workflow).
