@@ -46,20 +46,70 @@ describe("factory route simulation", () => {
     expect(result.message).toContain("PRESS A COLLISION");
   });
 
-  test("the conveyor advances the roomba an extra square", () => {
+  test("level two belts transport the loose weight, not the robot", () => {
     let state = initialState("running", 1);
-    state.robot = { x: 2, y: 6, facing: "right" };
-    state = step(state, "right");
-    expect(state.robot).toMatchObject({ x: 4, y: 6 });
-    expect(state.message).toBe("CONVEYOR TRANSFER");
+    state.robot = { x: 3, y: 7, facing: "right" };
+    state.weight = { x: 4, y: 6 };
+    state = step(state, "wait");
+    expect(state.weight).toEqual({ x: 5, y: 6 });
+    expect(state.robot).toMatchObject({ x: 3, y: 7 });
+    expect(state.message).toBe("WEIGHT CONVEYOR TRANSFER");
   });
 
-  test("moving patrol robots are lethal", () => {
+  test("the weight holds the plate open and removing it closes the required door", () => {
     let state = initialState("running", 1);
-    state.beat = 6;
-    state.robot = { x: 5, y: 5, facing: "up" };
-    state = step(state, "up");
-    expect(state.status).toBe("dead");
-    expect(state.message).toContain("PATROL A COLLISION");
+    state.weight = { x: 6, y: 5 };
+    state = step(state, "wait");
+    expect(state.weight).toEqual(LEVELS[1].plate);
+    expect(state.doorOpen).toBe(true);
+
+    state.robot = { x: 6, y: 3, facing: "right" };
+    state = step(state, "right");
+    expect(state.robot).toMatchObject({ x: 7, y: 3 });
+
+    state.robot = { x: 6, y: 4, facing: "up" };
+    state = step(state, "interact");
+    expect(state.carryingWeight).toBe(true);
+    expect(state.doorOpen).toBe(false);
+
+    state.robot = { x: 6, y: 3, facing: "right" };
+    state.carryingWeight = false;
+    state = step(state, "right");
+    expect(state.robot).toMatchObject({ x: 6, y: 3 });
+    expect(state.message).toBe("MOVEMENT BLOCKED");
+  });
+
+  test("the longer manual heavy-weight route wins without a conveyor transfer", () => {
+    const program = LEVELS[1].alternateSolution;
+    expect(program).toBeDefined();
+
+    let state = initialState("running", 1);
+    const messages: string[] = [];
+    for (const command of program ?? []) {
+      state = step(state, command);
+      messages.push(state.message);
+    }
+
+    expect(program?.length).toBe(19);
+    expect(messages).not.toContain("WEIGHT CONVEYOR TRANSFER");
+    expect(state.status).toBe("won");
+    expect(state.weight).toEqual(LEVELS[1].plate);
+  });
+
+  test("the moving patrol forces timing on the faster conveyor route", () => {
+    const timed = simulate([...LEVELS[1].solution], 20, 1);
+    expect(timed.status).toBe("won");
+
+    const untimed = [...LEVELS[1].solution];
+    untimed.splice(5, 1); // Skip the hold before crossing PATROL A's route.
+    const collision = simulate(untimed, 20, 1);
+    expect(collision.status).toBe("dead");
+    expect(collision.message).toContain("PATROL A COLLISION");
+
+    const lateToDoor = [...LEVELS[1].solution];
+    lateToDoor.splice(12, 0, "wait");
+    const corridorCollision = simulate(lateToDoor, 20, 1);
+    expect(corridorCollision.status).toBe("dead");
+    expect(corridorCollision.message).toContain("PATROL B COLLISION");
   });
 });

@@ -28,7 +28,9 @@ export interface LevelDefinition {
   subtitle: string;
   robotStart: Point & { facing: Facing };
   crateStart: Point;
+  weightStart: Point | null;
   panel: Point | null;
+  plate: Point | null;
   door: Point | null;
   target: Point;
   walls: readonly Point[];
@@ -36,6 +38,7 @@ export interface LevelDefinition {
   conveyors: readonly Conveyor[];
   enemies: readonly EnemyRobot[];
   solution: readonly Command[];
+  alternateSolution?: readonly Command[];
 }
 
 export interface SimState {
@@ -43,7 +46,10 @@ export interface SimState {
   beat: number;
   robot: Point & { facing: Facing };
   crate: Point | null;
+  weight: Point | null;
   carrying: boolean;
+  carryingWeight: boolean;
+  heavyMoveReady: boolean;
   doorOpen: boolean;
   status: RunStatus;
   message: string;
@@ -60,7 +66,9 @@ export const LEVELS: readonly LevelDefinition[] = [
     subtitle: "PRESS LINE",
     robotStart: { x: 1, y: 7, facing: "right" },
     crateStart: { x: 3, y: 7 },
+    weightStart: null,
     panel: { x: 4, y: 4 },
+    plate: null,
     door: { x: 6, y: 4 },
     target: { x: 10, y: 2 },
     walls: dividerWalls,
@@ -77,39 +85,45 @@ export const LEVELS: readonly LevelDefinition[] = [
   },
   {
     name: "SHIFT 02",
-    subtitle: "ROBOT TRAFFIC",
-    robotStart: { x: 1, y: 7, facing: "right" },
-    crateStart: { x: 2, y: 7 },
+    subtitle: "HEAVY TRAFFIC",
+    robotStart: { x: 3, y: 7, facing: "up" },
+    crateStart: { x: 6, y: 3 },
+    weightStart: { x: 3, y: 6 },
     panel: null,
-    door: null,
-    target: { x: 10, y: 2 },
-    walls: [],
+    plate: { x: 6, y: 4 },
+    door: { x: 7, y: 3 },
+    target: { x: 10, y: 3 },
+    walls: Array.from({ length: 7 }, (_, index) => ({ x: 7, y: index + 1 })),
     presses: [],
     conveyors: [
-      { x: 3, y: 6, direction: "right" },
       { x: 4, y: 6, direction: "right" },
       { x: 5, y: 6, direction: "right" },
+      { x: 6, y: 6, direction: "up" },
+      { x: 6, y: 5, direction: "up" },
     ],
     enemies: [
       {
         name: "PATROL A",
+        phase: 2,
         path: [
-          { x: 4, y: 4 }, { x: 5, y: 4 }, { x: 6, y: 4 }, { x: 7, y: 4 },
-          { x: 8, y: 4 }, { x: 7, y: 4 }, { x: 6, y: 4 }, { x: 5, y: 4 },
+          { x: 4, y: 5 }, { x: 5, y: 5 }, { x: 5, y: 4 }, { x: 4, y: 4 },
         ],
       },
       {
         name: "PATROL B",
-        phase: 2,
         path: [
-          { x: 9, y: 2 }, { x: 9, y: 3 }, { x: 9, y: 4 }, { x: 9, y: 5 },
-          { x: 9, y: 6 }, { x: 9, y: 5 }, { x: 9, y: 4 }, { x: 9, y: 3 },
+          { x: 8, y: 2 }, { x: 8, y: 3 }, { x: 8, y: 4 }, { x: 9, y: 4 },
+          { x: 9, y: 3 }, { x: 9, y: 2 },
         ],
       },
     ],
     solution: [
-      "right", "interact", "up", "right", "wait", "up", "wait", "up", "up", "right",
-      "right", "up", "right", "wait", "right", "right",
+      "up", "interact", "right", "right", "interact", "wait", "up", "up", "up", "right",
+      "right", "interact", "right", "right", "right", "right",
+    ],
+    alternateSolution: [
+      "up", "interact", "right", "right", "right", "right", "right", "right", "up", "up",
+      "up", "up", "interact", "up", "interact", "right", "right", "right", "right",
     ],
   },
 ] as const;
@@ -133,7 +147,10 @@ export function initialState(status: RunStatus = "ready", level = 0): SimState {
     beat: 0,
     robot: { ...definition.robotStart },
     crate: { ...definition.crateStart },
+    weight: definition.weightStart ? { ...definition.weightStart } : null,
     carrying: false,
+    carryingWeight: false,
+    heavyMoveReady: false,
     doorOpen: false,
     status,
     message: "ROUTE READY // PRESS RUN",
@@ -167,11 +184,17 @@ function delta(command: Facing): Point {
 }
 
 function moveRobot(state: SimState, direction: Facing, level: LevelDefinition): boolean {
+  if (state.carryingWeight && !state.heavyMoveReady) {
+    state.heavyMoveReady = true;
+    return false;
+  }
+
   const movement = delta(direction);
   const next = { x: state.robot.x + movement.x, y: state.robot.y + movement.y };
   if (wallAt(next, state, level)) return false;
   state.robot.x = next.x;
   state.robot.y = next.y;
+  state.heavyMoveReady = false;
   return true;
 }
 
@@ -185,15 +208,28 @@ export function step(previous: SimState, command: Command): SimState {
     beat: previous.beat + 1,
     robot: { ...previous.robot },
     crate: previous.crate ? { ...previous.crate } : null,
+    weight: previous.weight ? { ...previous.weight } : null,
     status: "running",
     message: "EXECUTING ROUTE",
   };
 
   if (command === "up" || command === "right" || command === "down" || command === "left") {
     state.robot.facing = command;
-    if (!moveRobot(state, command, level)) state.message = "MOVEMENT BLOCKED";
+    if (!moveRobot(state, command, level)) {
+      state.message = state.carryingWeight ? "HEAVY LOAD // BRACE" : "MOVEMENT BLOCKED";
+    }
   } else if (command === "interact") {
-    if (!state.carrying && state.crate && same(state.robot, state.crate)) {
+    if (state.carryingWeight) {
+      state.weight = { x: state.robot.x, y: state.robot.y };
+      state.carryingWeight = false;
+      state.heavyMoveReady = false;
+      state.message = "WEIGHT RELEASED";
+    } else if (!state.carrying && state.weight && same(state.robot, state.weight)) {
+      state.weight = null;
+      state.carryingWeight = true;
+      state.heavyMoveReady = false;
+      state.message = "HEAVY WEIGHT LOCKED";
+    } else if (!state.carrying && state.crate && same(state.robot, state.crate)) {
       state.crate = null;
       state.carrying = true;
       state.message = "CARGO LOCKED";
@@ -207,8 +243,22 @@ export function step(previous: SimState, command: Command): SimState {
     state.message = command === "wait" ? "HOLDING POSITION" : "EMPTY BEAT // HOLD";
   }
 
-  const conveyor = level.conveyors.find((belt) => same(belt, state.robot));
-  if (conveyor && moveRobot(state, conveyor.direction, level)) state.message = "CONVEYOR TRANSFER";
+  if (state.weight) {
+    const conveyor = level.conveyors.find((belt) => same(belt, state.weight as Point));
+    if (conveyor) {
+      const movement = delta(conveyor.direction);
+      const next = { x: state.weight.x + movement.x, y: state.weight.y + movement.y };
+      if (!wallAt(next, state, level)) {
+        state.weight = next;
+        state.message = "WEIGHT CONVEYOR TRANSFER";
+      }
+    }
+  }
+
+  if (level.plate) {
+    state.doorOpen = Boolean(state.weight && same(state.weight, level.plate));
+    if (state.doorOpen && state.message === "WEIGHT CONVEYOR TRANSFER") state.message = "PLATE HELD // BLAST DOOR OPEN";
+  }
 
   for (let index = 0; index < level.presses.length; index += 1) {
     const press = level.presses[index];
