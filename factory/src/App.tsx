@@ -1,12 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import {
-  DEFAULT_SOUNDTRACK_ID,
-  FactoryAudio,
-  SOUNDTRACKS,
-  isSoundtrackId,
-  type ScoreBeat,
-  type SoundtrackId,
-} from "./audio";
+import { FactoryAudio, type ScoreBeat } from "./audio";
 import { createFactoryGame, type FactoryScene } from "./game";
 import {
   LEVELS,
@@ -76,7 +69,7 @@ export default function App() {
   const timeoutRef = useRef<number | null>(null);
   const stateRef = useRef<SimState>(initialState());
   const programRef = useRef<Command[]>(starterProgram(0));
-  const audioRef = useRef(new FactoryAudio(initialMusic, DEFAULT_SOUNDTRACK_ID));
+  const audioRef = useRef(new FactoryAudio(initialMusic));
   const playbackGenerationRef = useRef(0);
   const exploredRef = useRef<Map<number, Set<string>>>(new Map());
 
@@ -85,7 +78,6 @@ export default function App() {
   const [selectedBeat, setSelectedBeat] = useState(4);
   const [attempts, setAttempts] = useState(0);
   const [music, setMusic] = useState(initialMusic);
-  const [soundtrack, setSoundtrack] = useState<SoundtrackId>(DEFAULT_SOUNDTRACK_ID);
   const [debugBeat, setDebugBeat] = useState(12);
 
   const clearTimer = useCallback(() => {
@@ -221,13 +213,6 @@ export default function App() {
     publishState(initialState("ready", level));
   }, [publishState, stopPlayback]);
 
-  const chooseSoundtrack = useCallback((id: SoundtrackId) => {
-    stopPlayback();
-    audioRef.current.setSoundtrack(id);
-    setSoundtrack(id);
-    publishState(initialState("ready", stateRef.current.level));
-  }, [publishState, stopPlayback]);
-
   const seekToBeat = useCallback(
     (beat: number) => {
       stopPlayback();
@@ -313,33 +298,18 @@ export default function App() {
           <span className="out-mini">OUT</span>
           <strong>{level.name} // 20 BEATS</strong>
         </div>
-        <div className="audio-controls">
-          <label>
-            <span>SOUNDTRACK</span>
-            <select
-              value={soundtrack}
-              onChange={(event) => {
-                if (isSoundtrackId(event.target.value)) chooseSoundtrack(event.target.value);
-              }}
-              aria-label="Choose soundtrack"
-            >
-              {SOUNDTRACKS.map((track, index) => (
-                <option key={track.id} value={track.id}>{index + 1}. {track.name}</option>
-              ))}
-            </select>
-          </label>
-          <button
-            className={`sound-button ${music ? "on" : "off"}`}
-            onClick={() => {
-              const next = !music;
-              setMusic(next);
-              audioRef.current.setEnabled(next);
-            }}
-            aria-label={music ? "Mute music" : "Enable music"}
-          >
-            {music ? "♫ ON" : "♫ OFF"}
-          </button>
-        </div>
+        <button
+          className={`sound-button ${music ? "on" : "off"}`}
+          onClick={() => {
+            const next = !music;
+            setMusic(next);
+            audioRef.current.setEnabled(next);
+          }}
+          aria-label={music ? "Mute Neon Conveyor" : "Play Neon Conveyor"}
+          title="Neon Conveyor"
+        >
+          {music ? "♫ ON" : "♫ OFF"}
+        </button>
       </header>
 
       <section className="workbench">

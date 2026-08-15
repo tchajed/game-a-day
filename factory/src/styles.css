@@ -108,27 +108,8 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--mint); outl
 .mission-arrow { color: #536071; font-size: 22px; }
 .mission-strip strong { padding-left: 11px; border-left: 1px solid #3c4656; color: var(--amber); }
 
-.audio-controls {
-  justify-self: end;
-  display: flex;
-  align-items: end;
-  gap: 7px;
-}
-.audio-controls label { display: grid; gap: 3px; }
-.audio-controls label > span { color: #68768a; font-size: 7px; font-weight: 700; letter-spacing: .15em; }
-.audio-controls select {
-  width: 156px;
-  height: 34px;
-  padding: 0 7px;
-  border: 1px solid #3a4557;
-  border-radius: 2px;
-  color: #d7e4e4;
-  background: #111720;
-  font-size: 10px;
-  font-weight: 700;
-  cursor: pointer;
-}
 .sound-button {
+  justify-self: end;
   border: 1px solid #3a4557;
   border-radius: 2px;
   background: #161d27;
@@ -382,7 +363,6 @@ footer {
   .brand-mark { width: 41px; height: 36px; }
   .brand-block h1 { font-size: 18px; }
   .brand-block p { font-size: 8px; }
-  .audio-controls label { display: none; }
   .sound-button { min-width: 60px; }
   .workbench { padding-top: 9px; gap: 10px; }
   .viewport-frame { aspect-ratio: 1.18; }
