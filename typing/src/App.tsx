@@ -69,12 +69,10 @@ export default function App() {
       if (current.phase !== 'playing') return
 
       if (current.mistypedKey !== null) {
-        if (event.key === 'Backspace') {
+        if (event.key === 'Backspace' || event.key.length === 1) {
           event.preventDefault()
-          audio.key(true)
+          audio.key(event.key === 'Backspace')
           dispatch({ type: 'key', key: event.key })
-        } else if (event.key.length === 1) {
-          event.preventDefault()
         }
         return
       }

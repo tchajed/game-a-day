@@ -150,7 +150,7 @@ function registerMistake(state: GameState, key: string, now: number): GameState 
   return {
     ...state,
     startedAt: state.startedAt ?? now,
-    mistypedKey: key,
+    mistypedKey: `${state.mistypedKey ?? ''}${key}`,
     attempts: state.attempts + 1,
     mistakes: mistakeNumber,
     currentMistakes: state.currentMistakes + 1,
@@ -174,7 +174,11 @@ function registerMistake(state: GameState, key: string, now: number): GameState 
 function typeKey(state: GameState, key: string, now: number): GameState {
   if (state.phase !== 'playing') return state
   if (state.mistypedKey !== null) {
-    return key === 'Backspace' ? { ...state, mistypedKey: null } : state
+    if (key === 'Backspace') {
+      const remainingMistakes = state.mistypedKey.slice(0, -1)
+      return { ...state, mistypedKey: remainingMistakes || null }
+    }
+    return key.length === 1 ? registerMistake(state, key, now) : state
   }
   if (key.length !== 1) return state
   const expected = state.current.text[state.charIndex]

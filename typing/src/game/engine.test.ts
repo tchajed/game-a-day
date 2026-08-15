@@ -7,7 +7,7 @@ describe('typing engine', () => {
     expect(WORD_COUNT).toBeGreaterThanOrEqual(400)
   })
 
-  it('requires backspace after a mistake without counting follow-on typing', () => {
+  it('accumulates bad characters and requires one backspace for each', () => {
     const initial = createGameState()
     const wrong = gameReducer(initial, { type: 'key', key: 'x', now: 100 })
     expect(wrong.charIndex).toBe(0)
@@ -17,14 +17,18 @@ describe('typing engine', () => {
 
     const followOn = gameReducer(wrong, { type: 'key', key: 'y', now: 110 })
     const expectedWhileBlocked = gameReducer(followOn, { type: 'key', key: initial.current.text[0]!, now: 120 })
-    expect(expectedWhileBlocked).toBe(followOn)
-    expect(followOn.mistakes).toBe(1)
-    expect(followOn.attempts).toBe(1)
+    expect(expectedWhileBlocked.mistypedKey).toBe(`xy${initial.current.text[0]}`)
+    expect(expectedWhileBlocked.mistakes).toBe(3)
+    expect(expectedWhileBlocked.attempts).toBe(3)
 
-    const erased = gameReducer(followOn, { type: 'key', key: 'Backspace', now: 200 })
+    const firstErase = gameReducer(expectedWhileBlocked, { type: 'key', key: 'Backspace', now: 200 })
+    expect(firstErase.mistypedKey).toBe('xy')
+    const secondErase = gameReducer(firstErase, { type: 'key', key: 'Backspace', now: 210 })
+    expect(secondErase.mistypedKey).toBe('x')
+    const erased = gameReducer(secondErase, { type: 'key', key: 'Backspace', now: 220 })
     expect(erased.charIndex).toBe(0)
     expect(erased.mistypedKey).toBeNull()
-    expect(erased.mistakes).toBe(1)
+    expect(erased.mistakes).toBe(3)
     expect(accuracy(erased)).toBe(0)
 
     const correct = gameReducer(erased, { type: 'key', key: initial.current.text[0]!, now: 300 })
@@ -32,7 +36,7 @@ describe('typing engine', () => {
     expect(correct.correct).toBe(1)
     expect(correct.streak).toBe(1)
     expect(correct.bestStreak).toBe(1)
-    expect(accuracy(correct)).toBe(50)
+    expect(accuracy(correct)).toBe(25)
 
     const reset = gameReducer(correct, { type: 'key', key: 'x', now: 400 })
     expect(reset.streak).toBe(0)
