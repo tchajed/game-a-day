@@ -15,7 +15,7 @@ A collection of games each built in one day, with AI assistance. Each game focus
 | [Psychopomps](psychopomp/) | `psychopomp` | Navigate the afterlife’s least prepared department as an overqualified new hire. |
 | [Bad Bet](betting/) | `betting` | Test a carnival’s suspicious odds before risking your purse on its games of chance. |
 | [Upper Management](typing/) | `typing` | Type carefully while corporate memos fill the night office with watchful ravens. |
-| [Shift Protocol](factory/) | `factory` | Program a cargo robot’s 20-beat route through a relentless automated factory. |
+| [Factory Beat](factory/) | `factory` | Program a cargo robot’s 20-beat route through a relentless automated factory. |
 
 Each game is a standalone Bun project. To run one locally:
 

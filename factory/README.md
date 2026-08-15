@@ -1,4 +1,4 @@
-# Factory programming
+# Factory Beat
 
 This is a game where you control a robot in a factory by scheduling its actions. This isn't programming in the sense of sophisticated logic, but programming its timing precisely. The whole game will also be a rhythm game and will operate on the beat, so all timing will be in terms of beats.
 
@@ -16,7 +16,7 @@ Make sure to make the UI game-like and usable. I think this should be done in Ph
 
 ## Prototype
 
-**Shift Protocol** is a two-level React + Phaser prototype. Program a food-delivery robot's 20-beat route, collect crates and operate factory machinery with one context-sensitive interact command, then reach the OUT bay. Each run permanently maps the tiles it sees, so planning happens against a growing fog-of-war map. The first shift introduces cycling presses and a blast door; the second asks you to route a loose industrial weight along conveyors onto a pressure plate while timing around oversized patrol robots. A slower manual weight route is also possible.
+**Factory Beat** is a two-level React + Phaser prototype. Program a food-delivery robot's 20-beat route, collect crates and operate factory machinery with one context-sensitive interact command, then reach the OUT bay. Each run permanently maps the tiles it sees, so planning happens against a growing fog-of-war map. The first shift introduces cycling presses and a blast door; the second asks you to route a loose industrial weight along conveyors onto a pressure plate while timing around oversized patrol robots. A slower manual weight route is also possible.
 
 ```bash
 bun install

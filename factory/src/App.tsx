@@ -304,7 +304,7 @@ export default function App() {
         <div className="brand-block">
           <span className="brand-mark" aria-hidden="true">F//01</span>
           <div>
-            <h1>SHIFT PROTOCOL</h1>
+            <h1>FACTORY BEAT</h1>
             <p>CRATE ROUTING TERMINAL</p>
           </div>
         </div>

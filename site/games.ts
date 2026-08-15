@@ -10,7 +10,7 @@ export type GameConfig = {
 export const games: GameConfig[] = [
   {
     directory: "factory",
-    slug: "shift-protocol",
+    slug: "factory-beat",
     date: "2026-08-15",
     cover: "screenshots/shift-protocol.png",
     crop: { left: 0, top: 0, width: 970, height: 647 },
