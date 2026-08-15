@@ -23,4 +23,4 @@ bun install
 bun run dev
 ```
 
-Use the timeline or keyboard shortcuts: arrows move, `Space` holds, `G` grabs, `S` uses the switch, `D` drops, and `Enter` runs the tape. Add `?music=off` to silence audio. Add `?debug=true` to reveal controls for loading the verified solution and seeking to any beat; programmatic playtests can also use `window.factoryDebug`.
+Use the timeline or keyboard shortcuts: arrows move, `Space` holds, `G` grabs, `S` uses the switch, `D` drops, and `Enter` runs the tape. Runs play against a procedurally synthesized 128 BPM Tone.js score with synchronized press, movement, switch, collision, and delivery cues. Add `?music=off` to silence audio. Add `?debug=true` to reveal controls for loading the verified solution and seeking to any beat; programmatic playtests can also use `window.factoryDebug`.

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { FactoryAudio } from "./audio";
+import { FactoryAudio, type ScoreBeat } from "./audio";
 import { createFactoryGame, type FactoryScene } from "./game";
 import {
   PROGRAM_LENGTH,
@@ -27,6 +27,22 @@ const starterProgram: Command[] = ["right", "grab", "up", "up", ...Array(16).fil
 const query = new URLSearchParams(window.location.search);
 const debugMode = query.get("debug") === "true";
 const initialMusic = query.get("music") !== "off";
+const FALLBACK_BEAT_MS = (60 / 128) * 1000;
+
+function planScore(program: Command[]): ScoreBeat[] {
+  const score: ScoreBeat[] = [];
+  let previous = initialState("running");
+
+  for (let index = 0; index < PROGRAM_LENGTH; index += 1) {
+    const command = program[index] ?? null;
+    const next = step(previous, command);
+    score.push({ command, previous, next });
+    previous = next;
+    if (next.status === "dead" || next.status === "won") break;
+  }
+
+  return score;
+}
 
 function stateTone(state: SimState): string {
   if (state.status === "dead") return "danger";
@@ -42,6 +58,7 @@ export default function App() {
   const stateRef = useRef<SimState>(initialState());
   const programRef = useRef<Command[]>(starterProgram);
   const audioRef = useRef(new FactoryAudio(initialMusic));
+  const playbackGenerationRef = useRef(0);
 
   const [program, setProgram] = useState<Command[]>(starterProgram);
   const [simState, setSimState] = useState<SimState>(stateRef.current);
@@ -50,10 +67,16 @@ export default function App() {
   const [music, setMusic] = useState(initialMusic);
   const [debugBeat, setDebugBeat] = useState(12);
 
-  const stopTimer = useCallback(() => {
+  const clearTimer = useCallback(() => {
     if (timeoutRef.current !== null) window.clearTimeout(timeoutRef.current);
     timeoutRef.current = null;
   }, []);
+
+  const stopPlayback = useCallback(() => {
+    playbackGenerationRef.current += 1;
+    clearTimer();
+    audioRef.current.stopScore();
+  }, [clearTimer]);
 
   const publishState = useCallback((next: SimState) => {
     stateRef.current = next;
@@ -69,21 +92,21 @@ export default function App() {
       scene.showState(stateRef.current);
     });
     return () => {
-      stopTimer();
+      stopPlayback();
       sceneRef.current = null;
       game.destroy(true);
       audioRef.current.dispose();
     };
-  }, [stopTimer]);
+  }, [stopPlayback]);
 
   useEffect(() => {
     programRef.current = program;
   }, [program]);
 
   const resetSimulation = useCallback(() => {
-    stopTimer();
+    stopPlayback();
     publishState(initialState());
-  }, [publishState, stopTimer]);
+  }, [publishState, stopPlayback]);
 
   const executeBeat = useCallback(() => {
     const current = stateRef.current;
@@ -92,27 +115,38 @@ export default function App() {
     publishState(next);
     setSelectedBeat(Math.min(next.beat, PROGRAM_LENGTH - 1));
     sceneRef.current?.pulse(next.status === "dead" ? "impact" : next.status === "won" ? "win" : "beat");
-    void audioRef.current.tick(next.beat, next.status === "dead");
 
-    if (next.status === "won") {
-      stopTimer();
-      void audioRef.current.success();
-    } else if (next.status === "dead") {
-      stopTimer();
+    if (next.status === "won" || next.status === "dead") {
+      clearTimer();
     } else {
-      timeoutRef.current = window.setTimeout(executeBeat, 470);
+      timeoutRef.current = window.setTimeout(executeBeat, FALLBACK_BEAT_MS);
     }
-  }, [publishState, stopTimer]);
+  }, [clearTimer, publishState]);
 
-  const runProgram = useCallback(() => {
-    stopTimer();
+  const applyScoreBeat = useCallback(
+    (beat: ScoreBeat) => {
+      const next = beat.next;
+      publishState(next);
+      setSelectedBeat(Math.min(next.beat, PROGRAM_LENGTH - 1));
+      sceneRef.current?.pulse(next.status === "dead" ? "impact" : next.status === "won" ? "win" : "beat");
+      if (next.status === "won" || next.status === "dead") clearTimer();
+    },
+    [clearTimer, publishState],
+  );
+
+  const runProgram = useCallback(async () => {
+    stopPlayback();
+    const playbackGeneration = ++playbackGenerationRef.current;
     const ready = initialState("running");
     ready.message = "TAPE ENGAGED // STAND CLEAR";
     publishState(ready);
     setAttempts((value) => value + 1);
     setSelectedBeat(0);
-    timeoutRef.current = window.setTimeout(executeBeat, 280);
-  }, [executeBeat, publishState, stopTimer]);
+
+    const scoreStarted = await audioRef.current.playScore(planScore(programRef.current), applyScoreBeat);
+    if (playbackGeneration !== playbackGenerationRef.current) return;
+    if (!scoreStarted) timeoutRef.current = window.setTimeout(executeBeat, 120);
+  }, [applyScoreBeat, executeBeat, publishState, stopPlayback]);
 
   const setCommand = useCallback(
     (command: Command) => {
@@ -136,17 +170,17 @@ export default function App() {
   }, [resetSimulation, simState.status]);
 
   const loadSolution = useCallback(() => {
-    stopTimer();
+    stopPlayback();
     const solution = [...SOLUTION];
     programRef.current = solution;
     setProgram(solution);
     setSelectedBeat(0);
     publishState(initialState());
-  }, [publishState, stopTimer]);
+  }, [publishState, stopPlayback]);
 
   const seekToBeat = useCallback(
     (beat: number) => {
-      stopTimer();
+      stopPlayback();
       const targetBeat = Math.max(0, Math.min(PROGRAM_LENGTH, beat));
       const sought = simulate(programRef.current, targetBeat);
       if (sought.status === "running") {
@@ -156,7 +190,7 @@ export default function App() {
       publishState(sought);
       setSelectedBeat(Math.min(targetBeat, PROGRAM_LENGTH - 1));
     },
-    [publishState, stopTimer],
+    [publishState, stopPlayback],
   );
 
   useEffect(() => {
