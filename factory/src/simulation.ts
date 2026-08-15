@@ -58,6 +58,12 @@ export interface SimState {
 export const GRID = { width: 12, height: 9 };
 export const PROGRAM_LENGTH = 20;
 
+const perimeterWalls = [
+  ...Array.from({ length: GRID.width }, (_, x) => ({ x, y: 0 })),
+  ...Array.from({ length: GRID.width }, (_, x) => ({ x, y: GRID.height - 1 })),
+  ...Array.from({ length: GRID.height - 2 }, (_, index) => ({ x: 0, y: index + 1 })),
+  ...Array.from({ length: GRID.height - 2 }, (_, index) => ({ x: GRID.width - 1, y: index + 1 })),
+];
 const dividerWalls = Array.from({ length: 7 }, (_, index) => ({ x: 6, y: index + 1 }));
 
 export const LEVELS: readonly LevelDefinition[] = [
@@ -71,7 +77,7 @@ export const LEVELS: readonly LevelDefinition[] = [
     plate: null,
     door: { x: 6, y: 4 },
     target: { x: 10, y: 2 },
-    walls: dividerWalls,
+    walls: [...perimeterWalls, ...dividerWalls],
     presses: [
       { x: 3, y: 5, phase: [1, 2], name: "PRESS A" },
       { x: 7, y: 3, phase: [2, 3], name: "PRESS B" },
@@ -93,7 +99,10 @@ export const LEVELS: readonly LevelDefinition[] = [
     plate: { x: 6, y: 4 },
     door: { x: 7, y: 3 },
     target: { x: 10, y: 3 },
-    walls: Array.from({ length: 7 }, (_, index) => ({ x: 7, y: index + 1 })),
+    walls: [
+      ...perimeterWalls,
+      ...Array.from({ length: 7 }, (_, index) => ({ x: 7, y: index + 1 })),
+    ],
     presses: [],
     conveyors: [
       { x: 4, y: 6, direction: "right" },
