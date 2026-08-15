@@ -1,5 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { FactoryAudio, type ScoreBeat } from "./audio";
+import {
+  DEFAULT_SOUNDTRACK_ID,
+  FactoryAudio,
+  SOUNDTRACKS,
+  isSoundtrackId,
+  type ScoreBeat,
+  type SoundtrackId,
+} from "./audio";
 import { createFactoryGame, type FactoryScene } from "./game";
 import {
   LEVELS,
@@ -23,7 +30,7 @@ const COMMANDS: Array<{ command: Exclude<Command, null>; icon: string; label: st
 
 const commandInfo = new Map(COMMANDS.map((entry) => [entry.command, entry]));
 function starterProgram(level: number): Command[] {
-  const hints = level === 0 ? ["right", "right", "interact", "up"] : ["right", "interact"];
+  const hints = level === 0 ? ["right", "right", "interact", "up"] : ["up", "interact"];
   return Array.from({ length: PROGRAM_LENGTH }, (_, index) => (hints[index] as Command) ?? null);
 }
 const query = new URLSearchParams(window.location.search);
@@ -53,20 +60,32 @@ function stateTone(state: SimState): string {
   return "idle";
 }
 
+function revealVision(explored: Set<string>, state: SimState, radius = 2): void {
+  for (let y = 0; y < 9; y += 1) {
+    for (let x = 0; x < 12; x += 1) {
+      const dx = Math.abs(x - state.robot.x);
+      const dy = Math.abs(y - state.robot.y);
+      if (dx <= radius && dy <= radius && dx + dy <= radius + 1) explored.add(`${x},${y}`);
+    }
+  }
+}
+
 export default function App() {
   const mountRef = useRef<HTMLDivElement>(null);
   const sceneRef = useRef<FactoryScene | null>(null);
   const timeoutRef = useRef<number | null>(null);
   const stateRef = useRef<SimState>(initialState());
   const programRef = useRef<Command[]>(starterProgram(0));
-  const audioRef = useRef(new FactoryAudio(initialMusic));
+  const audioRef = useRef(new FactoryAudio(initialMusic, DEFAULT_SOUNDTRACK_ID));
   const playbackGenerationRef = useRef(0);
+  const exploredRef = useRef<Map<number, Set<string>>>(new Map());
 
   const [program, setProgram] = useState<Command[]>(starterProgram(0));
   const [simState, setSimState] = useState<SimState>(stateRef.current);
   const [selectedBeat, setSelectedBeat] = useState(4);
   const [attempts, setAttempts] = useState(0);
   const [music, setMusic] = useState(initialMusic);
+  const [soundtrack, setSoundtrack] = useState<SoundtrackId>(DEFAULT_SOUNDTRACK_ID);
   const [debugBeat, setDebugBeat] = useState(12);
 
   const clearTimer = useCallback(() => {
@@ -81,9 +100,16 @@ export default function App() {
   }, [clearTimer]);
 
   const publishState = useCallback((next: SimState) => {
+    let explored = exploredRef.current.get(next.level);
+    if (!explored) {
+      explored = new Set<string>();
+      revealVision(explored, next);
+      exploredRef.current.set(next.level, explored);
+    }
+    if (next.status !== "ready") revealVision(explored, next);
     stateRef.current = next;
     setSimState(next);
-    sceneRef.current?.showState(next);
+    sceneRef.current?.showState(next, explored, next.status !== "running");
   }, []);
 
   useEffect(() => {
@@ -91,7 +117,11 @@ export default function App() {
     if (!mount) return;
     const game = createFactoryGame(mount, (scene) => {
       sceneRef.current = scene;
-      scene.showState(stateRef.current);
+      const initial = stateRef.current;
+      const explored = new Set<string>();
+      revealVision(explored, initial);
+      exploredRef.current.set(initial.level, explored);
+      scene.showState(initial, explored, true);
     });
     return () => {
       stopPlayback();
@@ -191,6 +221,13 @@ export default function App() {
     publishState(initialState("ready", level));
   }, [publishState, stopPlayback]);
 
+  const chooseSoundtrack = useCallback((id: SoundtrackId) => {
+    stopPlayback();
+    audioRef.current.setSoundtrack(id);
+    setSoundtrack(id);
+    publishState(initialState("ready", stateRef.current.level));
+  }, [publishState, stopPlayback]);
+
   const seekToBeat = useCallback(
     (beat: number) => {
       stopPlayback();
@@ -257,6 +294,8 @@ export default function App() {
 
   const filledBeats = useMemo(() => program.filter(Boolean).length, [program]);
   const level = getLevel(simState.level);
+  const mappedCells = exploredRef.current.get(simState.level)?.size ?? 1;
+  const mapPercent = Math.round((mappedCells / (12 * 9)) * 100);
 
   return (
     <main className="app-shell">
@@ -274,17 +313,33 @@ export default function App() {
           <span className="out-mini">OUT</span>
           <strong>{level.name} // 20 BEATS</strong>
         </div>
-        <button
-          className={`sound-button ${music ? "on" : "off"}`}
-          onClick={() => {
-            const next = !music;
-            setMusic(next);
-            audioRef.current.setEnabled(next);
-          }}
-          aria-label={music ? "Mute music" : "Enable music"}
-        >
-          {music ? "♫ ON" : "♫ OFF"}
-        </button>
+        <div className="audio-controls">
+          <label>
+            <span>SOUNDTRACK</span>
+            <select
+              value={soundtrack}
+              onChange={(event) => {
+                if (isSoundtrackId(event.target.value)) chooseSoundtrack(event.target.value);
+              }}
+              aria-label="Choose soundtrack"
+            >
+              {SOUNDTRACKS.map((track, index) => (
+                <option key={track.id} value={track.id}>{index + 1}. {track.name}</option>
+              ))}
+            </select>
+          </label>
+          <button
+            className={`sound-button ${music ? "on" : "off"}`}
+            onClick={() => {
+              const next = !music;
+              setMusic(next);
+              audioRef.current.setEnabled(next);
+            }}
+            aria-label={music ? "Mute music" : "Enable music"}
+          >
+            {music ? "♫ ON" : "♫ OFF"}
+          </button>
+        </div>
       </header>
 
       <section className="workbench">
@@ -292,7 +347,8 @@ export default function App() {
           <div className={`viewport-frame ${stateTone(simState)}`}>
             <div className="viewport-label">
               <span>CAM 0{simState.level + 3} // {level.subtitle}</span>
-              <span className="live-dot">LIVE</span>
+              <span className="map-progress">MAP {mapPercent}%</span>
+              <span className="live-dot">{simState.status === "running" ? "LIVE" : "PLAN"}</span>
             </div>
             <div className="game-mount" ref={mountRef} />
             <div className="scanlines" aria-hidden="true" />
@@ -381,7 +437,7 @@ export default function App() {
           </div>
 
           <div className="hazard-key">
-            <div><span className="hazard-swatch" /> {simState.level === 0 ? "PRESSES CRUSH FOR 2 BEATS" : "RED ROBOTS + BELTS MOVE EACH BEAT"}</div>
+            <div><span className="hazard-swatch" /> {simState.level === 0 ? "PRESSES CRUSH FOR 2 BEATS" : "BELT THE WEIGHT TO HOLD THE GATE // PATROLS MOVE"}</div>
             <div className="phase-pips"><i /><i /><i /><i /></div>
           </div>
 
