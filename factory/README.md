@@ -16,11 +16,11 @@ Make sure to make the UI game-like and usable. I think this should be done in Ph
 
 ## Prototype
 
-**Shift Protocol** is a two-level React + Phaser prototype. Program a low-slung cargo roomba's 20-beat route, collect crates and operate floor switches with one context-sensitive interact command, then reach the OUT bay. The first shift introduces cycling presses and a blast door; the second adds moving hostile robots and a conveyor that carries the roomba on every beat.
+**Shift Protocol** is a two-level React + Phaser prototype. Program a food-delivery robot's 20-beat route, collect crates and operate factory machinery with one context-sensitive interact command, then reach the OUT bay. Each run permanently maps the tiles it sees, so planning happens against a growing fog-of-war map. The first shift introduces cycling presses and a blast door; the second asks you to route a loose industrial weight along conveyors onto a pressure plate while timing around oversized patrol robots. A slower manual weight route is also possible.
 
 ```bash
 bun install
 bun run dev
 ```
 
-Use the timeline or keyboard shortcuts: arrows move, `Space` holds, `E` interacts with the current square, and `Enter` runs the tape. Carrying cargo into OUT completes the shift automatically. Runs play against a procedurally synthesized 128 BPM Tone.js score with synchronized machinery, movement, interaction, collision, and delivery cues. Add `?music=off` to silence audio. Add `?debug=true` to reveal controls for loading each level's verified solution and seeking to any beat; programmatic playtests can also use `window.factoryDebug`.
+Use the timeline or keyboard shortcuts: arrows move, `Space` holds, `E` interacts with the current square, and `Enter` runs the tape. Carrying cargo into OUT completes the shift automatically. Runs play against one of five selectable procedurally synthesized 128 BPM Tone.js scores, with double-time phrases plus synchronized machinery, movement, interaction, collision, and delivery cues. Add `?music=off` to silence audio. Add `?debug=true` to reveal controls for loading each level's verified solution and seeking to any beat; programmatic playtests can also use `window.factoryDebug`.
