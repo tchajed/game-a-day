@@ -19,13 +19,14 @@ export function Memo({ state }: { state: GameState }) {
   const { current, charIndex } = state
   const complete = current.text.slice(0, charIndex)
   const expected = current.text[charIndex] ?? ''
+  const displayedKey = state.mistypedKey ?? expected
   const remaining = current.text.slice(charIndex + 1)
   const currentBlots = state.blots.filter((blot) => blot.memoId === current.id)
   const mistakeIndexes = new Set(currentBlots.map((blot) => blot.index))
   const finalReveal = state.phase === 'ending' || state.phase === 'complete'
 
   return (
-    <section className={`memo-card ${mistakeIndexes.has(charIndex) ? 'has-current-error' : ''}`} data-testid="memo" aria-live="polite">
+    <section className={`memo-card ${state.mistypedKey !== null ? 'has-current-error' : ''}`} data-testid="memo" aria-live="polite">
       <div className="memo-header">BLACKWING HOLDINGS // NIGHT TRANSCRIPTION</div>
       <div className="memo-rule" />
       <p className="memo-text">
@@ -35,8 +36,12 @@ export function Memo({ state }: { state: GameState }) {
             : character)}
         </span>
         {expected && (
-          <span key={`${state.errorPulse}-${charIndex}`} className="expected" data-testid="expected-char">
-            {finalReveal && current.id === 'final' ? '.' : expected === ' ' ? '\u00a0' : expected}
+          <span
+            key={`${state.errorPulse}-${charIndex}`}
+            className={`expected ${state.mistypedKey !== null ? 'mistyped-char' : ''}`}
+            data-testid="expected-char"
+          >
+            {finalReveal && current.id === 'final' ? '.' : displayedKey === ' ' ? '\u00a0' : displayedKey}
           </span>
         )}
         <span className="untyped">{remaining}</span>

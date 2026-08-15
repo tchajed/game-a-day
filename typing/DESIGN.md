@@ -16,8 +16,8 @@ The game has one primary mechanic: type the dictated memo as accurately as possi
 
 - The supervisor raven presents one sentence at a time.
 - Correct characters appear on the memo.
-- A wrong key flashes red, adds a blot to the memo when corrected, and counts against the player's accuracy.
-- The cursor waits for the correct character, so mistakes never block progression.
+- A wrong key flashes red, adds a blot to the memo when corrected, and permanently counts against the player's accuracy.
+- The player must backspace over the visible wrong key before continuing. Follow-on typing while that mistake is waiting is ignored, so a reflexively completed word does not become a cascade of extra mistakes.
 - Completing a sentence enacts its contents in the environment.
 - Every mistake causes a visible reaction from the ravens.
 - There's a persistent timer and wpm counter but these are never acknowledged or relevant to the game.

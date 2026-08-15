@@ -19,6 +19,7 @@ export type GameState = {
   attempts: number
   mistakes: number
   currentMistakes: number
+  mistypedKey: string | null
   streak: number
   bestStreak: number
   scrutiny: number
@@ -54,6 +55,7 @@ export function createGameState(): GameState {
     attempts: 0,
     mistakes: 0,
     currentMistakes: 0,
+    mistypedKey: null,
     streak: 0,
     bestStreak: 0,
     scrutiny: 0,
@@ -142,12 +144,13 @@ function completeSentence(state: GameState): GameState {
   return next
 }
 
-function registerMistake(state: GameState, now: number): GameState {
+function registerMistake(state: GameState, key: string, now: number): GameState {
   const expected = state.current.text[state.charIndex] ?? ''
   const mistakeNumber = state.mistakes + 1
   return {
     ...state,
     startedAt: state.startedAt ?? now,
+    mistypedKey: key,
     attempts: state.attempts + 1,
     mistakes: mistakeNumber,
     currentMistakes: state.currentMistakes + 1,
@@ -169,10 +172,14 @@ function registerMistake(state: GameState, now: number): GameState {
 }
 
 function typeKey(state: GameState, key: string, now: number): GameState {
-  if (state.phase !== 'playing' || key.length !== 1) return state
+  if (state.phase !== 'playing') return state
+  if (state.mistypedKey !== null) {
+    return key === 'Backspace' ? { ...state, mistypedKey: null } : state
+  }
+  if (key.length !== 1) return state
   const expected = state.current.text[state.charIndex]
   if (!expected) return state
-  if (key !== expected) return registerMistake(state, now)
+  if (key !== expected) return registerMistake(state, key, now)
 
   const nextIndex = state.charIndex + 1
   const streak = state.streak + 1
@@ -200,7 +207,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
     case 'key':
       return typeKey(state, action.key, now)
     case 'force-mistake':
-      return state.phase === 'playing' ? registerMistake(state, now) : state
+      return state.phase === 'playing' ? registerMistake(state, '×', now) : state
     case 'finish-sentence':
       if (state.current.id === 'final') return { ...state, phase: 'ending', enactedStage: 6, startedAt: state.startedAt ?? now }
       return state.phase === 'playing' ? completeSentence(state) : state
@@ -213,6 +220,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
           current: state.pendingPractice,
           charIndex: 0,
           currentMistakes: 0,
+          mistypedKey: null,
           pendingPractice: null,
         }
       }
@@ -226,6 +234,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         authoredIndex: nextIndex,
         charIndex: 0,
         currentMistakes: 0,
+        mistypedKey: null,
         authoredSincePractice: state.current.kind === 'practice' ? 0 : state.authoredSincePractice,
       }
     }
@@ -240,6 +249,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         authoredIndex: targetIndex,
         charIndex: 0,
         currentMistakes: 0,
+        mistypedKey: null,
         pendingPractice: null,
         enactedStage: Math.max(state.enactedStage, targetStage),
       }

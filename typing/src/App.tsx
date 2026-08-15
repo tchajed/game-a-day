@@ -50,7 +50,7 @@ export default function App() {
   useEffect(() => {
     if (state.errorPulse === 0) return
     window.clearTimeout(feedbackTimeout.current)
-    setFeedback({ id: state.errorPulse, kind: 'error', text: 'PATTERN LOGGED // REVIEW SCHEDULED' })
+    setFeedback({ id: state.errorPulse, kind: 'error', text: 'PATTERN LOGGED // BACKSPACE REQUIRED' })
     feedbackTimeout.current = window.setTimeout(() => setFeedback(null), 3400)
   }, [state.errorPulse])
 
@@ -64,9 +64,22 @@ export default function App() {
 
   useEffect(() => {
     const handleKey = (event: KeyboardEvent) => {
-      if (event.repeat || event.isComposing || event.ctrlKey || event.metaKey || event.altKey || event.key.length !== 1) return
+      if (event.repeat || event.isComposing || event.ctrlKey || event.metaKey || event.altKey) return
       const current = stateRef.current
       if (current.phase !== 'playing') return
+
+      if (current.mistypedKey !== null) {
+        if (event.key === 'Backspace') {
+          event.preventDefault()
+          audio.key(true)
+          dispatch({ type: 'key', key: event.key })
+        } else if (event.key.length === 1) {
+          event.preventDefault()
+        }
+        return
+      }
+
+      if (event.key.length !== 1) return
       event.preventDefault()
       const correct = event.key === current.current.text[current.charIndex]
       audio.key(correct)

@@ -126,6 +126,7 @@ button { font: inherit; }
 .typed { color: #171a17; }.untyped { color: #6f7065; }
 .expected { position: relative; color: #151713; background: #ada98f; border-bottom: 2px solid #282b27; animation: cursor 1.05s steps(1) infinite; }
 .has-current-error .expected { animation: errorFlash .5s ease-out, cursor 1.05s .5s steps(1) infinite; }
+.has-current-error .mistyped-char { color: #fff; background: var(--red); border-bottom-color: #721313; box-shadow: 0 0 18px #bd2b2b; text-decoration: line-through; animation: none; }
 .mistake-location { margin: 0; padding: 0 .03em; color: #8e1717; background: #c73a312b; border-bottom: 2px solid #a51f1f; box-shadow: inset 0 -7px 0 #c1322721; font: inherit; }
 @keyframes cursor { 50% { background: #6a6b5e; color: #e7e1cb; } }
 @keyframes errorFlash { 0%, 78% { background: var(--red); color: #fff; box-shadow: 0 0 18px #bd2b2b; } }

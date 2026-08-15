@@ -1,26 +1,40 @@
 import { describe, expect, it } from 'vitest'
 import { AUTHORED_MEMOS, WORD_COUNT } from './content'
-import { createGameState, gameReducer } from './engine'
+import { accuracy, createGameState, gameReducer } from './engine'
 
 describe('typing engine', () => {
   it('ships more than 400 authored words', () => {
     expect(WORD_COUNT).toBeGreaterThanOrEqual(400)
   })
 
-  it('advances only on the expected key', () => {
+  it('requires backspace after a mistake without counting follow-on typing', () => {
     const initial = createGameState()
     const wrong = gameReducer(initial, { type: 'key', key: 'x', now: 100 })
     expect(wrong.charIndex).toBe(0)
+    expect(wrong.mistypedKey).toBe('x')
     expect(wrong.mistakes).toBe(1)
     expect(wrong.attempts).toBe(1)
 
-    const correct = gameReducer(wrong, { type: 'key', key: initial.current.text[0]!, now: 200 })
+    const followOn = gameReducer(wrong, { type: 'key', key: 'y', now: 110 })
+    const expectedWhileBlocked = gameReducer(followOn, { type: 'key', key: initial.current.text[0]!, now: 120 })
+    expect(expectedWhileBlocked).toBe(followOn)
+    expect(followOn.mistakes).toBe(1)
+    expect(followOn.attempts).toBe(1)
+
+    const erased = gameReducer(followOn, { type: 'key', key: 'Backspace', now: 200 })
+    expect(erased.charIndex).toBe(0)
+    expect(erased.mistypedKey).toBeNull()
+    expect(erased.mistakes).toBe(1)
+    expect(accuracy(erased)).toBe(0)
+
+    const correct = gameReducer(erased, { type: 'key', key: initial.current.text[0]!, now: 300 })
     expect(correct.charIndex).toBe(1)
     expect(correct.correct).toBe(1)
     expect(correct.streak).toBe(1)
     expect(correct.bestStreak).toBe(1)
+    expect(accuracy(correct)).toBe(50)
 
-    const reset = gameReducer(correct, { type: 'key', key: 'x', now: 300 })
+    const reset = gameReducer(correct, { type: 'key', key: 'x', now: 400 })
     expect(reset.streak).toBe(0)
     expect(reset.bestStreak).toBe(1)
   })
