@@ -26,7 +26,7 @@ body {
   overflow-x: hidden;
   background:
     radial-gradient(circle at 18% 10%, rgba(52, 91, 110, 0.16), transparent 30%),
-    linear-gradient(135deg, transparent 0 48%, rgba(255,255,255,.018) 48% 52%, transparent 52%) 0 0 / 18px 18px,
+    repeating-linear-gradient(0deg, transparent 0 31px, rgba(255,255,255,.012) 31px 32px),
     #080b11;
 }
 
@@ -191,14 +191,14 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--mint); outl
   display: grid;
   place-items: center;
 }
-.game-mount canvas { display: block; image-rendering: pixelated; }
+.game-mount canvas { display: block; image-rendering: auto; }
 .scanlines {
   pointer-events: none;
   position: absolute;
   z-index: 3;
   inset: 31px 0 0;
-  opacity: .12;
-  background: repeating-linear-gradient(to bottom, transparent 0 3px, #9ed3d9 3px 4px);
+  opacity: .055;
+  background: repeating-linear-gradient(to bottom, transparent 0 5px, #9ed3d9 5px 6px);
   mix-blend-mode: screen;
 }
 

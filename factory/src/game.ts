@@ -184,40 +184,46 @@ export class FactoryScene extends Phaser.Scene {
     const px = ORIGIN_X + x * TILE;
     const py = ORIGIN_Y + y * TILE;
     const g = this.ink;
-    const top = (x + y) % 2 === 0 ? 0x202a37 : 0x1c2531;
-    g.fillStyle(0x080b11, 1);
-    g.fillRect(px, py, TILE - 2, TILE - 2);
-    g.fillStyle(top, 1);
-    g.fillPoints([
-      new Phaser.Math.Vector2(px + TILE / 2, py + 3),
-      new Phaser.Math.Vector2(px + TILE - 5, py + TILE / 2),
-      new Phaser.Math.Vector2(px + TILE / 2, py + TILE - 5),
-      new Phaser.Math.Vector2(px + 3, py + TILE / 2),
-    ], true);
-    // Four bevel facets make each slab read as a low diamond.
-    g.fillStyle(0x303c4b, 0.8);
-    g.fillTriangle(px + 3, py + TILE / 2, px + TILE / 2, py + 3, px + TILE / 2, py + 8);
-    g.fillStyle(0x121924, 0.9);
-    g.fillTriangle(px + TILE / 2, py + TILE - 5, px + TILE - 5, py + TILE / 2, px + TILE / 2, py + TILE - 10);
-    g.fillStyle(0x526075, 0.55);
-    g.fillRect(px + 8, py + 26, 4, 4);
-    g.fillStyle(0x090c12, 0.8);
-    g.fillRect(px + TILE - 13, py + 27, 4, 4);
+    const panel = (x + y) % 2 === 0 ? 0x202a36 : 0x1d2632;
 
-    // Utility pipes and occasional embedded guide lights.
+    // Straight, orthogonal steel deck plates. Narrow gutters keep the grid legible
+    // without the optical-motion effect of the old diamond facets.
+    g.fillStyle(0x080b11, 1);
+    g.fillRect(px, py, TILE - 1, TILE - 1);
+    g.fillStyle(panel, 1);
+    g.fillRoundedRect(px + 3, py + 3, TILE - 7, TILE - 7, 2);
+    g.fillStyle(0x2b3745, 1);
+    g.fillRect(px + 5, py + 5, TILE - 11, 3);
+    g.fillStyle(0x141b25, 1);
+    g.fillRect(px + 5, py + TILE - 9, TILE - 11, 3);
+    g.lineStyle(1, 0x3e4b5c, 0.65);
+    g.strokeRoundedRect(px + 5.5, py + 5.5, TILE - 12, TILE - 12, 1);
+
+    // Recessed fasteners and tiny wear marks add scale without reading as pixels.
+    for (const [bx, by] of [[9, 10], [TILE - 11, 10], [9, TILE - 12], [TILE - 11, TILE - 12]]) {
+      g.fillStyle(0x0b1018, 1);
+      g.fillCircle(px + bx, py + by, 2.1);
+      g.fillStyle(0x637083, 0.8);
+      g.fillCircle(px + bx - 0.5, py + by - 0.5, 0.85);
+    }
+    g.lineStyle(1, 0x536174, 0.22);
+    g.lineBetween(px + 17, py + 17, px + 41, py + 17);
+    g.lineBetween(px + 17, py + 20, px + 33, py + 20);
+
+    // Occasional flush service channels and guide lamps stay axis-aligned.
     if ((x + y * 3) % 7 === 0) {
-      g.fillStyle(0x0f141d, 1);
-      g.fillRect(px + 8, py + 43, 42, 5);
-      g.fillStyle(0x5a6879, 1);
-      g.fillRect(px + 8, py + 43, 42, 2);
-      g.fillStyle(0xd38c36, 1);
-      g.fillRect(px + 15, py + 41, 5, 9);
-      g.fillRect(px + 39, py + 41, 5, 9);
+      g.fillStyle(0x0d131c, 1);
+      g.fillRoundedRect(px + 10, py + 37, 38, 8, 2);
+      g.lineStyle(1, 0x627184, 0.9);
+      g.strokeRoundedRect(px + 10.5, py + 37.5, 37, 7, 2);
+      g.fillStyle(0xc78531, 1);
+      g.fillCircle(px + 16, py + 41, 2);
+      g.fillCircle(px + 42, py + 41, 2);
     } else if ((x * 5 + y) % 9 === 0) {
-      g.fillStyle(0x173b42, 1);
-      g.fillRect(px + 23, py + 22, 12, 7);
-      g.fillStyle(0x62e6d5, 0.85);
-      g.fillRect(px + 25, py + 23, 8, 3);
+      g.fillStyle(0x102d34, 1);
+      g.fillRoundedRect(px + 21, py + 28, 16, 7, 2);
+      g.fillStyle(0x6ff0df, 0.9);
+      g.fillRoundedRect(px + 24, py + 30, 10, 2, 1);
     }
   }
 
@@ -422,24 +428,27 @@ export class FactoryScene extends Phaser.Scene {
     const px = ORIGIN_X + x * TILE;
     const py = ORIGIN_Y + y * TILE;
     const g = this.ink;
-    g.fillStyle(0x07090d, 0.8);
-    g.fillEllipse(px + 29, py + 46, 43, 12);
-    g.fillStyle(shipped ? 0x358e72 : 0x8c542d, 1);
-    g.fillRect(px + 10, py + 17, 38, 29);
-    g.fillStyle(shipped ? 0x7ce3bd : 0xd68a3b, 1);
-    g.fillPoints([
-      new Phaser.Math.Vector2(px + 10, py + 17), new Phaser.Math.Vector2(px + 17, py + 10),
-      new Phaser.Math.Vector2(px + 50, py + 10), new Phaser.Math.Vector2(px + 48, py + 17),
-    ], true);
-    g.fillStyle(0xf3bc58, 1);
-    g.fillRect(px + 15, py + 20, 5, 20);
-    g.fillRect(px + 39, py + 20, 5, 20);
-    g.lineStyle(2, 0x4f2c1d, 1);
-    g.strokeRect(px + 10, py + 17, 38, 29);
-    g.fillStyle(0xf6dd9a, 1);
-    g.fillRect(px + 24, py + 24, 11, 8);
-    g.fillStyle(0x7d4028, 1);
-    g.fillRect(px + 26, py + 26, 7, 2);
+    const body = shipped ? 0x358e72 : 0x92572f;
+    const edge = shipped ? 0x83e8c4 : 0xe5a04c;
+    g.fillStyle(0x05070b, 0.72);
+    g.fillEllipse(px + 29, py + 47, 44, 11);
+    g.fillStyle(body, 1);
+    g.fillRoundedRect(px + 9, py + 15, 40, 32, 3);
+    g.fillStyle(edge, 1);
+    g.fillRoundedRect(px + 11, py + 11, 36, 8, 2);
+    g.fillStyle(0xf4bd62, 0.95);
+    g.fillRoundedRect(px + 14, py + 19, 5, 24, 1);
+    g.fillRoundedRect(px + 39, py + 19, 5, 24, 1);
+    g.lineStyle(1.5, shipped ? 0x174c3d : 0x4f2c1d, 1);
+    g.strokeRoundedRect(px + 9.5, py + 15.5, 39, 31, 3);
+    g.lineStyle(1, 0x5a321f, 0.75);
+    g.lineBetween(px + 20, py + 21, px + 37, py + 40);
+    g.lineBetween(px + 37, py + 21, px + 20, py + 40);
+    g.fillStyle(0xf7e5ad, 1);
+    g.fillRoundedRect(px + 22, py + 25, 14, 9, 1);
+    g.fillStyle(0x70402b, 1);
+    g.fillRect(px + 25, py + 28, 8, 1.5);
+    g.fillRect(px + 25, py + 31, 5, 1);
   }
 
   private drawContactMarker(x: number, y: number): void {
@@ -502,61 +511,78 @@ export class FactoryScene extends Phaser.Scene {
     const cy = ORIGIN_Y + state.robot.y * TILE + 30;
     const g = this.ink;
 
-    // Friendly food-delivery bot: visible wheels, tall insulated cabinet, face display and antenna.
-    g.fillStyle(0x030508, 0.8);
-    g.fillEllipse(cx, cy + 24, 55, 15);
-    g.fillStyle(0x111924, 1);
-    g.fillRect(cx - 24, cy + 7, 8, 22);
-    g.fillRect(cx + 16, cy + 7, 8, 22);
-    g.fillStyle(0x36485b, 1);
-    g.fillRect(cx - 22, cy + 12, 6, 12);
-    g.fillRect(cx + 16, cy + 12, 6, 12);
+    // Compact courier robot with rounded bodywork, articulated wheels, cabinet
+    // seams and a glass face panel. Fine one-pixel accents now stay crisp because
+    // the scene is rendered with antialiasing instead of nearest-neighbour scaling.
+    g.fillStyle(0x030508, 0.72);
+    g.fillEllipse(cx, cy + 24, 55, 14);
+    for (const side of [-1, 1]) {
+      g.fillStyle(0x0b1017, 1);
+      g.fillRoundedRect(cx + side * 17 - (side < 0 ? 8 : 0), cy + 7, 8, 22, 4);
+      g.fillStyle(0x53697b, 1);
+      g.fillCircle(cx + side * 20, cy + 14, 3.2);
+      g.fillCircle(cx + side * 20, cy + 23, 3.2);
+      g.fillStyle(0x18232e, 1);
+      g.fillCircle(cx + side * 20, cy + 14, 1.2);
+      g.fillCircle(cx + side * 20, cy + 23, 1.2);
+    }
 
-    g.fillStyle(0x2a7c88, 1);
-    g.fillRect(cx - 20, cy - 27, 40, 47);
-    g.fillStyle(0x66d8d0, 1);
-    g.fillPoints([
-      new Phaser.Math.Vector2(cx - 20, cy - 27), new Phaser.Math.Vector2(cx - 14, cy - 33),
-      new Phaser.Math.Vector2(cx + 19, cy - 33), new Phaser.Math.Vector2(cx + 20, cy - 27),
-    ], true);
-    g.fillStyle(0x174e5b, 1);
-    g.fillRect(cx - 15, cy - 22, 30, 24);
-    g.lineStyle(2, 0xa4fff0, 1);
-    g.strokeRect(cx - 15, cy - 22, 30, 24);
-    g.fillStyle(0x0b1820, 1);
-    g.fillRect(cx - 12, cy - 18, 24, 11);
-    g.fillStyle(0x8ff5de, 1);
-    g.fillRect(cx - 7, cy - 15, 4, 4);
-    g.fillRect(cx + 3, cy - 15, 4, 4);
-    g.fillStyle(0x5acdbf, 1);
-    g.fillRect(cx - 3, cy - 9, 6, 2);
+    g.fillStyle(0x1d6572, 1);
+    g.fillRoundedRect(cx - 20, cy - 31, 40, 51, 6);
+    g.fillStyle(0x55c8c5, 1);
+    g.fillRoundedRect(cx - 17, cy - 29, 34, 7, 3);
+    g.fillStyle(0x2e91a0, 1);
+    g.fillRoundedRect(cx - 17, cy - 20, 34, 37, 3);
+    g.lineStyle(1.5, 0x97f5e9, 0.9);
+    g.strokeRoundedRect(cx - 16.5, cy - 19.5, 33, 36, 3);
+
+    // Smoked display and expressive status lights.
+    g.fillStyle(0x07151c, 1);
+    g.fillRoundedRect(cx - 13, cy - 16, 26, 14, 3);
+    g.fillStyle(0x173c45, 1);
+    g.fillRoundedRect(cx - 11, cy - 14, 22, 10, 2);
+    g.fillStyle(0xa4ffeb, 1);
+    g.fillCircle(cx - 6, cy - 9, 2);
+    g.fillCircle(cx + 6, cy - 9, 2);
+    g.lineStyle(1.5, 0x71e5d6, 1);
+    g.lineBetween(cx - 3, cy - 5.5, cx + 3, cy - 5.5);
+
+    // Insulated cargo-door latch and maintenance details.
     g.fillStyle(0xf2c550, 1);
-    g.fillRect(cx - 13, cy + 6, 26, 5);
-    g.fillStyle(0x163e49, 1);
-    g.fillRect(cx - 10, cy + 14, 20, 4);
+    g.fillRoundedRect(cx - 12, cy + 3, 24, 5, 2);
+    g.fillStyle(0x123c48, 1);
+    g.fillRoundedRect(cx - 9, cy + 11, 18, 3, 1);
+    g.fillStyle(0x9fe6df, 0.85);
+    g.fillCircle(cx - 13, cy + 12.5, 1.3);
+    g.fillStyle(0xff735f, 1);
+    g.fillCircle(cx + 13, cy + 12.5, 1.3);
 
-    // Antenna and warm locator lamp reinforce the upright courier silhouette.
-    g.fillStyle(0x728b9d, 1);
-    g.fillRect(cx + 10, cy - 42, 3, 10);
+    // Flexible antenna with a warm locator beacon.
+    g.lineStyle(1.5, 0x8296a6, 1);
+    g.lineBetween(cx + 10, cy - 31, cx + 13, cy - 41);
+    g.fillStyle(0xffc942, 0.25);
+    g.fillCircle(cx + 14, cy - 44, 6);
     g.fillStyle(0xffd454, 1);
-    g.fillRect(cx + 8, cy - 46, 7, 6);
-    g.fillStyle(0xfff2a2, 1);
-    g.fillRect(cx + 10, cy - 45, 3, 2);
+    g.fillCircle(cx + 14, cy - 44, 3.2);
+    g.fillStyle(0xffffcf, 1);
+    g.fillCircle(cx + 13, cy - 45, 1.1);
 
     const marker: Record<Facing, Point> = {
-      up: { x: 0, y: -31 }, right: { x: 21, y: -4 }, down: { x: 0, y: 22 }, left: { x: -21, y: -4 },
+      up: { x: 0, y: -33 }, right: { x: 22, y: -4 }, down: { x: 0, y: 22 }, left: { x: -22, y: -4 },
     };
     const facing = marker[state.robot.facing];
     g.fillStyle(0xffd34e, 1);
     g.fillTriangle(cx + facing.x, cy + facing.y - 4, cx + facing.x + 4, cy + facing.y + 3, cx + facing.x - 4, cy + facing.y + 3);
 
     if (state.carrying) {
-      g.fillStyle(0xd88539, 1);
-      g.fillRect(cx - 13, cy - 38, 26, 13);
+      g.fillStyle(0x713e24, 1);
+      g.fillRoundedRect(cx - 14, cy - 40, 28, 14, 3);
+      g.fillStyle(0xe29142, 1);
+      g.fillRoundedRect(cx - 12, cy - 38, 24, 10, 2);
       g.fillStyle(0xffc45d, 1);
-      g.fillRect(cx - 9, cy - 35, 18, 3);
-      g.lineStyle(2, 0x56301e, 1);
-      g.strokeRect(cx - 13, cy - 38, 26, 13);
+      g.fillRoundedRect(cx - 8, cy - 36, 16, 2, 1);
+      g.lineStyle(1, 0x56301e, 1);
+      g.strokeRoundedRect(cx - 13.5, cy - 39.5, 27, 13, 3);
     }
   }
 
@@ -571,8 +597,8 @@ export class FactoryScene extends Phaser.Scene {
         if (this.explored.has(keyOf(x, y))) {
           f.fillStyle(0x070a12, 0.69);
           f.fillRect(px, py, TILE - 2, TILE - 2);
-          f.fillStyle(0x17202c, 0.2);
-          f.fillTriangle(px + 2, py + 2, px + TILE - 3, py + 2, px + 2, py + TILE - 3);
+          f.lineStyle(1, 0x223044, 0.18);
+          f.lineBetween(px + 5, py + 12, px + TILE - 7, py + 12);
         } else {
           f.fillStyle(0x020307, 0.985);
           f.fillRect(px - 1, py - 1, TILE, TILE);
@@ -596,10 +622,10 @@ export function createFactoryGame(parent: HTMLElement, onReady: (scene: FactoryS
     width: WIDTH,
     height: HEIGHT,
     backgroundColor: "#070910",
-    pixelArt: true,
-    antialias: false,
+    pixelArt: false,
+    antialias: true,
     scene,
     scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
-    render: { pixelArt: true, antialias: false, roundPixels: true },
+    render: { pixelArt: false, antialias: true, roundPixels: false },
   });
 }
