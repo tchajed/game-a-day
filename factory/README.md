@@ -8,4 +8,8 @@ I want a pixel art look (maybe similar to Megaman), but a previous conversation 
 
 I think the right thing for the factory is primarily picking up and moving boxes around, and putting them on conveyor belts, but it can also include flipping switches to open doors, turn on and off conveyors, etc. Let's start out with one somewhat simple level and then we'll try a more complex level design.
 
+Eventually I want to have simple conditionals in the programs to react to something dynamic in the environment, like something with some timing randomness, but let's not do that initially while we work out the core mechanics.
+
 You should make sure there is a solution. Debug mode should provide controls for skipping to a specific point in the simulation as well as loading up the solution.
+
+Make sure to make the UI game-like and usable. I think this should be done in Phaser as a result, but it might also be cool to have the programming UI be in React and the simulation and art in Phaser. We should have readable text sizes and fonts, minimize the use of text in general. The fonts should match the style.
