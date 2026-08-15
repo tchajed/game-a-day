@@ -16,11 +16,11 @@ Make sure to make the UI game-like and usable. I think this should be done in Ph
 
 ## Prototype
 
-**Shift Protocol** is a single-level React + Phaser prototype. Program the robot's 20-beat route, time its movement across two cycling presses, open the blast door, and deliver the crate to the OUT bay.
+**Shift Protocol** is a two-level React + Phaser prototype. Program a low-slung cargo roomba's 20-beat route, collect crates and operate floor switches with one context-sensitive interact command, then reach the OUT bay. The first shift introduces cycling presses and a blast door; the second adds moving hostile robots and a conveyor that carries the roomba on every beat.
 
 ```bash
 bun install
 bun run dev
 ```
 
-Use the timeline or keyboard shortcuts: arrows move, `Space` holds, `G` grabs, `S` uses the switch, `D` drops, and `Enter` runs the tape. Runs play against a procedurally synthesized 128 BPM Tone.js score with synchronized press, movement, switch, collision, and delivery cues. Add `?music=off` to silence audio. Add `?debug=true` to reveal controls for loading the verified solution and seeking to any beat; programmatic playtests can also use `window.factoryDebug`.
+Use the timeline or keyboard shortcuts: arrows move, `Space` holds, `E` interacts with the current square, and `Enter` runs the tape. Carrying cargo into OUT completes the shift automatically. Runs play against a procedurally synthesized 128 BPM Tone.js score with synchronized machinery, movement, interaction, collision, and delivery cues. Add `?music=off` to silence audio. Add `?debug=true` to reveal controls for loading each level's verified solution and seeking to any beat; programmatic playtests can also use `window.factoryDebug`.
