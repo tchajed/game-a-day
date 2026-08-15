@@ -297,7 +297,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--mint); outl
 
 .command-heading { display: flex; justify-content: space-between; margin: 13px 1px 7px; color: var(--amber); font-size: 10px; font-weight: 700; letter-spacing: .15em; }
 .command-heading small { color: #6f7d90; font-size: 8px; }
-.command-pad { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+.command-pad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
 .command-pad button {
   height: 66px;
   position: relative;

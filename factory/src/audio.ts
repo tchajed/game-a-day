@@ -217,13 +217,8 @@ export class FactoryAudio {
 
     if (["up", "right", "down", "left"].includes(command ?? "")) {
       if (moved) {
-        const notes: Record<string, string> = {
-          up: "G5",
-          right: "D5",
-          down: "G4",
-          left: "C5",
-        };
-        rig.servo.triggerAttackRelease(notes[command ?? ""] ?? "C5", 0.045, time + 0.045, 0.22);
+        // Every direction is the same motor action; facing no longer changes the cue.
+        rig.servo.triggerAttackRelease("C5", 0.045, time + 0.045, 0.22);
         rig.servo.triggerAttackRelease("C3", 0.035, time + 0.105, 0.12);
       } else {
         rig.servo.triggerAttackRelease("F#2", 0.09, time + 0.035, 0.28);
@@ -231,17 +226,12 @@ export class FactoryAudio {
       return;
     }
 
-    if (command === "grab" && !beat.previous.carrying && beat.next.carrying) {
+    if (command === "interact") {
+      // Pickup and switch activation intentionally share one tactile confirm sound.
       rig.servo.triggerAttackRelease(["C4", "G4"], 0.07, time + 0.025, 0.34);
       rig.metal.triggerAttackRelease(0.12, time + 0.075, 0.34);
-    } else if (command === "switch" && !beat.previous.doorOpen && beat.next.doorOpen) {
-      rig.servo.triggerAttackRelease(["C5", "E5", "Bb5"], 0.12, time + 0.02, 0.38);
-      rig.metal.triggerAttackRelease(0.3, time + 0.07, 0.5);
-      rig.steam.triggerAttackRelease(0.22, time + 0.13, 0.14);
-    } else if (command === "drop" && beat.next.status !== "won") {
-      rig.servo.triggerAttackRelease("Bb2", 0.08, time + 0.035, 0.24);
     } else if (command === "wait" || command === null) {
-      rig.servo.triggerAttackRelease("C6", 0.022, time + 0.06, 0.08);
+      rig.servo.triggerAttackRelease("C3", 0.035, time + 0.06, 0.08);
     }
   }
 

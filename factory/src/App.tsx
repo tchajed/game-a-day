@@ -2,8 +2,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { FactoryAudio, type ScoreBeat } from "./audio";
 import { createFactoryGame, type FactoryScene } from "./game";
 import {
+  LEVELS,
   PROGRAM_LENGTH,
-  SOLUTION,
+  getLevel,
   initialState,
   simulate,
   step,
@@ -17,21 +18,22 @@ const COMMANDS: Array<{ command: Exclude<Command, null>; icon: string; label: st
   { command: "down", icon: "↓", label: "South", key: "↓" },
   { command: "left", icon: "←", label: "West", key: "←" },
   { command: "wait", icon: "Ⅱ", label: "Hold", key: "Space" },
-  { command: "grab", icon: "⌄", label: "Grab", key: "G" },
-  { command: "drop", icon: "⌃", label: "Drop", key: "D" },
-  { command: "switch", icon: "⚡", label: "Switch", key: "S" },
+  { command: "interact", icon: "◎", label: "Interact", key: "E" },
 ];
 
 const commandInfo = new Map(COMMANDS.map((entry) => [entry.command, entry]));
-const starterProgram: Command[] = ["right", "grab", "up", "up", ...Array(16).fill(null)];
+function starterProgram(level: number): Command[] {
+  const hints = level === 0 ? ["right", "right", "interact", "up"] : ["right", "interact"];
+  return Array.from({ length: PROGRAM_LENGTH }, (_, index) => (hints[index] as Command) ?? null);
+}
 const query = new URLSearchParams(window.location.search);
 const debugMode = query.get("debug") === "true";
 const initialMusic = query.get("music") !== "off";
 const FALLBACK_BEAT_MS = (60 / 128) * 1000;
 
-function planScore(program: Command[]): ScoreBeat[] {
+function planScore(program: Command[], level: number): ScoreBeat[] {
   const score: ScoreBeat[] = [];
-  let previous = initialState("running");
+  let previous = initialState("running", level);
 
   for (let index = 0; index < PROGRAM_LENGTH; index += 1) {
     const command = program[index] ?? null;
@@ -56,11 +58,11 @@ export default function App() {
   const sceneRef = useRef<FactoryScene | null>(null);
   const timeoutRef = useRef<number | null>(null);
   const stateRef = useRef<SimState>(initialState());
-  const programRef = useRef<Command[]>(starterProgram);
+  const programRef = useRef<Command[]>(starterProgram(0));
   const audioRef = useRef(new FactoryAudio(initialMusic));
   const playbackGenerationRef = useRef(0);
 
-  const [program, setProgram] = useState<Command[]>(starterProgram);
+  const [program, setProgram] = useState<Command[]>(starterProgram(0));
   const [simState, setSimState] = useState<SimState>(stateRef.current);
   const [selectedBeat, setSelectedBeat] = useState(4);
   const [attempts, setAttempts] = useState(0);
@@ -105,7 +107,7 @@ export default function App() {
 
   const resetSimulation = useCallback(() => {
     stopPlayback();
-    publishState(initialState());
+    publishState(initialState("ready", stateRef.current.level));
   }, [publishState, stopPlayback]);
 
   const executeBeat = useCallback(() => {
@@ -137,13 +139,13 @@ export default function App() {
   const runProgram = useCallback(async () => {
     stopPlayback();
     const playbackGeneration = ++playbackGenerationRef.current;
-    const ready = initialState("running");
+    const ready = initialState("running", stateRef.current.level);
     ready.message = "TAPE ENGAGED // STAND CLEAR";
     publishState(ready);
     setAttempts((value) => value + 1);
     setSelectedBeat(0);
 
-    const scoreStarted = await audioRef.current.playScore(planScore(programRef.current), applyScoreBeat);
+    const scoreStarted = await audioRef.current.playScore(planScore(programRef.current, ready.level), applyScoreBeat);
     if (playbackGeneration !== playbackGenerationRef.current) return;
     if (!scoreStarted) timeoutRef.current = window.setTimeout(executeBeat, 120);
   }, [applyScoreBeat, executeBeat, publishState, stopPlayback]);
@@ -171,18 +173,29 @@ export default function App() {
 
   const loadSolution = useCallback(() => {
     stopPlayback();
-    const solution = [...SOLUTION];
+    const level = stateRef.current.level;
+    const solution = Array.from({ length: PROGRAM_LENGTH }, (_, index) => getLevel(level).solution[index] ?? null);
     programRef.current = solution;
     setProgram(solution);
     setSelectedBeat(0);
-    publishState(initialState());
+    publishState(initialState("ready", level));
+  }, [publishState, stopPlayback]);
+
+  const advanceLevel = useCallback(() => {
+    stopPlayback();
+    const level = (stateRef.current.level + 1) % LEVELS.length;
+    const nextProgram = starterProgram(level);
+    programRef.current = nextProgram;
+    setProgram(nextProgram);
+    setSelectedBeat(0);
+    publishState(initialState("ready", level));
   }, [publishState, stopPlayback]);
 
   const seekToBeat = useCallback(
     (beat: number) => {
       stopPlayback();
       const targetBeat = Math.max(0, Math.min(PROGRAM_LENGTH, beat));
-      const sought = simulate(programRef.current, targetBeat);
+      const sought = simulate(programRef.current, targetBeat, stateRef.current.level);
       if (sought.status === "running") {
         sought.status = "ready";
         sought.message = `DEBUG SEEK // BEAT ${targetBeat}`;
@@ -206,12 +219,8 @@ export default function App() {
         ArrowDown: "down",
         ArrowLeft: "left",
         " ": "wait",
-        g: "grab",
-        G: "grab",
-        d: "drop",
-        D: "drop",
-        s: "switch",
-        S: "switch",
+        e: "interact",
+        E: "interact",
       };
       if (event.key in keyMap) {
         event.preventDefault();
@@ -247,6 +256,7 @@ export default function App() {
   }, [loadSolution, resetSimulation, seekToBeat]);
 
   const filledBeats = useMemo(() => program.filter(Boolean).length, [program]);
+  const level = getLevel(simState.level);
 
   return (
     <main className="app-shell">
@@ -262,7 +272,7 @@ export default function App() {
           <span className="crate-mini">×</span>
           <span className="mission-arrow">→</span>
           <span className="out-mini">OUT</span>
-          <strong>20 BEATS</strong>
+          <strong>{level.name} // 20 BEATS</strong>
         </div>
         <button
           className={`sound-button ${music ? "on" : "off"}`}
@@ -281,7 +291,7 @@ export default function App() {
         <div className="sim-column">
           <div className={`viewport-frame ${stateTone(simState)}`}>
             <div className="viewport-label">
-              <span>CAM 03 // SHIPPING FLOOR</span>
+              <span>CAM 0{simState.level + 3} // {level.subtitle}</span>
               <span className="live-dot">LIVE</span>
             </div>
             <div className="game-mount" ref={mountRef} />
@@ -290,7 +300,7 @@ export default function App() {
               <div className="result-card success-card">
                 <span>SHIFT CLEAR</span>
                 <strong>CARGO SHIPPED</strong>
-                <button onClick={resetSimulation}>VIEW ROUTE</button>
+                <button onClick={advanceLevel}>{simState.level < LEVELS.length - 1 ? "NEXT SHIFT" : "RESTART LINE"}</button>
               </div>
             )}
             {simState.status === "dead" && (
@@ -371,7 +381,7 @@ export default function App() {
           </div>
 
           <div className="hazard-key">
-            <div><span className="hazard-swatch" /> PRESSES CRUSH FOR 2 BEATS</div>
+            <div><span className="hazard-swatch" /> {simState.level === 0 ? "PRESSES CRUSH FOR 2 BEATS" : "RED ROBOTS + BELTS MOVE EACH BEAT"}</div>
             <div className="phase-pips"><i /><i /><i /><i /></div>
           </div>
 
@@ -395,7 +405,7 @@ export default function App() {
         </aside>
       </section>
       <footer>
-        <span>ARROWS MOVE</span><span>G GRAB</span><span>S SWITCH</span><span>D DROP</span><span>SPACE HOLD</span><span>ENTER RUN</span>
+        <span>ARROWS MOVE</span><span>E INTERACT ON TILE</span><span>SPACE HOLD</span><span>ENTER RUN</span>
       </footer>
     </main>
   );
