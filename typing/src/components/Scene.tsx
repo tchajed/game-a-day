@@ -2,7 +2,16 @@ import type { GameState } from '../game/engine'
 import { Memo } from './Memo'
 import { Raven } from './Raven'
 
-const SUPERVISOR_RAVEN = `${import.meta.env.BASE_URL}assets/supervisor-raven.png`
+const SUPERVISOR_VARIANTS = {
+  dutiful: 'supervisor-raven-dutiful.png',
+  alert: 'supervisor-raven-alert.png',
+  watchful: 'supervisor-raven-watchful.png',
+} as const
+const requestedSupervisor = new URLSearchParams(window.location.search).get('supervisor')
+const supervisorVariant = requestedSupervisor && requestedSupervisor in SUPERVISOR_VARIANTS
+  ? requestedSupervisor as keyof typeof SUPERVISOR_VARIANTS
+  : 'dutiful'
+const SUPERVISOR_RAVEN = `${import.meta.env.BASE_URL}assets/${SUPERVISOR_VARIANTS[supervisorVariant]}`
 const WATCHER_RAVEN = `${import.meta.env.BASE_URL}assets/watcher-raven.png`
 
 const BUILDINGS = [
@@ -98,7 +107,8 @@ export function Scene({ state }: { state: GameState }) {
             key={`supervisor-${state.errorPulse}-${state.completionPulse}`}
             className={`supervisor supervisor-image ${state.phase === 'playing' && state.currentMistakes > 0 ? 'reacting' : ''} ${state.phase === 'transition' ? 'approving' : ''} ${state.mistakes > 0 ? 'watchful' : ''}`}
             src={SUPERVISOR_RAVEN}
-            alt="Your raven supervisor"
+            alt="Your watchful junior raven supervisor"
+            data-variant={supervisorVariant}
           />
         </div>
         <div className="final-typist"><Raven stare /><span className="final-wing">.</span></div>

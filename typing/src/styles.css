@@ -195,7 +195,7 @@ button { font: inherit; }
 }
 
 @media (max-height: 650px) and (min-width: 761px) {
-  .monitor { height: 50vh; bottom: 9%; }.memo-rule { margin-bottom: 10px; }.supervisor-perch { width: 110px; }.stage-label { top: 13%; }.shift-progress { top: calc(13% + 82px); }
+  .monitor { height: 50vh; bottom: 9%; }.memo-rule { margin-bottom: 10px; }.supervisor-perch { width: 165px; }.stage-label { top: 13%; }.shift-progress { top: calc(13% + 82px); }
 }
 
 @media (prefers-reduced-motion: reduce) {
