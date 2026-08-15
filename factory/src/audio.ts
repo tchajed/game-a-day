@@ -16,8 +16,10 @@ import type { Command, SimState } from "./simulation";
 
 const BPM = 128;
 const BEAT_SECONDS = 60 / BPM;
-const MASTER_LEVEL = 0.72;
+const RUN_LEVEL = 0.72;
+const PLANNING_LEVEL = 0.56;
 const STEPS_PER_BEAT = 2;
+const BAR_SECONDS = BEAT_SECONDS * 4;
 const STEP_SECONDS = BEAT_SECONDS / STEPS_PER_BEAT;
 
 export interface ScoreBeat {
@@ -81,6 +83,10 @@ export class FactoryAudio {
   private enabled: boolean;
   private rig: AudioRig | null = null;
   private generation = 0;
+  private musicStarted = false;
+  private musicEventId: number | null = null;
+  private scoreEventIds: number[] = [];
+  private running = false;
 
   constructor(enabled: boolean) {
     this.enabled = enabled;
@@ -89,8 +95,15 @@ export class FactoryAudio {
   setEnabled(enabled: boolean): void {
     this.enabled = enabled;
     if (this.rig) {
-      this.rig.master.gain.rampTo(enabled ? MASTER_LEVEL : 0, 0.06);
+      const level = this.running ? RUN_LEVEL : PLANNING_LEVEL;
+      this.rig.master.gain.rampTo(enabled ? level : 0, 0.06);
     }
+    if (enabled) void this.startMusic();
+  }
+
+  /** Start the continuous planning soundtrack after any user gesture. */
+  startPlanning(): void {
+    if (this.enabled) void this.startMusic();
   }
 
   private createRig(): AudioRig {
@@ -101,7 +114,7 @@ export class FactoryAudio {
       attack: 0.003,
       release: 0.16,
     }).toDestination();
-    const master = new Gain(this.enabled ? MASTER_LEVEL : 0).connect(compressor);
+    const master = new Gain(this.enabled ? PLANNING_LEVEL : 0).connect(compressor);
 
     const kick = new MembraneSynth({
       pitchDecay: 0.055,
@@ -176,52 +189,61 @@ export class FactoryAudio {
     return this.rig;
   }
 
-  async playScore(score: ScoreBeat[], onBeat: (beat: ScoreBeat) => void): Promise<boolean> {
-    const generation = ++this.generation;
+  private async startMusic(): Promise<boolean> {
     if (!this.enabled) return false;
-
     try {
       await start();
     } catch {
       return false;
     }
-    if (generation !== this.generation) return false;
+    if (this.musicStarted) return true;
 
     const rig = this.ensureRig();
-    const arrangement = ARRANGEMENT;
     const transport = getTransport();
-    const draw = getDraw();
+    let step = 0;
     transport.stop();
     transport.cancel(0);
-    draw.cancel(0);
     transport.position = 0;
     transport.bpm.value = BPM;
+    this.musicEventId = transport.scheduleRepeat((time) => {
+      this.performMusicStep(rig, ARRANGEMENT, step, time);
+      step += 1;
+    }, STEP_SECONDS, 0);
+    this.musicStarted = true;
+    transport.start("+0.12", 0);
+    return true;
+  }
+
+  async playScore(score: ScoreBeat[], onBeat: (beat: ScoreBeat) => void): Promise<boolean> {
+    this.stopScore();
+    const generation = ++this.generation;
+    if (!(await this.startMusic()) || generation !== this.generation) return false;
+
+    const rig = this.ensureRig();
+    const transport = getTransport();
+    const draw = getDraw();
+    // If the transport has only just been armed, beat zero is safe. Otherwise,
+    // wait for the next four-beat boundary so simulation beat zero is a downbeat.
+    const position = transport.seconds;
+    const scoreStart = position < 0.03
+      ? 0
+      : Math.ceil((position + 0.05) / BAR_SECONDS) * BAR_SECONDS;
 
     score.forEach((beat, index) => {
-      const beatTime = index * BEAT_SECONDS;
-      transport.schedule((time) => {
+      const beatTime = scoreStart + index * BEAT_SECONDS;
+      const eventId = transport.schedule((time) => {
         if (generation !== this.generation) return;
+        if (index === 0) {
+          this.running = true;
+          rig.master.gain.setValueAtTime(this.enabled ? RUN_LEVEL : 0, time);
+        }
         this.performBeat(rig, beat, index, time);
         draw.schedule(() => {
           if (generation === this.generation) onBeat(beat);
         }, time);
       }, beatTime);
+      this.scoreEventIds.push(eventId);
     });
-
-    // Run the arrangement at double the simulation rate. Odd steps can swing
-    // late, and phrase lengths of 18/24 steps create accents between game beats.
-    for (let step = 0; step < score.length * STEPS_PER_BEAT; step += 1) {
-      const stepTime = step * STEP_SECONDS;
-      transport.schedule((time) => {
-        if (generation === this.generation) this.performMusicStep(rig, arrangement, step, time);
-      }, stepTime);
-    }
-
-    const stopTime = score.length * BEAT_SECONDS + BEAT_SECONDS;
-    // Pausing preserves the end position. Transport.stop() rewinds to zero and
-    // can retrigger the first scheduled beat while processing the stop event.
-    transport.schedule((time) => transport.pause(time), stopTime);
-    transport.start("+0.12", 0);
     return true;
   }
 
@@ -337,15 +359,19 @@ export class FactoryAudio {
     rig.servo.triggerAttackRelease(["C4", "G4", "C5"], 0.5, time + 0.43, 0.5);
   }
 
+  finishScore(): void {
+    this.running = false;
+    this.rig?.master.gain.rampTo(this.enabled ? PLANNING_LEVEL : 0, 0.12);
+  }
+
   stopScore(): void {
     this.generation += 1;
     const transport = getTransport();
-    transport.stop();
-    transport.cancel(0);
+    this.scoreEventIds.forEach((eventId) => transport.clear(eventId));
+    this.scoreEventIds = [];
     getDraw().cancel(0);
-    this.rig?.bass.triggerRelease();
+    this.finishScore();
     this.rig?.servo.releaseAll();
-    this.rig?.music.releaseAll();
   }
 
   private disposeRig(): void {
@@ -368,6 +394,11 @@ export class FactoryAudio {
 
   dispose(): void {
     this.stopScore();
+    const transport = getTransport();
+    if (this.musicEventId !== null) transport.clear(this.musicEventId);
+    this.musicEventId = null;
+    this.musicStarted = false;
+    transport.stop();
     this.disposeRig();
   }
 }

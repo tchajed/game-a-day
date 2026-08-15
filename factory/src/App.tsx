@@ -127,6 +127,16 @@ export default function App() {
     programRef.current = program;
   }, [program]);
 
+  useEffect(() => {
+    const startPlanningMusic = () => audioRef.current.startPlanning();
+    window.addEventListener("pointerdown", startPlanningMusic, { once: true });
+    window.addEventListener("keydown", startPlanningMusic, { once: true });
+    return () => {
+      window.removeEventListener("pointerdown", startPlanningMusic);
+      window.removeEventListener("keydown", startPlanningMusic);
+    };
+  }, []);
+
   const resetSimulation = useCallback(() => {
     stopPlayback();
     publishState(initialState("ready", stateRef.current.level));
@@ -153,7 +163,10 @@ export default function App() {
       publishState(next);
       setSelectedBeat(Math.min(next.beat, PROGRAM_LENGTH - 1));
       sceneRef.current?.pulse(next.status === "dead" ? "impact" : next.status === "won" ? "win" : "beat");
-      if (next.status === "won" || next.status === "dead") clearTimer();
+      if (next.status === "won" || next.status === "dead") {
+        clearTimer();
+        audioRef.current.finishScore();
+      }
     },
     [clearTimer, publishState],
   );
@@ -232,7 +245,10 @@ export default function App() {
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.target instanceof HTMLInputElement) return;
       if (simState.status === "running") {
-        if (event.key === "Escape") resetSimulation();
+        if (event.key === "Escape" || event.key === "Enter") {
+          event.preventDefault();
+          resetSimulation();
+        }
         return;
       }
       const keyMap: Record<string, Command> = {
@@ -400,7 +416,7 @@ export default function App() {
               CLEAR
             </button>
             {simState.status === "running" ? (
-              <button className="run-button stop" onClick={resetSimulation}>■ ABORT</button>
+              <button className="run-button stop" onClick={resetSimulation}>■ ABORT · ENTER</button>
             ) : (
               <button className="run-button" onClick={runProgram}>▶ RUN TAPE</button>
             )}
@@ -431,7 +447,8 @@ export default function App() {
         </aside>
       </section>
       <footer>
-        <span>ARROWS MOVE</span><span>E INTERACT ON TILE</span><span>SPACE HOLD</span><span>ENTER RUN</span>
+        <span>ARROWS MOVE</span><span>E INTERACT ON TILE</span><span>SPACE HOLD</span>
+        <span>{simState.status === "running" ? "ENTER ABORT + EDIT" : "ENTER RUN"}</span>
       </footer>
     </main>
   );
