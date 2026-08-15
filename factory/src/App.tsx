@@ -137,7 +137,9 @@ export default function App() {
 
   const loadSolution = useCallback(() => {
     stopTimer();
-    setProgram([...SOLUTION]);
+    const solution = [...SOLUTION];
+    programRef.current = solution;
+    setProgram(solution);
     setSelectedBeat(0);
     publishState(initialState());
   }, [publishState, stopTimer]);
