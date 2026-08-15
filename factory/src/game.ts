@@ -199,31 +199,13 @@ export class FactoryScene extends Phaser.Scene {
     g.lineStyle(1, 0x3e4b5c, 0.65);
     g.strokeRoundedRect(px + 5.5, py + 5.5, TILE - 12, TILE - 12, 1);
 
-    // Recessed fasteners and tiny wear marks add scale without reading as pixels.
+    // Identical recessed fasteners are the only surface detail; every unique
+    // floor marking is reserved for something the player can use or avoid.
     for (const [bx, by] of [[9, 10], [TILE - 11, 10], [9, TILE - 12], [TILE - 11, TILE - 12]]) {
       g.fillStyle(0x0b1018, 1);
       g.fillCircle(px + bx, py + by, 2.1);
-      g.fillStyle(0x637083, 0.8);
-      g.fillCircle(px + bx - 0.5, py + by - 0.5, 0.85);
-    }
-    g.lineStyle(1, 0x536174, 0.22);
-    g.lineBetween(px + 17, py + 17, px + 41, py + 17);
-    g.lineBetween(px + 17, py + 20, px + 33, py + 20);
-
-    // Occasional flush service channels and guide lamps stay axis-aligned.
-    if ((x + y * 3) % 7 === 0) {
-      g.fillStyle(0x0d131c, 1);
-      g.fillRoundedRect(px + 10, py + 37, 38, 8, 2);
-      g.lineStyle(1, 0x627184, 0.9);
-      g.strokeRoundedRect(px + 10.5, py + 37.5, 37, 7, 2);
-      g.fillStyle(0xc78531, 1);
-      g.fillCircle(px + 16, py + 41, 2);
-      g.fillCircle(px + 42, py + 41, 2);
-    } else if ((x * 5 + y) % 9 === 0) {
-      g.fillStyle(0x102d34, 1);
-      g.fillRoundedRect(px + 21, py + 28, 16, 7, 2);
-      g.fillStyle(0x6ff0df, 0.9);
-      g.fillRoundedRect(px + 24, py + 30, 10, 2, 1);
+      g.fillStyle(0x637083, 0.65);
+      g.fillCircle(px + bx - 0.5, py + by - 0.5, 0.75);
     }
   }
 
