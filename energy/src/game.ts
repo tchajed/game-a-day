@@ -1,6 +1,6 @@
-export type BuildingType = 'pylon' | 'solar' | 'wind' | 'geothermal' | 'fusion' | 'garage'
+export type BuildingType = 'pylon' | 'solar'
 export type BuildingStatus = 'blueprint' | 'building' | 'complete'
-export type WorkerStatus = 'idle' | 'moving' | 'building' | 'stalled'
+export type WorkerStatus = 'idle' | 'moving' | 'building' | 'rescuing' | 'stalled'
 
 export type Building = {
   id: number
@@ -20,9 +20,14 @@ export type Worker = {
   y: number
   status: WorkerStatus
   taskId: number | null
+  rescueId: number | null
   targetX: number
   targetY: number
-  workClock: number
+  operatingTime: number
+  failureAt: number
+  repairs: number
+  serviceTime: number
+  reliable: boolean
 }
 
 export type GameState = {
@@ -35,6 +40,7 @@ export type GameState = {
   buildings: Building[]
   workers: Worker[]
   nextId: number
+  nextWorkerId: number
   toast: string
   seed: number
   running: boolean
@@ -54,22 +60,47 @@ export const WORLD_SIZE = 36
 export const HQ = { x: 18, y: 18 }
 export const PYLON_RANGE = 6.25
 export const FACILITY_RANGE = 4.75
+export const ROBOT_MTTF = 60
+export const RESCUE_TIME = 2.5
 
 export const BUILDINGS: Record<BuildingType, BuildingSpec> = {
-  pylon: { name: 'Relay pylon', cost: 45, output: 0, buildTime: 3, icon: '⌁', key: '1', note: 'Carries the grid 6 tiles' },
-  solar: { name: 'Solar array', cost: 140, output: 4, buildTime: 6, icon: '▰', key: '2', note: '+4 MW · cheap and compact' },
-  wind: { name: 'Wind field', cost: 430, output: 13, buildTime: 11, icon: '✣', key: '3', note: '+13 MW · serious output' },
-  geothermal: { name: 'Geo station', cost: 1450, output: 42, buildTime: 18, icon: '◉', key: '4', note: '+42 MW · industrial power' },
-  fusion: { name: 'Fusion yard', cost: 5200, output: 155, buildTime: 30, icon: '⬡', key: '5', note: '+155 MW · endgame scale' },
-  garage: { name: 'Robot garage', cost: 900, output: 0, buildTime: 14, icon: '▣', key: '6', note: 'Deploys another worker' },
+  pylon: { name: 'Relay pylon', cost: 35, output: 0, buildTime: 4, icon: '⌁', key: '1', note: 'Carries the grid 6 tiles' },
+  solar: { name: 'Solar array', cost: 110, output: 3, buildTime: 8, icon: '▰', key: '2', note: '+3 MW continuous export' },
 }
 
 const distance = (a: { x: number; y: number }, b: { x: number; y: number }) => Math.hypot(a.x - b.x, a.y - b.y)
-const isGenerator = (type: BuildingType) => BUILDINGS[type].output > 0
+
+// Deterministic samples from a shifted exponential distribution. Across many repairs,
+// operating time averages ROBOT_MTTF while still making each fault unpredictable.
+function failureInterval(id: number, repairs: number) {
+  const minimum = 10
+  const value = Math.sin((id * 91 + repairs * 193 + 17) * 12.9898) * 43758.5453
+  const uniform = Math.min(.999, Math.max(.001, value - Math.floor(value)))
+  return minimum - Math.log(1 - uniform) * (ROBOT_MTTF - minimum)
+}
+
+function makeWorker(id: number, reliable = false, offset = 0): Worker {
+  return {
+    id,
+    name: reliable ? 'FAILSAFE-0' : `UNIT-${String(id).padStart(2, '0')}`,
+    x: HQ.x - .7 + offset * .55,
+    y: HQ.y + .8 + (offset % 2) * .4,
+    status: 'idle',
+    taskId: null,
+    rescueId: null,
+    targetX: HQ.x - .7 + offset * .55,
+    targetY: HQ.y + .8 + (offset % 2) * .4,
+    operatingTime: 0,
+    failureAt: reliable ? Infinity : failureInterval(id, 0),
+    repairs: 0,
+    serviceTime: 0,
+    reliable,
+  }
+}
 
 export function getBuildingCost(state: GameState, type: BuildingType) {
   const built = state.buildings.filter(building => building.type === type).length
-  const growth = type === 'pylon' ? 1.07 : 1.16
+  const growth = type === 'pylon' ? 1.04 : 1.09
   return Math.round(BUILDINGS[type].cost * growth ** built / 5) * 5
 }
 
@@ -82,7 +113,7 @@ export function recomputeNetwork(buildings: Building[]): Building[] {
     changed = false
     for (const pylon of next) {
       if (pylon.type !== 'pylon' || pylon.status !== 'complete' || connectedPylons.has(pylon.id)) continue
-      const candidates: Array<{ id: number | null; x: number; y: number }> = [{ id: null as number | null, ...HQ }]
+      const candidates: Array<{ id: number | null; x: number; y: number }> = [{ id: null, ...HQ }]
       for (const other of next) {
         if (other.type === 'pylon' && connectedPylons.has(other.id)) candidates.push(other)
       }
@@ -99,7 +130,7 @@ export function recomputeNetwork(buildings: Building[]): Building[] {
   }
 
   const networkNodes: Array<{ id: number | null; x: number; y: number }> = [
-    { id: null as number | null, ...HQ },
+    { id: null, ...HQ },
     ...next.filter(building => building.type === 'pylon' && building.connected),
   ]
   for (const building of next) {
@@ -122,21 +153,30 @@ export function initialState(debug = false): GameState {
   ]
   return {
     elapsed: 0,
-    cash: debug ? 12000 : 560,
+    cash: debug ? 12000 : 420,
     totalEnergy: 0,
-    generation: 4,
+    generation: 3,
     buildMode: null,
-    selectedWorker: 1,
+    selectedWorker: 2,
     buildings,
-    workers: [
-      { id: 1, name: 'MICA-1', x: 17.3, y: 18.4, status: 'idle', taskId: null, targetX: 17.3, targetY: 18.4, workClock: 0 },
-      { id: 2, name: 'BOLT-2', x: 18.5, y: 19.1, status: 'idle', taskId: null, targetX: 18.5, targetY: 19.1, workClock: 12 },
-      { id: 3, name: 'KITE-3', x: 19.1, y: 18.3, status: 'idle', taskId: null, targetX: 19.1, targetY: 18.3, workClock: 24 },
-    ],
+    workers: [makeWorker(1, true, 0), makeWorker(2, false, 1), makeWorker(3, false, 2), makeWorker(4, false, 3)],
     nextId: 10,
-    toast: 'Select a structure, place a blueprint, then assign a robot.',
+    nextWorkerId: 5,
+    toast: 'Place a blueprint, assign a unit, and watch for field failures.',
     seed: 81727,
     running: true,
+  }
+}
+
+export function addWorker(state: GameState): GameState {
+  const id = state.nextWorkerId
+  return {
+    ...state,
+    workers: [...state.workers, makeWorker(id, false, state.workers.length)],
+    nextWorkerId: id + 1,
+    selectedWorker: id,
+    buildMode: null,
+    toast: `UNIT-${String(id).padStart(2, '0')} deployed. More throughput means more failures to manage.`,
   }
 }
 
@@ -144,8 +184,8 @@ export function placeBlueprint(state: GameState, type: BuildingType, x: number, 
   const cost = getBuildingCost(state, type)
   if (state.cash < cost) return { ...state, toast: `Need ${formatCredits(cost)} for ${BUILDINGS[type].name}.` }
   if (x < 1 || y < 1 || x >= WORLD_SIZE - 1 || y >= WORLD_SIZE - 1) return { ...state, toast: 'That site is outside the survey boundary.' }
-  if (distance({ x, y }, HQ) < 2.2 || state.buildings.some(building => distance(building, { x, y }) < 1.25)) {
-    return { ...state, toast: 'Site obstructed — choose another tile.' }
+  if (distance({ x, y }, HQ) < 2.2 || state.buildings.some(building => distance(building, { x, y }) < 1.5)) {
+    return { ...state, toast: 'Site obstructed — leave room around each structure.' }
   }
   const building: Building = { id: state.nextId, type, x, y, status: 'blueprint', progress: 0, connected: false, parentId: null }
   return {
@@ -153,109 +193,154 @@ export function placeBlueprint(state: GameState, type: BuildingType, x: number, 
     cash: state.cash - cost,
     buildings: [...state.buildings, building],
     nextId: state.nextId + 1,
-    toast: `${BUILDINGS[type].name} planned. Select a robot, then click its blueprint.`,
+    toast: `${BUILDINGS[type].name} planned. Select a working unit, then click its blueprint.`,
   }
 }
 
 export function assignWorker(state: GameState, workerId: number, taskId: number): GameState {
   const task = state.buildings.find(building => building.id === taskId && building.status !== 'complete')
   const worker = state.workers.find(unit => unit.id === workerId)
-  if (!task || !worker) return state
+  if (!task || !worker || worker.status === 'stalled') return state
   const workers = state.workers.map(unit => {
     if (unit.id !== workerId) return unit.taskId === taskId ? { ...unit, taskId: null, status: 'idle' as WorkerStatus } : unit
-    return { ...unit, taskId, targetX: task.x, targetY: task.y, status: 'moving' as WorkerStatus }
+    return { ...unit, taskId, rescueId: null, targetX: task.x, targetY: task.y, status: 'moving' as WorkerStatus, serviceTime: 0 }
   })
   const buildings = state.buildings.map(building => building.id === taskId ? { ...building, status: 'building' as BuildingStatus } : building)
-  return { ...state, workers, buildings, toast: `${worker.name} assigned to ${BUILDINGS[task.type].name}.` }
+  return { ...state, workers, buildings, toast: `${worker.name} dispatched to ${BUILDINGS[task.type].name}.` }
+}
+
+export function assignRescue(state: GameState, workerId: number, targetId: number): GameState {
+  const worker = state.workers.find(unit => unit.id === workerId)
+  const target = state.workers.find(unit => unit.id === targetId)
+  if (!worker || !target || worker.id === target.id || worker.status === 'stalled' || target.status !== 'stalled') return state
+  const workers = state.workers.map(unit => {
+    if (unit.id !== workerId) return unit.rescueId === targetId ? { ...unit, rescueId: null, status: 'idle' as WorkerStatus } : unit
+    return {
+      ...unit,
+      taskId: null,
+      rescueId: targetId,
+      targetX: target.x,
+      targetY: target.y,
+      status: 'moving' as WorkerStatus,
+      serviceTime: 0,
+    }
+  })
+  return { ...state, workers, selectedWorker: workerId, buildMode: null, toast: `${worker.name} responding to ${target.name}. Keep a rescue path open.` }
 }
 
 export function moveWorker(state: GameState, workerId: number, x: number, y: number): GameState {
   const worker = state.workers.find(unit => unit.id === workerId)
-  if (!worker) return state
+  if (!worker || worker.status === 'stalled') return state
   return {
     ...state,
     workers: state.workers.map(unit => unit.id === workerId
-      ? { ...unit, taskId: null, targetX: x, targetY: y, status: 'moving' as WorkerStatus }
+      ? { ...unit, taskId: null, rescueId: null, targetX: x, targetY: y, status: 'moving' as WorkerStatus, serviceTime: 0 }
       : unit),
     toast: `${worker.name} moving to marker.`,
   }
 }
 
-export function rebootWorker(state: GameState, workerId: number): GameState {
-  const worker = state.workers.find(unit => unit.id === workerId)
-  if (!worker || worker.status !== 'stalled') return state
-  return {
-    ...state,
-    workers: state.workers.map(unit => unit.id === workerId
-      ? { ...unit, status: unit.taskId ? 'moving' as WorkerStatus : 'idle' as WorkerStatus, workClock: 0 }
-      : unit),
-    toast: `${worker.name} rebooted. Keep an eye on it.`,
-  }
+function workerSpeed(worker: Worker) {
+  return worker.reliable ? .95 : 2.35
+}
+
+function workerRate(worker: Worker) {
+  return worker.reliable ? .38 : 1
 }
 
 export function stepGame(state: GameState, dt: number): GameState {
   if (!state.running) return state
-  let completedGarage = false
   const buildings = state.buildings.map(building => ({ ...building }))
-  const workers = state.workers.map(worker => {
-    const next = { ...worker, workClock: worker.workClock + dt }
-    if (next.status === 'stalled' || next.status === 'idle') return next
+  const workers = state.workers.map(worker => ({ ...worker }))
+  let newlyStalled: Worker | null = null
+  let newlyRescued: Worker | null = null
 
-    // Deterministic service faults make the small robot crew require active supervision.
-    if (next.workClock >= 46 + next.id * 7) {
-      next.status = 'stalled'
-      return next
-    }
-
-    const dx = next.targetX - next.x
-    const dy = next.targetY - next.y
+  const travelWorker = (worker: Worker) => {
+    const dx = worker.targetX - worker.x
+    const dy = worker.targetY - worker.y
     const remaining = Math.hypot(dx, dy)
-    if (remaining > 0.16) {
-      const travel = Math.min(remaining, dt * 2.35)
-      next.x += dx / remaining * travel
-      next.y += dy / remaining * travel
-      next.status = 'moving'
-      return next
+    if (remaining <= .16) {
+      worker.x = worker.targetX
+      worker.y = worker.targetY
+      return true
+    }
+    const travel = Math.min(remaining, dt * workerSpeed(worker))
+    worker.x += dx / remaining * travel
+    worker.y += dy / remaining * travel
+    worker.status = 'moving'
+    return false
+  }
+
+  for (const worker of workers) {
+    if (worker.status === 'idle' || worker.status === 'stalled') continue
+
+    if (!worker.reliable) {
+      worker.operatingTime += dt
+      if (worker.operatingTime >= worker.failureAt) {
+        worker.status = 'stalled'
+        worker.serviceTime = 0
+        newlyStalled = worker
+        continue
+      }
     }
 
-    next.x = next.targetX
-    next.y = next.targetY
-    if (next.taskId === null) {
-      next.status = 'idle'
-      return next
+    if (worker.rescueId !== null) {
+      const target = workers.find(unit => unit.id === worker.rescueId)
+      if (!target || target.status !== 'stalled') {
+        worker.rescueId = null
+        worker.status = 'idle'
+        worker.serviceTime = 0
+        continue
+      }
+      worker.targetX = target.x
+      worker.targetY = target.y
+      if (!travelWorker(worker)) continue
+      worker.status = 'rescuing'
+      worker.serviceTime += dt * workerRate(worker)
+      if (worker.serviceTime >= RESCUE_TIME) {
+        target.repairs += 1
+        target.operatingTime = 0
+        target.failureAt = target.reliable ? Infinity : failureInterval(target.id, target.repairs)
+        target.serviceTime = 0
+        target.status = target.taskId !== null || target.rescueId !== null ? 'moving' : 'idle'
+        worker.rescueId = null
+        worker.status = 'idle'
+        worker.serviceTime = 0
+        newlyRescued = target
+      }
+      continue
     }
-    const task = buildings.find(building => building.id === next.taskId)
+
+    if (!travelWorker(worker)) continue
+    if (worker.taskId === null) {
+      worker.status = 'idle'
+      continue
+    }
+    const task = buildings.find(building => building.id === worker.taskId)
     if (!task || task.status === 'complete') {
-      next.taskId = null
-      next.status = 'idle'
-      return next
+      worker.taskId = null
+      worker.status = 'idle'
+      continue
     }
-    next.status = 'building'
+    worker.status = 'building'
     task.status = 'building'
-    task.progress = Math.min(1, task.progress + dt / BUILDINGS[task.type].buildTime)
+    task.progress = Math.min(1, task.progress + dt * workerRate(worker) / BUILDINGS[task.type].buildTime)
     if (task.progress >= 1) {
       task.status = 'complete'
       task.progress = 1
-      completedGarage ||= task.type === 'garage'
-      next.taskId = null
-      next.status = 'idle'
+      worker.taskId = null
+      worker.status = 'idle'
     }
-    return next
-  })
-
-  if (completedGarage) {
-    const id = state.nextId
-    workers.push({ id, name: `RIVET-${workers.length + 1}`, x: HQ.x, y: HQ.y + .7, status: 'idle', taskId: null, targetX: HQ.x, targetY: HQ.y + .7, workClock: 0 })
   }
 
   const networked = recomputeNetwork(buildings)
   const generation = networked.reduce((sum, building) => sum + (building.connected ? BUILDINGS[building.type].output : 0), 0)
-  const income = generation * 0.82 * dt
-  const stalled = workers.find(worker => worker.status === 'stalled' && state.workers.find(old => old.id === worker.id)?.status !== 'stalled')
+  const income = generation * .9 * dt
   const finished = networked.find(building => building.status === 'complete' && state.buildings.find(old => old.id === building.id)?.status !== 'complete')
   let toast = state.toast
-  if (finished) toast = `${BUILDINGS[finished.type].name} complete${finished.connected ? ' and exporting.' : ' — OFF GRID. Extend a pylon line.'}`
-  if (stalled) toast = `⚠ ${stalled.name} lost task lock. Select it and REBOOT.`
+  if (finished) toast = `${BUILDINGS[finished.type].name} complete${finished.connected ? ' and exporting.' : ' — OFF GRID. Extend a relay line.'}`
+  if (newlyRescued) toast = `${newlyRescued.name} restored. Its fault clock has been reset.`
+  if (newlyStalled) toast = `⚠ ${newlyStalled.name} FAILED. Select a working unit, then click the stalled unit.`
 
   return {
     ...state,
@@ -265,7 +350,6 @@ export function stepGame(state: GameState, dt: number): GameState {
     generation,
     buildings: networked,
     workers,
-    nextId: completedGarage ? state.nextId + 1 : state.nextId,
     toast,
   }
 }

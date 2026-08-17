@@ -165,7 +165,7 @@ class FrontierScene extends Phaser.Scene {
       graphics.lineBetween(x - 13, y - 21, x + 13, y - 21)
       graphics.fillStyle(accent, 1)
       graphics.fillCircle(x, y - 49, 5)
-    } else if (building.type === 'solar') {
+    } else {
       graphics.fillStyle(0x153d51, 1)
       graphics.lineStyle(2, accent, 1)
       for (let row = 0; row < 2; row++) {
@@ -176,31 +176,6 @@ class FrontierScene extends Phaser.Scene {
         graphics.lineTo(x - 3 + row * 7, y + 3 - row * 12)
         graphics.closePath(); graphics.fillPath(); graphics.strokePath()
       }
-    } else if (building.type === 'wind') {
-      for (const offset of [-18, 18]) {
-        graphics.fillStyle(0xd7e5dc, 1); graphics.fillRect(x + offset - 2, y - 44, 4, 43)
-        graphics.fillStyle(accent, 1); graphics.fillCircle(x + offset, y - 44, 5)
-        graphics.lineStyle(3, 0xe4f1e9, 1)
-        for (let blade = 0; blade < 3; blade++) {
-          const angle = time * 1.7 + blade * Math.PI * 2 / 3 + offset
-          graphics.lineBetween(x + offset, y - 44, x + offset + Math.cos(angle) * 18, y - 44 + Math.sin(angle) * 18)
-        }
-      }
-    } else if (building.type === 'geothermal') {
-      graphics.fillStyle(0x173c35, 1); graphics.fillRoundedRect(x - 28, y - 36, 56, 39, 4)
-      graphics.lineStyle(2, accent, 1); graphics.strokeRoundedRect(x - 28, y - 36, 56, 39, 4)
-      graphics.fillStyle(0xc4d8cc, 1); graphics.fillRect(x - 18, y - 57, 12, 27); graphics.fillRect(x + 8, y - 48, 10, 18)
-      graphics.fillStyle(0xc7fff0, .18); graphics.fillCircle(x - 12, y - 64 - Math.sin(time * 2) * 4, 10)
-    } else if (building.type === 'fusion') {
-      graphics.fillStyle(0xcadbd0, 1); graphics.fillRoundedRect(x - 33, y - 26, 66, 29, 5)
-      graphics.fillStyle(0x102c30, 1); graphics.fillCircle(x, y - 29, 25)
-      graphics.lineStyle(5, accent, 1); graphics.beginPath(); graphics.arc(x, y - 29, 17, time * 1.8, time * 1.8 + Math.PI * 1.55); graphics.strokePath()
-      graphics.fillStyle(0xffffff, .8); graphics.fillCircle(x, y - 29, 5)
-    } else if (building.type === 'garage') {
-      graphics.fillStyle(0xbacfc4, 1)
-      graphics.beginPath(); graphics.moveTo(x - 31, y - 30); graphics.lineTo(x, y - 48); graphics.lineTo(x + 31, y - 30); graphics.lineTo(x + 31, y + 4); graphics.lineTo(x - 31, y + 4); graphics.closePath(); graphics.fillPath()
-      graphics.fillStyle(0x112d2d, 1); graphics.fillRect(x - 18, y - 24, 36, 28)
-      graphics.lineStyle(2, accent, 1); graphics.strokeRect(x - 18, y - 24, 36, 28)
     }
 
     if (!online && building.type !== 'pylon') this.text(x, y - 67, 'OFF GRID', 12, '#ff6677')
@@ -214,17 +189,18 @@ class FrontierScene extends Phaser.Scene {
       graphics.lineStyle(2, 0xffcf63, 1)
       graphics.strokeEllipse(point.x, point.y + 5, 38, 19)
     }
-    graphics.fillStyle(worker.status === 'stalled' ? 0xff6677 : 0xf2b84b, 1)
+    graphics.fillStyle(worker.status === 'stalled' ? 0xff6677 : worker.reliable ? 0x63f2a5 : 0xf2b84b, 1)
     graphics.fillRoundedRect(point.x - 9, point.y - 17 + bob, 18, 17, 4)
     graphics.fillStyle(0x102729, 1)
     graphics.fillRect(point.x - 5, point.y - 13 + bob, 10, 5)
     graphics.lineStyle(3, 0xdbe9df, 1)
     graphics.lineBetween(point.x - 5, point.y + bob, point.x - 8, point.y + 8)
     graphics.lineBetween(point.x + 5, point.y + bob, point.x + 8, point.y + 8)
-    if (worker.status === 'building') {
-      graphics.lineStyle(2, 0xffdf88, .8)
+    if (worker.status === 'building' || worker.status === 'rescuing') {
+      graphics.lineStyle(2, worker.status === 'rescuing' ? 0x63f2a5 : 0xffdf88, .9)
       graphics.lineBetween(point.x + 9, point.y - 8, point.x + 20, point.y - 17 + Math.sin(time * 9) * 4)
     }
+    if (worker.reliable) this.text(point.x, point.y - 31, '∞', 11, '#baffd8')
     if (worker.status === 'stalled') this.text(point.x, point.y - 34, '!', 20, '#ff6677')
   }
 
@@ -282,6 +258,16 @@ class FrontierScene extends Phaser.Scene {
     graphics.fillStyle(0x63f2a5, 1); graphics.fillRect(hq.x - 19, hq.y - 37, 38, 7)
     graphics.lineStyle(3, 0x63f2a5, 1); graphics.strokeRect(hq.x - 28, hq.y - 46, 56, 35)
     this.text(hq.x, hq.y + 34, 'GRID CORE', 13)
+
+    for (const worker of state.workers) {
+      if (worker.rescueId === null) continue
+      const target = state.workers.find(candidate => candidate.id === worker.rescueId)
+      if (!target) continue
+      const source = iso(worker.x, worker.y)
+      const destination = iso(target.x, target.y)
+      graphics.lineStyle(2, 0x63f2a5, .55)
+      graphics.lineBetween(source.x, source.y - 8, destination.x, destination.y - 8)
+    }
 
     const sortedBuildings = [...state.buildings].sort((a, b) => (a.x + a.y) - (b.x + b.y))
     sortedBuildings.forEach(building => this.drawBuilding(building, state.elapsed))

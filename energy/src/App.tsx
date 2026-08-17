@@ -2,6 +2,9 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import WorldCanvas from './WorldCanvas'
 import {
   BUILDINGS,
+  ROBOT_MTTF,
+  addWorker,
+  assignRescue,
   assignWorker,
   formatCredits,
   formatTime,
@@ -9,7 +12,6 @@ import {
   initialState,
   moveWorker,
   placeBlueprint,
-  rebootWorker,
   stepGame,
   type BuildingType,
   type GameState,
@@ -19,7 +21,7 @@ import './styles.css'
 const params = new URLSearchParams(location.search)
 const debug = params.get('debug') === 'true'
 const musicOff = params.get('music') === 'off'
-const buildingOrder: BuildingType[] = ['pylon', 'solar', 'wind', 'geothermal', 'fusion', 'garage']
+const buildingOrder: BuildingType[] = ['pylon', 'solar']
 
 function useSimulation() {
   const [state, setState] = useState<GameState>(() => initialState(debug))
@@ -55,9 +57,7 @@ export default function App() {
   const { state, mutate, ref } = useSimulation()
   const [music, setMusic] = useState(false)
   const audio = useRef<AudioContext | null>(null)
-  const selected = state.workers.find(worker => worker.id === state.selectedWorker) ?? null
-  const offGrid = state.buildings.filter(building => building.status === 'complete' && !building.connected).length
-  const planned = state.buildings.filter(building => building.status !== 'complete').length
+  const stalled = state.workers.filter(worker => worker.status === 'stalled').length
 
   const selectBuild = useCallback((type: BuildingType) => {
     mutate(state => ({
@@ -72,8 +72,12 @@ export default function App() {
   const handleGround = useCallback((x: number, y: number) => {
     mutate(state => {
       if (state.buildMode) return placeBlueprint(state, state.buildMode, x, y)
-      if (state.selectedWorker !== null) return moveWorker(state, state.selectedWorker, x, y)
-      return { ...state, toast: 'Select a robot or choose a structure.' }
+      if (state.selectedWorker !== null) {
+        const worker = state.workers.find(item => item.id === state.selectedWorker)
+        if (worker?.status === 'stalled') return { ...state, toast: `${worker.name} cannot move. Select a working unit and click the failure.` }
+        return moveWorker(state, state.selectedWorker, x, y)
+      }
+      return { ...state, toast: 'Select a unit or choose a structure.' }
     })
   }, [mutate])
 
@@ -81,8 +85,29 @@ export default function App() {
     mutate(state => {
       const building = state.buildings.find(item => item.id === id)
       if (!building || building.status === 'complete') return state
-      if (state.selectedWorker === null) return { ...state, toast: 'Select a robot before assigning this blueprint.' }
+      if (state.selectedWorker === null) return { ...state, toast: 'Select a working unit before assigning this blueprint.' }
+      const worker = state.workers.find(item => item.id === state.selectedWorker)
+      if (worker?.status === 'stalled') return { ...state, toast: `${worker.name} is stalled. Another unit must rescue it first.` }
       return assignWorker(state, state.selectedWorker, id)
+    })
+  }, [mutate])
+
+  const handleWorker = useCallback((id: number) => {
+    mutate(state => {
+      const target = state.workers.find(worker => worker.id === id)
+      const selectedWorker = state.workers.find(worker => worker.id === state.selectedWorker)
+      if (!target) return state
+      if (target.status === 'stalled' && selectedWorker && selectedWorker.id !== target.id && selectedWorker.status !== 'stalled') {
+        return assignRescue(state, selectedWorker.id, target.id)
+      }
+      return {
+        ...state,
+        selectedWorker: id,
+        buildMode: null,
+        toast: target.status === 'stalled'
+          ? `${target.name} is down. Select a working unit, then click ${target.name} to dispatch a rescue.`
+          : `${target.name} selected.`,
+      }
     })
   }, [mutate])
 
@@ -130,6 +155,10 @@ export default function App() {
       setCash: (cash: number) => mutate(state => ({ ...state, cash })),
       restart: () => mutate(() => initialState(true)),
       place: (type: BuildingType, x: number, y: number) => mutate(state => placeBlueprint(state, type, x, y)),
+      assign: (workerId: number, buildingId: number) => mutate(state => assignWorker(state, workerId, buildingId)),
+      rescue: (workerId: number, targetId: number) => mutate(state => assignRescue(state, workerId, targetId)),
+      move: (workerId: number, x: number, y: number) => mutate(state => moveWorker(state, workerId, x, y)),
+      addWorker: () => mutate(addWorker),
     }
   }, [mutate, ref])
 
@@ -144,7 +173,7 @@ export default function App() {
         <Stat label="AVAILABLE" value={formatCredits(state.cash)} test="cash" />
         <Stat label="GRID OUTPUT" value={`${state.generation.toFixed(0)} MW`} test="generation" glow />
         <Stat label="LIFETIME EXPORT" value={`${state.totalEnergy.toFixed(2)} MWh`} />
-        <Stat label="NETWORK" value={offGrid ? `${offGrid} OFF GRID` : 'STABLE'} hot={offGrid > 0} />
+        <Stat label="CREW STATUS" value={stalled ? `${stalled} FAILED` : `${state.workers.length} ONLINE`} hot={stalled > 0} />
       </div>
       <button className="audio" data-testid="music-toggle" onClick={toggleMusic}>{musicOff ? 'AUDIO OFF' : music ? '■ HUM' : '♪ HUM'}</button>
     </header>
@@ -154,41 +183,38 @@ export default function App() {
         state={state}
         onGround={handleGround}
         onBuilding={handleBuilding}
-        onWorker={id => mutate(state => ({ ...state, selectedWorker: id, buildMode: null, toast: `${state.workers.find(worker => worker.id === id)?.name} selected.` }))}
+        onWorker={handleWorker}
       />
       <div className="scanlines" />
       <aside className="right-panel">
         <div className="mission-card">
-          <small>OPEN-ENDED DIRECTIVE</small>
-          <h2>BUILD THE GRID</h2>
-          <p>No contract. No deadline. Every connected megawatt earns credits for the next expansion.</p>
-          <div><span>PLANNED <b>{planned}</b></span><span>ONLINE <b>{state.buildings.filter(item => item.status === 'complete' && item.connected).length}</b></span></div>
+          <small>FIELD OPERATIONS DIRECTIVE</small>
+          <h2>KEEP THEM RUNNING</h2>
+          <p>Standard units fail after {ROBOT_MTTF} seconds on average. Reach them with another unit to repair.</p>
         </div>
         <div className={`system-feed ${state.toast.startsWith('⚠') ? 'critical' : ''}`}>
           <small>SYSTEM FEED</small><p>{state.toast}</p>
         </div>
         <div className="roster">
-          <div className="panel-title"><span>FIELD ROBOTS</span><small>DIRECT CONTROL</small></div>
-          {state.workers.map(worker => <button
-            key={worker.id}
-            className={`${state.selectedWorker === worker.id ? 'selected' : ''} ${worker.status === 'stalled' ? 'stalled' : ''}`}
-            onClick={() => mutate(state => ({ ...state, selectedWorker: worker.id, buildMode: null, toast: `${worker.name} selected.` }))}
-          >
-            <i>{worker.status === 'stalled' ? '!' : worker.id.toString().padStart(2, '0')}</i>
-            <span><b>{worker.name}</b><small>{worker.status === 'building' ? 'CONSTRUCTING' : worker.status.toUpperCase()}</small></span>
-            <em />
-          </button>)}
+          <div className="panel-title"><span>FIELD UNITS</span><button data-testid="add-worker" onClick={() => mutate(addWorker)}>+ DEPLOY UNIT</button></div>
+          <div className="roster-scroll">
+            {state.workers.map(worker => <button
+              key={worker.id}
+              className={`${state.selectedWorker === worker.id ? 'selected' : ''} ${worker.status === 'stalled' ? 'stalled' : ''} ${worker.reliable ? 'reliable' : ''}`}
+              onClick={() => handleWorker(worker.id)}
+            >
+              <i>{worker.status === 'stalled' ? '!' : worker.reliable ? '∞' : worker.id.toString().padStart(2, '0')}</i>
+              <span><b>{worker.name}</b><small>{worker.status === 'building' ? 'CONSTRUCTING' : worker.status === 'rescuing' ? 'FIELD REPAIR' : worker.status.toUpperCase()}</small></span>
+              <strong>{worker.reliable ? 'NO FAILURES · 40% SPEED' : `MTTF ${ROBOT_MTTF}s · ${Math.floor(worker.operatingTime)}s UP`}</strong>
+              <em />
+            </button>)}
+          </div>
         </div>
-        {selected && <div className={`unit-card ${selected.status}`}>
-          <div><small>SELECTED UNIT</small><b>{selected.name}</b></div>
-          <p>{selected.status === 'stalled' ? 'Task lock failed. Manual reboot required.' : selected.taskId ? 'Click another blueprint to reassign.' : 'Click a blueprint to build, or terrain to move.'}</p>
-          {selected.status === 'stalled' && <button data-testid="reboot" onClick={() => mutate(state => rebootWorker(state, selected.id))}>REBOOT {selected.name}</button>}
-        </div>}
       </aside>
     </section>
 
     <section className="command-deck">
-      <div className="deck-heading"><small>CONSTRUCTION</small><b>{state.buildMode ? `${BUILDINGS[state.buildMode].name.toUpperCase()} TOOL ACTIVE` : 'CHOOSE A FACILITY'}</b><span>PLACE → SELECT ROBOT → ASSIGN</span></div>
+      <div className="deck-heading"><small>CONSTRUCTION</small><b>{state.buildMode ? `${BUILDINGS[state.buildMode].name.toUpperCase()} TOOL ACTIVE` : 'EXPAND THE GRID'}</b><span>PLACE → ASSIGN → RESCUE FAILURES</span></div>
       <div className="build-list">
         {buildingOrder.map(type => {
           const building = BUILDINGS[type]

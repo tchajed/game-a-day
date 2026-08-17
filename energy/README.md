@@ -1,25 +1,26 @@
 # GRIDWORKS
 
-GRIDWORKS is an endless isometric base-building game about growing a frontier power network. There is no contract or countdown: connected generators continuously earn credits, which fund increasingly expensive facilities and a wider grid.
+GRIDWORKS is an endless operations game about scaling a solar grid with an unreliable robot crew. Standard units are fast and free to deploy, but fail after 60 seconds of operating time on average. A failed unit can only be restored when another unit physically reaches it, so every extra robot increases both construction throughput and the number of breakdowns demanding attention.
 
 ## Core loop
 
-1. Choose a facility and click the field to place its blueprint.
-2. Select a robot, then click the blueprint to assign construction.
-3. Build relay pylons outward from the Grid Core.
-4. Keep generators within range of the connected pylon network so their power can be exported.
-5. Reinvest the income in solar arrays, wind fields, geothermal stations, fusion yards, and robot garages.
+1. Place relay pylons and solar-array blueprints.
+2. Select a unit, then click a blueprint to dispatch it.
+3. Keep generators within range of the connected relay network so their power earns credits.
+4. When a unit fails, select a working unit and click the failure to send a field rescue.
+5. Deploy as many additional standard units as you are willing to supervise.
 
-Robots do not choose work themselves, and occasionally lose their task lock. Select a stalled robot and reboot it before issuing more orders.
+`FAILSAFE-0` never fails, preventing total crew lockup, but it moves and works at only 40% of standard speed. All other units have an MTTF (mean time to failure) of 60 operating seconds. Idle time does not count.
 
 ## Controls
 
 - **Drag:** pan across the 36×36 field
 - **Mouse wheel / + −:** zoom
-- **Click robot:** select it
-- **Click terrain:** move the selected robot, or place the selected blueprint
-- **Click blueprint:** assign the selected robot
-- **1–6:** choose a build tool
+- **Click unit:** select it
+- **Click terrain:** move the selected unit, or place the selected blueprint
+- **Click blueprint:** assign the selected unit
+- **Click failed unit with a working unit selected:** dispatch a rescue
+- **1–2:** choose relay or solar construction
 - **Escape:** cancel the build tool
 - **Home button:** recenter on the Grid Core
 

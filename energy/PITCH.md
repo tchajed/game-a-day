@@ -1,7 +1,7 @@
 # GRIDWORKS
 
-**The frontier is open. How far can your grid reach?** Command a twitchy crew of construction robots across a vast isometric landscape, string relay pylons back to your Grid Core, and turn isolated solar, wind, geothermal, and fusion facilities into one enormous power network. Every connected megawatt funds the next expansion—but blueprints build nothing by themselves, machines lose their task lock, and every idle robot is growth left on the table. There is no deadline and no final contract: just one more line, one more facility, and a power empire spreading toward the horizon.
+**How many unreliable robots can you keep running at once?** Expand a frontier solar grid with a crew of fast, failure-prone construction units that break down after only 60 seconds of work on average. Every new unit accelerates construction—and adds another machine you may have to rescue when it collapses in the field. Divert working robots from valuable projects, chain together desperate repairs, and keep the perfectly reliable but painfully slow FAILSAFE-0 ready for the breakdown that would otherwise stop everything.
 
-![GRIDWORKS opens on a large pannable energy frontier](artifacts/energy-endless-first.png)
+![An unreliable robot crew awaits orders around the Grid Core](artifacts/energy-unreliable-first.png)
 
-![Facility blueprints await robot assignments](artifacts/energy-endless-blueprints.png)
+![A working unit races across the field to repair a failure](artifacts/energy-unreliable-rescue.png)
