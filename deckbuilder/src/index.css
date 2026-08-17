@@ -110,6 +110,24 @@ header nav button.active { border-bottom-color: var(--mint); }
   .contact-stage { border: 0; }.contact-body { min-height: 340px; }.portrait-wrap { min-height: 340px; }.hand-panel { border-top: 1px solid var(--line); padding: 20px; }.hand-cards { max-width: 540px; }.card { height: 300px; }.response-preview { max-width: 540px; }.manual-note { margin-top: 14px; }
   .result-overlay { inset: 74px 0 58px; }.workshop-view, .archive-view { padding: 28px 20px 90px; }.archive-grid { grid-template-columns: 1fr; }.archive-grid article { display: grid; grid-template-columns: 220px 1fr; }.archive-copy { border-top: 0; border-left: 1px solid var(--line); }.workshop-head p { max-width: 480px; }
 }
+/* Legibility pass: no essential game text is rendered at the old 6–8px sizes. */
+.brand small, .mission-step small, .mission-step span, .automation-card span, .automation-card small,
+.affiliation small, .affiliation span, .portrait-tag, .signal-chip small, .panel-title,
+.log > span, .intel-strip > span, .meter-label span, .turn-counter small,
+.hand-head span, .deck-count small, .family, .preview-top, .choose-note,
+.final-stats span, .section-title small, .owned-count, .deck-tag, .locked-card strong,
+.locked-card span, .archive-copy > small, .archive-copy dt, .debug-tools b,
+.debug-tools button { font-size: 9px; }
+.eyebrow, .stage-head p, .mission-step strong, .automation-card strong,
+.affiliation strong, .signal-chip strong, .intro-copy, .log p, .intel-strip b,
+.meter-label small, .turn-counter span, .card-copy p, .response-preview > p,
+.preview-values span, .transmit, .manual-note, .primary-action, .text-action,
+.section-title button, .archive-copy > span, .archive-copy dd, .archive-copy p,
+.help-modal li span { font-size: 10px; }
+.card-flavor { font-size: 9px; }
+.response-preview > p, .card-copy p, .intro-copy, .log p { line-height: 1.55; }
+.library-item .card-copy p { font-size: 10px; }
+
 @media (max-width: 600px) {
   header { height: 62px; }.header-tools .icon-button:first-of-type { display: none; }.brand-mark { width: 32px; height: 32px; }.contact-stage { padding: 19px 13px; }.stage-head h1 { font-size: 19px; }.stage-head p { font-size: 8px; }.affiliation { min-width: 106px; }.contact-body { margin-top: 14px; }.portrait-wrap { min-height: 300px; }.status-row { grid-template-columns: 1fr 50px 1fr; gap: 9px; }.meter-label span { font-size: 6px; }.meter-label strong { font-size: 14px; }
   .hand-panel { padding: 18px 13px 75px; }.hand-cards { gap: 8px; }.card { height: 270px; }.card-art { height: 95px; }.reward-cards { gap: 6px; }.result-modal { padding: 22px 12px; }.result-modal h2 { font-size: 23px; }.card.compact { height: 215px; }.card.compact .card-copy p { font-size: 7px; }
