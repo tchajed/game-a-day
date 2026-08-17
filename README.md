@@ -6,10 +6,10 @@ A collection of games each built in one day, with AI assistance. Each game focus
 
 | Game | Directory | Description |
 | --- | --- | --- |
-| [Signal / Sequence](aug8/) | `aug8` | Monitor a stream of signals and catch violations of temporal rules. |
-| [Parking Simulator](aug9/) | `aug9` | Wrestle with the controls of a top-down parallel-parking challenge. |
-| [Visa Form](aug10/) | `aug10` | Race against a bad government website to complete a visa application. |
-| [Little Peak Coffee](aug11/) | `aug11` | Dial in a balanced espresso shot as a meticulous mouse barista. |
+| [Signal / Sequence](ltl/) | `ltl` | Monitor a stream of signals and catch violations of temporal rules. |
+| [Parking Simulator](parking/) | `parking` | Wrestle with the controls of a top-down parallel-parking challenge. |
+| [Visa Form](visa-form/) | `visa-form` | Race against a bad government website to complete a visa application. |
+| [Little Peak Coffee](espresso/) | `espresso` | Dial in a balanced espresso shot as a meticulous mouse barista. |
 | [Museum of Ordinary Things](museum/) | `museum` | Wander an uncanny collection where impossible subjects are treated as ordinary. |
 | [Northstar Ledger](accounting/) | `accounting` | Follow emails and audit ferry-company accounts to uncover a hidden route. |
 | [Psychopomps](psychopomp/) | `psychopomp` | Navigate the afterlife’s least prepared department as an overqualified new hire. |
@@ -21,7 +21,7 @@ A collection of games each built in one day, with AI assistance. Each game focus
 Each game is a standalone Bun project. To run one locally:
 
 ```bash
-cd aug10
+cd visa-form
 bun install
 bun run dev
 ```
