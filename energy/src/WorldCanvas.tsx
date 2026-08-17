@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 import Phaser from 'phaser'
-import { BUILDINGS, FACILITY_RANGE, HQ, WORLD_SIZE, type Building, type BuildingType, type GameState } from './game'
+import { BUILDINGS, FACILITY_RANGE, HQ, ROLES, WORLD_SIZE, roleNeededFor, type Building, type BuildingType, type GameState } from './game'
 
 const TILE_W = 74
 const TILE_H = 37
@@ -189,19 +189,21 @@ class FrontierScene extends Phaser.Scene {
       graphics.lineStyle(2, 0xffcf63, 1)
       graphics.strokeEllipse(point.x, point.y + 5, 38, 19)
     }
-    graphics.fillStyle(worker.status === 'stalled' ? 0xff6677 : worker.reliable ? 0x63f2a5 : 0xf2b84b, 1)
-    graphics.fillRoundedRect(point.x - 9, point.y - 17 + bob, 18, 17, 4)
+    const role = ROLES[worker.role]
+    const roleColor = Number.parseInt(role.color.slice(1), 16)
+    graphics.fillStyle(worker.status === 'stalled' ? 0xff6677 : roleColor, 1)
+    graphics.fillRoundedRect(point.x - 10, point.y - 18 + bob, 20, 18, 4)
     graphics.fillStyle(0x102729, 1)
-    graphics.fillRect(point.x - 5, point.y - 13 + bob, 10, 5)
+    graphics.fillRect(point.x - 6, point.y - 14 + bob, 12, 6)
     graphics.lineStyle(3, 0xdbe9df, 1)
     graphics.lineBetween(point.x - 5, point.y + bob, point.x - 8, point.y + 8)
     graphics.lineBetween(point.x + 5, point.y + bob, point.x + 8, point.y + 8)
     if (worker.status === 'building' || worker.status === 'rescuing') {
-      graphics.lineStyle(2, worker.status === 'rescuing' ? 0x63f2a5 : 0xffdf88, .9)
+      graphics.lineStyle(2, worker.status === 'rescuing' ? 0x63f2a5 : roleColor, .9)
       graphics.lineBetween(point.x + 9, point.y - 8, point.x + 20, point.y - 17 + Math.sin(time * 9) * 4)
     }
-    if (worker.reliable) this.text(point.x, point.y - 32, '∞', 14, '#baffd8')
-    if (worker.status === 'stalled') this.text(point.x, point.y - 36, '!', 24, '#ff6677')
+    this.text(point.x, point.y - 28 + bob, role.glyph, 13, worker.status === 'stalled' ? '#ffffff' : role.color)
+    if (worker.status === 'stalled') this.text(point.x, point.y - 47, `NEEDS ${ROLES[roleNeededFor(worker.role)].name}`, 12, '#ff91a0')
   }
 
   draw() {

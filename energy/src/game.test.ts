@@ -1,34 +1,102 @@
 import { describe, expect, test } from 'vitest'
 import {
-  addWorker,
+  ROLES,
   assignRescue,
   assignWorker,
+  canRepair,
   getBuildingCost,
-  getWorkerDeployCost,
   initialState,
   moveWorker,
   placeBlueprint,
   recomputeNetwork,
+  roleNeededFor,
   stepGame,
   type Building,
+  type GameState,
+  type RobotRole,
 } from './game'
 
-describe('unreliable robot energy operation', () => {
-  test('starts with simple solar generation and one reliable failsafe', () => {
+function run(state: GameState, seconds: number) {
+  for (let i = 0; i < seconds * 10 && state.phase === 'playing'; i++) state = stepGame(state, .1)
+  return state
+}
+
+describe('triad repair protocol', () => {
+  test('repair compatibility forms one directional three-role ring', () => {
+    const roles = Object.keys(ROLES) as RobotRole[]
+    for (const target of roles) {
+      const compatible = roles.filter(repairer => canRepair(repairer, target))
+      expect(compatible).toEqual([roleNeededFor(target)])
+      expect(compatible).toHaveLength(1)
+    }
+    expect(canRepair('optic', 'arc')).toBe(true)
+    expect(canRepair('arc', 'servo')).toBe(true)
+    expect(canRepair('servo', 'optic')).toBe(true)
+  })
+
+  test('tutorial starts with a selected OPTIC and a failed ARC', () => {
     const state = initialState()
-    expect(state.cash).toBe(420)
+    expect(state.level).toBe(0)
     expect(state.generation).toBe(3)
-    expect(state.workers.filter(worker => worker.reliable)).toHaveLength(1)
-    expect(state.workers.filter(worker => !worker.reliable)).toHaveLength(3)
+    expect(state.selectedWorker).toBe(3)
+    expect(state.workers.map(worker => worker.role)).toEqual(['arc', 'servo', 'optic'])
+    expect(state.workers[0].status).toBe('stalled')
+    expect(state.buildings.filter(building => building.status === 'blueprint')).toHaveLength(2)
   })
 
-  test('connected solar arrays generate credits forever', () => {
+  test('wrong-role rescue is rejected with useful feedback', () => {
     const state = initialState()
-    const next = stepGame(state, 1)
-    expect(next.cash).toBeGreaterThan(state.cash)
-    expect(next.generation).toBe(3)
+    const next = assignRescue(state, 2, 1)
+    expect(next.workers[1].status).toBe('idle')
+    expect(next.toast).toContain('needs OPTIC')
   })
 
+  test('tutorial is solved by repairing ARC and using both specialists', () => {
+    let state = initialState()
+    state = assignRescue(state, 3, 1)
+    state = run(state, 8)
+    expect(state.workers[0].status).toBe('idle')
+    expect(state.workers[0].repairs).toBe(1)
+
+    state = assignWorker(state, 2, 3)
+    state = assignWorker(state, 1, 4)
+    state = run(state, 18)
+    expect(state.phase).toBe('won')
+    expect(state.generation).toBe(6)
+  })
+
+  test('idle units do not accumulate wear, active units do', () => {
+    let state = initialState(false, 1)
+    const idleWear = state.workers[2].operatingTime
+    state = run(state, 5)
+    expect(state.workers[2].operatingTime).toBe(idleWear)
+    state = moveWorker(state, 3, 26, 20)
+    state = run(state, 1)
+    expect(state.workers[2].operatingTime).toBeGreaterThan(idleWear)
+  })
+
+  test('standard units stall at their sampled operating lifetime', () => {
+    let state = initialState(false, 1)
+    state.workers[0].failureAt = .5
+    state = moveWorker(state, 1, 30, 30)
+    state = stepGame(state, .6)
+    expect(state.workers[0].status).toBe('stalled')
+  })
+
+  test('a compatible unit restores a failure and the rescued unit resumes its task', () => {
+    let state = initialState(false, 1)
+    state = placeBlueprint(state, 'solar', 25, 16)
+    state = assignWorker(state, 1, 10)
+    state.workers[0] = { ...state.workers[0], status: 'stalled', x: 22, y: 20, operatingTime: 30 }
+    state = assignRescue(state, 3, 1)
+    state = run(state, 8)
+    expect(state.workers[0].repairs).toBe(1)
+    expect(['moving', 'building', 'idle']).toContain(state.workers[0].status)
+    expect(state.workers[0].operatingTime).toBeGreaterThanOrEqual(0)
+  })
+})
+
+describe('grid and challenge level', () => {
   test('pylon chains carry power back to headquarters', () => {
     const buildings: Building[] = [
       { id: 1, type: 'pylon', x: 23, y: 18, status: 'complete', progress: 1, connected: false, parentId: null },
@@ -41,95 +109,69 @@ describe('unreliable robot energy operation', () => {
     expect(connected[2].parentId).toBe(2)
   })
 
-  test('a solar array beyond the distribution network stays offline', () => {
-    const state = initialState()
-    state.buildings.push({ id: 9, type: 'solar', x: 2, y: 2, status: 'complete', progress: 1, connected: false, parentId: null })
-    const next = stepGame(state, .1)
-    expect(next.buildings.find(building => building.id === 9)?.connected).toBe(false)
-    expect(next.generation).toBe(3)
-  })
-
   test('rejected placement records an on-grid error marker', () => {
-    const state = placeBlueprint(initialState(), 'solar', 18, 18)
+    const state = placeBlueprint(initialState(false, 1), 'solar', 18, 18)
     expect(state.placementError).toMatchObject({ x: 18, y: 18, message: 'SITE OBSTRUCTED' })
-    expect(state.placementError?.until).toBeGreaterThan(state.elapsed)
   })
 
-  test('robots must be assigned before blueprints are constructed', () => {
-    let state = placeBlueprint(initialState(), 'pylon', 24, 19)
-    const task = state.buildings.at(-1)!
-    state = stepGame(state, 2)
-    expect(state.buildings.at(-1)?.progress).toBe(0)
-    state = assignWorker(state, 2, task.id)
-    for (let i = 0; i < 160; i++) state = stepGame(state, .1)
-    expect(state.buildings.at(-1)?.status).toBe('complete')
-  })
-
-  test('standard units fail after their sampled operating lifetime', () => {
-    let state = initialState()
-    state.workers[1].failureAt = .5
-    state = moveWorker(state, 2, 30, 30)
-    state = stepGame(state, .6)
-    expect(state.workers.find(worker => worker.id === 2)?.status).toBe('stalled')
-  })
-
-  test('the reliable unit never fails but works slowly', () => {
-    let state = placeBlueprint(initialState(), 'pylon', 24, 19)
-    const task = state.buildings.at(-1)!
-    state = assignWorker(state, 1, task.id)
-    for (let i = 0; i < 100; i++) state = stepGame(state, .1)
-    const progress = state.buildings.at(-1)?.progress ?? 0
-    expect(state.workers[0].status).not.toBe('stalled')
-    expect(progress).toBeGreaterThan(0)
-    expect(progress).toBeLessThan(.5)
-    for (let i = 0; i < 2000; i++) state = stepGame(state, .1)
-    expect(state.workers[0].status).not.toBe('stalled')
-  })
-
-  test('a second unit can reach and restore a stalled unit', () => {
-    let state = initialState()
-    state.workers[1] = { ...state.workers[1], status: 'stalled', x: 20, y: 20, operatingTime: 30 }
-    state = assignRescue(state, 1, 2)
-    for (let i = 0; i < 180; i++) state = stepGame(state, .1)
-    const rescued = state.workers.find(worker => worker.id === 2)!
-    expect(rescued.status).toBe('idle')
-    expect(rescued.operatingTime).toBe(0)
-    expect(rescued.repairs).toBe(1)
-  })
-
-  test('stalled units cannot move or assign themselves', () => {
-    let state = initialState()
-    state.workers[1].status = 'stalled'
-    const moved = moveWorker(state, 2, 30, 30)
-    const blueprint = placeBlueprint(state, 'pylon', 24, 19).buildings.at(-1)!
-    const assigned = assignWorker(state, 2, blueprint.id)
-    expect(moved).toBe(state)
-    expect(assigned).toBe(state)
-  })
-
-  test('deploying units costs credits and gets more expensive', () => {
-    let state = { ...initialState(), cash: 1_000_000 }
-    const firstCost = getWorkerDeployCost(state)
-    const cashBefore = state.cash
-    state = addWorker(state)
-    expect(state.cash).toBe(cashBefore - firstCost)
-    expect(getWorkerDeployCost(state)).toBeGreaterThan(firstCost)
-    for (let i = 0; i < 11; i++) state = addWorker(state)
-    expect(state.workers).toHaveLength(16)
-    expect(state.workers.filter(worker => worker.reliable)).toHaveLength(1)
-  })
-
-  test('cannot deploy a unit without enough credits', () => {
-    const state = { ...initialState(), cash: 0 }
-    const next = addWorker(state)
-    expect(next.workers).toHaveLength(state.workers.length)
-    expect(next.cash).toBe(0)
+  test('specialists build their structure faster', () => {
+    let specialist = placeBlueprint(initialState(false, 1), 'solar', 25, 16)
+    let generalist = structuredClone(specialist)
+    specialist = assignWorker(specialist, 1, 10)
+    generalist = assignWorker(generalist, 2, 10)
+    specialist = run(specialist, 5)
+    generalist = run(generalist, 5)
+    expect(specialist.buildings.at(-1)!.progress).toBeGreaterThan(generalist.buildings.at(-1)!.progress)
   })
 
   test('repeat construction becomes gradually more expensive', () => {
-    let state = initialState()
+    let state = initialState(false, 1)
     const first = getBuildingCost(state, 'solar')
-    state = placeBlueprint({ ...state, cash: 10000 }, 'solar', 12, 12)
+    state = placeBlueprint(state, 'solar', 12, 12)
     expect(getBuildingCost(state, 'solar')).toBeGreaterThan(first)
+  })
+
+  test('an automated balanced-triad strategy can beat the featured level', () => {
+    let state = initialState(false, 1)
+    const plans: Array<['pylon' | 'solar', number, number]> = [
+      ['pylon', 27, 19], ['pylon', 32, 19],
+      ['solar', 25, 16], ['solar', 27, 22], ['solar', 31, 16], ['solar', 33, 22],
+    ]
+    for (const [type, x, y] of plans) state = placeBlueprint(state, type, x, y)
+    expect(state.buildings.filter(building => building.status === 'blueprint')).toHaveLength(6)
+
+    for (let tick = 0; tick < 1450 && state.phase === 'playing'; tick++) {
+      // Rescue first. Prefer idle responders so productive workers are only diverted
+      // when a triad has no reserve available.
+      const targeted = new Set(state.workers.map(worker => worker.rescueId).filter(id => id !== null))
+      for (const target of state.workers.filter(worker => worker.status === 'stalled' && !targeted.has(worker.id))) {
+        const candidates = state.workers
+          .filter(worker => worker.status !== 'stalled' && worker.rescueId === null && canRepair(worker, target))
+          .sort((a, b) => (a.status === 'idle' ? 0 : 1) - (b.status === 'idle' ? 0 : 1))
+        if (candidates[0]) state = assignRescue(state, candidates[0].id, target.id)
+      }
+
+      // Keep each specialty on its best construction type. OPTICs remain a fast
+      // reserve until a compatible rescue is needed.
+      for (const worker of state.workers.filter(worker => worker.status === 'idle')) {
+        const preferredType = worker.role === 'arc' ? 'solar' : worker.role === 'servo' ? 'pylon' : null
+        if (!preferredType) continue
+        const claimed = new Set(state.workers.map(unit => unit.taskId).filter(id => id !== null))
+        const task = state.buildings.find(building => building.type === preferredType && building.status !== 'complete' && !claimed.has(building.id))
+        if (task) state = assignWorker(state, worker.id, task.id)
+      }
+      state = stepGame(state, .1)
+    }
+
+    expect(state.phase).toBe('won')
+    expect(state.generation).toBe(15)
+    expect(state.elapsed).toBeLessThan(150)
+    expect(state.workers.reduce((sum, worker) => sum + worker.repairs, 0)).toBeGreaterThan(0)
+  })
+
+  test('the storm ends a challenge that misses its output target', () => {
+    const state = run(initialState(false, 1), 151)
+    expect(state.phase).toBe('lost')
+    expect(state.toast).toContain('STORM')
   })
 })
