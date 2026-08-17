@@ -44,14 +44,14 @@ export const games: GameConfig[] = [
     crop: { left: 435, top: 10, width: 810, height: 540 },
   },
   {
-    directory: "aug12",
+    directory: "accounting",
     slug: "ledger",
     date: "2026-08-12",
     cover: "screenshots/ledger.png",
     crop: { left: 0, top: 20, width: 810, height: 540 },
   },
   {
-    directory: "aug11-2",
+    directory: "museum",
     slug: "museum",
     date: "2026-08-11",
     cover: "screenshots/museum-entry.png",
