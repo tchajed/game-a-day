@@ -6,6 +6,7 @@ A collection of games each built in one day, with AI assistance. Each game focus
 
 | Game | Directory | Description |
 | --- | --- | --- |
+| [NULL PROTOCOL](deckbuilder/) | `deckbuilder` | Read alien signals, build trust, and recover better diplomacy protocols across time loops. |
 | [Signal / Sequence](ltl/) | `ltl` | Monitor a stream of signals and catch violations of temporal rules. |
 | [Parking Simulator](parking/) | `parking` | Wrestle with the controls of a top-down parallel-parking challenge. |
 | [Visa Form](visa-form/) | `visa-form` | Race against a bad government website to complete a visa application. |
