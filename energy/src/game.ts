@@ -74,7 +74,7 @@ export function getBuildingCost(state: GameState, type: BuildingType) {
 }
 
 export function recomputeNetwork(buildings: Building[]): Building[] {
-  const next = buildings.map(building => ({ ...building, connected: false, parentId: null }))
+  const next: Building[] = buildings.map(building => ({ ...building, connected: false, parentId: null }))
   const connectedPylons = new Set<number>()
   let changed = true
 

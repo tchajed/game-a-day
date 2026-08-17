@@ -1,55 +1,215 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import WorldCanvas from './WorldCanvas'
-import { BUILDINGS, formatMoney, initialState, stepGame, type BuildingType, type GameState } from './game'
+import {
+  BUILDINGS,
+  assignWorker,
+  formatCredits,
+  formatTime,
+  getBuildingCost,
+  initialState,
+  moveWorker,
+  placeBlueprint,
+  rebootWorker,
+  stepGame,
+  type BuildingType,
+  type GameState,
+} from './game'
 import './styles.css'
 
-const debug = new URLSearchParams(location.search).get('debug') === 'true'
-const musicOff = new URLSearchParams(location.search).get('music') === 'off'
+const params = new URLSearchParams(location.search)
+const debug = params.get('debug') === 'true'
+const musicOff = params.get('music') === 'off'
+const buildingOrder: BuildingType[] = ['pylon', 'solar', 'wind', 'geothermal', 'fusion', 'garage']
 
 function useSimulation() {
-  const [state,setState]=useState<GameState>(()=>initialState(debug)); const ref=useRef(state); ref.current=state
-  const mutate=useCallback((fn:(s:GameState)=>GameState)=>setState(s=>{const n=fn(s);ref.current=n;return n}),[])
-  useEffect(()=>{let frame=0,last=performance.now(),acc=0;const loop=(now:number)=>{acc+=Math.min(250,now-last);last=now;while(acc>=100){mutate(s=>stepGame(s,.1));acc-=100}frame=requestAnimationFrame(loop)};frame=requestAnimationFrame(loop);return()=>cancelAnimationFrame(frame)},[mutate])
-  return {state,mutate,ref}
+  const [state, setState] = useState<GameState>(() => initialState(debug))
+  const ref = useRef(state)
+  ref.current = state
+  const mutate = useCallback((fn: (state: GameState) => GameState) => {
+    setState(state => {
+      const next = fn(state)
+      ref.current = next
+      return next
+    })
+  }, [])
+  useEffect(() => {
+    let frame = 0
+    let previous = performance.now()
+    let accumulator = 0
+    const loop = (now: number) => {
+      accumulator += Math.min(250, now - previous)
+      previous = now
+      while (accumulator >= 100) {
+        mutate(state => stepGame(state, .1))
+        accumulator -= 100
+      }
+      frame = requestAnimationFrame(loop)
+    }
+    frame = requestAnimationFrame(loop)
+    return () => cancelAnimationFrame(frame)
+  }, [mutate])
+  return { state, mutate, ref }
 }
 
-function Gauge({state}:{state:GameState}) {
-  const error=state.exportMW-state.target, angle=Math.max(-62,Math.min(62,error/7*62)); const good=Math.abs(error)<=1
-  return <div className={`gauge ${good?'good':Math.abs(error)>4?'bad':''}`}>
-    <div className="gauge-label"><span>EXPORT</span><b data-testid="export">{state.exportMW.toFixed(1)}</b><small> / <span data-testid="target">{state.target}</span> MW</small></div>
-    <div className="arc"><div className="needle" style={{transform:`rotate(${angle}deg)`}}/><i/></div>
-    <div className="gauge-scale"><span>DEFICIT</span><strong>{good?'ON CONTRACT':error>0?'CURTAIL / CHARGE':'DISCHARGE'}</strong><span>EXCESS</span></div>
-  </div>
-}
+export default function App() {
+  const { state, mutate, ref } = useSimulation()
+  const [music, setMusic] = useState(false)
+  const audio = useRef<AudioContext | null>(null)
+  const selected = state.workers.find(worker => worker.id === state.selectedWorker) ?? null
+  const offGrid = state.buildings.filter(building => building.status === 'complete' && !building.connected).length
+  const planned = state.buildings.filter(building => building.status !== 'complete').length
 
-export default function App(){
-  const {state,mutate,ref}=useSimulation(); const [music,setMusic]=useState(false); const audio=useRef<AudioContext|null>(null)
-  const build=(type:BuildingType)=>mutate(s=>({...s,buildMode:s.buildMode===type?null:type,toast:`SELECT AN OPEN PAD // ${BUILDINGS[type].name.toUpperCase()}`}))
-  const place=(i:number)=>mutate(s=>{if(!s.buildMode||s.pads[i].building)return s;const item=BUILDINGS[s.buildMode];if(s.cash<item.cost)return{...s,toast:'INSUFFICIENT CAPITAL // BORROW OR EARN'};const pads=s.pads.map(p=>({...p}));pads[i].building=s.buildMode;return{...s,pads,cash:s.cash-item.cost,buildMode:null,selected:i,toast:`${item.name.toUpperCase()} ONLINE`}})
-  const dispatch=(value:number)=>mutate(s=>({...s,intendedDispatch:value,toast:value>0?'STORAGE DISCHARGING':value<0?'STORAGE CHARGING':'STORAGE IDLE'}))
-  const align=()=>mutate(s=>({...s,windFault:false,alignProgress:1,toast:'TURBINES ALIGNED // OUTPUT RESTORED'}))
-  const toggleMusic=()=>{if(musicOff)return;if(music){audio.current?.close();audio.current=null;setMusic(false)}else{const a=new AudioContext();const osc=a.createOscillator(),gain=a.createGain();osc.type='sine';osc.frequency.value=52;gain.gain.value=.025;osc.connect(gain).connect(a.destination);osc.start();audio.current=a;setMusic(true)}}
-  useEffect(()=>{if(!debug)return;(window as unknown as {__ENERGY__:unknown}).__ENERGY__={getState:()=>ref.current,step:(ms:number)=>mutate(s=>stepGame(s,ms/1000)),restart:()=>mutate(()=>initialState(true)),setCash:(cash:number)=>mutate(s=>({...s,cash})),forceFault:()=>mutate(s=>({...s,windFault:true,alignProgress:.38})),build}},[mutate,ref])
-  const remaining=Math.max(0,300-state.elapsed), balance=state.elapsed?state.balancedSeconds/state.elapsed*100:0, equity=state.cash-state.debt
+  const selectBuild = useCallback((type: BuildingType) => {
+    mutate(state => ({
+      ...state,
+      buildMode: state.buildMode === type ? null : type,
+      toast: state.buildMode === type
+        ? 'Build tool cancelled.'
+        : `${BUILDINGS[type].name}: click the terrain to place. Esc cancels.`,
+    }))
+  }, [mutate])
+
+  const handleGround = useCallback((x: number, y: number) => {
+    mutate(state => {
+      if (state.buildMode) return placeBlueprint(state, state.buildMode, x, y)
+      if (state.selectedWorker !== null) return moveWorker(state, state.selectedWorker, x, y)
+      return { ...state, toast: 'Select a robot or choose a structure.' }
+    })
+  }, [mutate])
+
+  const handleBuilding = useCallback((id: number) => {
+    mutate(state => {
+      const building = state.buildings.find(item => item.id === id)
+      if (!building || building.status === 'complete') return state
+      if (state.selectedWorker === null) return { ...state, toast: 'Select a robot before assigning this blueprint.' }
+      return assignWorker(state, state.selectedWorker, id)
+    })
+  }, [mutate])
+
+  const toggleMusic = () => {
+    if (musicOff) return
+    if (music) {
+      audio.current?.close()
+      audio.current = null
+      setMusic(false)
+      return
+    }
+    const context = new AudioContext()
+    const oscillator = context.createOscillator()
+    const oscillator2 = context.createOscillator()
+    const gain = context.createGain()
+    oscillator.type = 'sine'
+    oscillator.frequency.value = 48
+    oscillator2.type = 'triangle'
+    oscillator2.frequency.value = 72
+    gain.gain.value = .018
+    oscillator.connect(gain)
+    oscillator2.connect(gain)
+    gain.connect(context.destination)
+    oscillator.start()
+    oscillator2.start()
+    audio.current = context
+    setMusic(true)
+  }
+
+  useEffect(() => {
+    const keydown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') mutate(state => ({ ...state, buildMode: null, toast: 'Build tool cancelled.' }))
+      const type = buildingOrder.find(item => BUILDINGS[item].key === event.key)
+      if (type) selectBuild(type)
+    }
+    window.addEventListener('keydown', keydown)
+    return () => window.removeEventListener('keydown', keydown)
+  }, [mutate, selectBuild])
+
+  useEffect(() => {
+    if (!debug) return
+    ;(window as unknown as { __ENERGY__: unknown }).__ENERGY__ = {
+      getState: () => ref.current,
+      step: (milliseconds: number) => mutate(state => stepGame(state, milliseconds / 1000)),
+      setCash: (cash: number) => mutate(state => ({ ...state, cash })),
+      restart: () => mutate(() => initialState(true)),
+      place: (type: BuildingType, x: number, y: number) => mutate(state => placeBlueprint(state, type, x, y)),
+    }
+  }, [mutate, ref])
+
   return <main>
     <header>
-      <div className="brand"><span className="brand-mark">G//S</span><div><b>GRID<span>SHIFT</span></b><small>AEOLUS DISTRICT 07</small></div></div>
-      <div className="topstats"><Stat label="TIME" value={`${Math.floor(remaining/60)}:${String(Math.floor(remaining%60)).padStart(2,'0')}`} hot={remaining<45}/><Stat label="CONTRACT" value={`${state.target} MW`} test="target"/><Stat label="SPOT PRICE" value={`$${state.price}/MWh`} hot={state.price>200}/><Stat label="CASH" value={formatMoney(state.cash)} test="cash"/><Stat label="DEBT" value={formatMoney(state.debt)} /></div>
+      <div className="brand">
+        <span className="brand-mark">G∞</span>
+        <div><b>GRID<span>WORKS</span></b><small>AEOLUS FRONTIER</small></div>
+      </div>
+      <div className="topstats">
+        <Stat label="RUN TIME" value={formatTime(state.elapsed)} />
+        <Stat label="AVAILABLE" value={formatCredits(state.cash)} test="cash" />
+        <Stat label="GRID OUTPUT" value={`${state.generation.toFixed(0)} MW`} test="generation" glow />
+        <Stat label="LIFETIME EXPORT" value={`${state.totalEnergy.toFixed(2)} MWh`} />
+        <Stat label="NETWORK" value={offGrid ? `${offGrid} OFF GRID` : 'STABLE'} hot={offGrid > 0} />
+      </div>
+      <button className="audio" data-testid="music-toggle" onClick={toggleMusic}>{musicOff ? 'AUDIO OFF' : music ? '■ HUM' : '♪ HUM'}</button>
     </header>
-    <section className="playfield"><WorldCanvas state={state} onPad={place} onSelect={i=>mutate(s=>({...s,selected:i}))}/><div className="scanlines"/>
+
+    <section className="playfield">
+      <WorldCanvas
+        state={state}
+        onGround={handleGround}
+        onBuilding={handleBuilding}
+        onWorker={id => mutate(state => ({ ...state, selectedWorker: id, buildMode: null, toast: `${state.workers.find(worker => worker.id === id)?.name} selected.` }))}
+      />
+      <div className="scanlines" />
       <aside className="right-panel">
-        <Gauge state={state}/>
-        <div className={`alert ${state.windFault?'critical':''}`}><span>{state.windFault?'MAINTENANCE REQUIRED':'SYSTEM FEED'}</span><p>{state.toast}</p>{state.windFault&&<button onClick={align}>RECALIBRATE TURBINES <kbd>A</kbd></button>}</div>
-        <div className="objectives"><span>OPERATOR METRICS</span><p><i style={{width:`${balance}%`}}/>Balanced <b>{balance.toFixed(0)}%</b></p><p><i className="danger" style={{width:`${state.dangerSeconds/12*100}%`}}/>Collapse risk <b>{state.dangerSeconds.toFixed(1)} / 12s</b></p></div>
+        <div className="mission-card">
+          <small>OPEN-ENDED DIRECTIVE</small>
+          <h2>BUILD THE GRID</h2>
+          <p>No contract. No deadline. Every connected megawatt earns credits for the next expansion.</p>
+          <div><span>PLANNED <b>{planned}</b></span><span>ONLINE <b>{state.buildings.filter(item => item.status === 'complete' && item.connected).length}</b></span></div>
+        </div>
+        <div className={`system-feed ${state.toast.startsWith('⚠') ? 'critical' : ''}`}>
+          <small>SYSTEM FEED</small><p>{state.toast}</p>
+        </div>
+        <div className="roster">
+          <div className="panel-title"><span>FIELD ROBOTS</span><small>DIRECT CONTROL</small></div>
+          {state.workers.map(worker => <button
+            key={worker.id}
+            className={`${state.selectedWorker === worker.id ? 'selected' : ''} ${worker.status === 'stalled' ? 'stalled' : ''}`}
+            onClick={() => mutate(state => ({ ...state, selectedWorker: worker.id, buildMode: null, toast: `${worker.name} selected.` }))}
+          >
+            <i>{worker.status === 'stalled' ? '!' : worker.id.toString().padStart(2, '0')}</i>
+            <span><b>{worker.name}</b><small>{worker.status === 'building' ? 'CONSTRUCTING' : worker.status.toUpperCase()}</small></span>
+            <em />
+          </button>)}
+        </div>
+        {selected && <div className={`unit-card ${selected.status}`}>
+          <div><small>SELECTED UNIT</small><b>{selected.name}</b></div>
+          <p>{selected.status === 'stalled' ? 'Task lock failed. Manual reboot required.' : selected.taskId ? 'Click another blueprint to reassign.' : 'Click a blueprint to build, or terrain to move.'}</p>
+          {selected.status === 'stalled' && <button data-testid="reboot" onClick={() => mutate(state => rebootWorker(state, selected.id))}>REBOOT {selected.name}</button>}
+        </div>}
       </aside>
     </section>
+
     <section className="command-deck">
-      <div className="build-group"><label>EXPANSION BAY <small>SELECT → PLACE</small></label><div>{(Object.keys(BUILDINGS) as BuildingType[]).map(t=>{const b=BUILDINGS[t];return <button key={t} data-testid={`build-${t}`} className={state.buildMode===t?'active':''} onClick={()=>build(t)}><i>{b.icon}</i><span><b>{b.name}</b><small>{b.note}</small></span><strong>{formatMoney(b.cost)}</strong></button>})}</div></div>
-      <div className="dispatch"><label>STORAGE DISPATCH <small data-testid="storage">{state.stored.toFixed(1)} / {state.capacity} MWh</small></label><div className="dispatch-read"><b>{state.dispatch>0?'+':''}{state.dispatch.toFixed(1)}</b><span>MW</span></div><input aria-label="Storage dispatch" type="range" min="-8" max="8" step=".5" value={state.intendedDispatch} onChange={e=>dispatch(Number(e.target.value))}/><div className="range-label"><span>CHARGE</span><span>IDLE</span><span>EXPORT</span></div>{state.flywheelHeat>0&&<div className="heat">FLYWHEEL HEAT <i style={{width:`${state.flywheelHeat}%`}}/></div>}</div>
-      <div className="finance"><label>CAPITAL</label><button data-testid="borrow" onClick={()=>mutate(s=>({...s,cash:s.cash+10000,debt:s.debt+10000,toast:'CREDIT LINE DRAWN // +$10,000'}))}>DRAW CREDIT <b>+$10K</b><small>Debt +$10K</small></button><button data-testid="music-toggle" className="sound" onClick={toggleMusic}>{musicOff?'AUDIO OFF':music?'◼ MUTE GRID':'▶ GRID HUM'}</button></div>
+      <div className="deck-heading"><small>CONSTRUCTION</small><b>{state.buildMode ? `${BUILDINGS[state.buildMode].name.toUpperCase()} TOOL ACTIVE` : 'CHOOSE A FACILITY'}</b><span>PLACE → SELECT ROBOT → ASSIGN</span></div>
+      <div className="build-list">
+        {buildingOrder.map(type => {
+          const building = BUILDINGS[type]
+          const cost = getBuildingCost(state, type)
+          return <button
+            key={type}
+            data-testid={`build-${type}`}
+            className={`${state.buildMode === type ? 'active' : ''} ${state.cash < cost ? 'expensive' : ''}`}
+            onClick={() => selectBuild(type)}
+          >
+            <kbd>{building.key}</kbd><i>{building.icon}</i>
+            <span><b>{building.name}</b><small>{building.note}</small></span>
+            <strong>{formatCredits(cost)}</strong>
+          </button>
+        })}
+      </div>
     </section>
-    {state.finished&&<div className="result" data-testid="result"><div><small>FINAL OPERATOR REPORT</small><h1>{state.dangerSeconds>=12?'GRID COLLAPSE':equity>=20000?'GRID OPERATOR ELITE':equity>=0?'CONTRACT SECURED':'INSOLVENT'}</h1><p>Your clean-energy district delivered <b>{Math.round(state.score/1000)}k</b> in traded power.</p><section><Stat label="CASH" value={formatMoney(state.cash)}/><Stat label="DEBT" value={formatMoney(state.debt)}/><Stat label="EQUITY" value={formatMoney(equity)}/><Stat label="ON CONTRACT" value={`${balance.toFixed(0)}%`}/></section><button onClick={()=>mutate(()=>initialState(debug))}>RUN ANOTHER SHIFT</button></div></div>}
-    {debug&&<button className="debug-skip" onClick={()=>mutate(s=>({...s,elapsed:295}))}>SKIP TO END</button>}
+    {debug && <button className="debug-cash" onClick={() => mutate(state => ({ ...state, cash: state.cash + 5000 }))}>DEBUG +₡5K</button>}
   </main>
 }
-function Stat({label,value,hot,test}:{label:string,value:string,hot?:boolean,test?:string}){return <div className={hot?'hot':''}><small>{label}</small><b data-testid={test}>{value}</b></div>}
+
+function Stat({ label, value, hot, glow, test }: { label: string; value: string; hot?: boolean; glow?: boolean; test?: string }) {
+  return <div className={`${hot ? 'hot' : ''} ${glow ? 'glow' : ''}`}><small>{label}</small><b data-testid={test}>{value}</b></div>
+}
