@@ -1,6 +1,6 @@
 # NULL PROTOCOL
 
-Humanity’s first contact keeps ending badly—so send the conversation back through time. **NULL PROTOCOL** is a compact diplomacy deckbuilder where every alien gesture is a clue: read the signal, choose one of two protocol cards, and build trust before tension fractures the link. Observe envoys to uncover the two rival factions hidden inside their delegation, recover powerful responses from successful timelines, and rebuild a six-card negotiating deck for the next impossible conversation. Today you drive the robot by hand; tomorrow, you’ll write the algorithm that speaks for Earth.
+Humanity’s first contact keeps ending badly—so debug the conversation across time. **NULL PROTOCOL** is a compact programming puzzle where every alien gesture is a clue: study a fixed sequence of signals, arrange a six-step negotiation protocol, then choose between the two methods available at each exchange. Failed timelines reveal the shape of the solution; successful ones preserve new responses for harder contacts. Build trust without overloading the link, uncover the rival voices hidden inside the delegation, and find the precise procedure that can speak for Earth.
 
 ![Manual contact with Lyra-of-Mists](screenshots/null-protocol-fieldbook-contact.png)
 

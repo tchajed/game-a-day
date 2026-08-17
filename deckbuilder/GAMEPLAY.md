@@ -75,6 +75,12 @@ Reward choice:
 
 This remains a deterministic, short sequencing puzzle suitable for the manual-play phase. The future programming layer can automate the same two-card-hand decisions.
 
+## Prototype assessment
+
+The result is an interesting programming puzzle, but it is **not meaningfully a deckbuilder**. Building the “deck” is really choosing and ordering a six-step program: draws are deterministic, the card pool is small, and each encounter asks for a narrow sequence rather than an evolving strategy built from card synergies. Unlocking specialist methods adds new instructions to the puzzle, but it does not make deck construction the core source of play.
+
+That misses the original goal. This prototype was intended to explore a true programming deckbuilder, not merely express a programming puzzle with cards. A future iteration should preserve the algorithmic play while making deck growth, combinations, and adaptation across runs central enough that different decks create genuinely different programs.
+
 ## Balance checks
 
 `src/game.test.ts` exhaustively searches distinct-card play sequences and verifies that:
