@@ -10,15 +10,12 @@ export type GameState = {
   exportMW: number
   target: number
   price: number
-  wind: number
-  sun: number
   stored: number
   capacity: number
   dispatch: number
   intendedDispatch: number
   balancedSeconds: number
   dangerSeconds: number
-  storm: boolean
   selected: number | null
   buildMode: BuildingType | null
   pads: Pad[]
@@ -32,17 +29,17 @@ export type GameState = {
 }
 
 export const BUILDINGS: Record<BuildingType, { name: string; cost: number; icon: string; note: string }> = {
-  wind: { name: 'Wind', cost: 9000, icon: '◉', note: '0–5 MW · needs alignment' },
-  solar: { name: 'Solar', cost: 7000, icon: '▰', note: '0–4 MW · follows sun' },
-  battery: { name: 'Battery', cost: 11000, icon: '▥', note: '8 MWh · ±4 MW' },
-  flywheel: { name: 'Flywheel', cost: 6000, icon: '◎', note: '1 MWh · ±6 MW · runs hot' },
+  wind: { name: 'Wind', cost: 6500, icon: '◉', note: '4.5 MW · needs alignment' },
+  solar: { name: 'Solar', cost: 5500, icon: '▰', note: '3.5 MW · dependable' },
+  battery: { name: 'Battery', cost: 8000, icon: '▥', note: '8 MWh · ±4 MW' },
+  flywheel: { name: 'Flywheel', cost: 4500, icon: '◎', note: '1 MWh · ±6 MW · runs hot' },
 }
 
 export const initialState = (debug = false): GameState => ({
-  elapsed: debug ? 35 : 0, cash: debug ? 35000 : 18000, debt: 30000, score: 0,
-  generation: 0, exportMW: 0, target: 3, price: 80, wind: .68, sun: .9,
+  elapsed: debug ? 35 : 0, cash: debug ? 35000 : 22000, debt: 0, score: 0,
+  generation: 3, exportMW: 3, target: 3, price: 80,
   stored: 4, capacity: 8, dispatch: 0, intendedDispatch: 0,
-  balancedSeconds: 0, dangerSeconds: 0, storm: false, selected: null, buildMode: null,
+  balancedSeconds: 0, dangerSeconds: 0, selected: null, buildMode: null,
   pads: [{ x: 5, y: 2 }, { x: 7, y: 4 }, { x: 3, y: 6 }],
   windFault: false, alignProgress: 1, flywheelHeat: 0, running: true, finished: false,
   toast: 'GRID ONLINE // Match the export contract', seed: 7261,
@@ -53,10 +50,10 @@ const contract = (t: number) => {
   if (t < 90) return [4, 95]
   if (t < 120) return [5, 110]
   if (t < 150) return [3, 60]
-  if (t < 170) return [6, 240]
+  if (t < 170) return [6, 180]
   if (t < 210) return [4, 90]
   if (t < 255) return [6, 125]
-  return [8, 180]
+  return [7, 160]
 }
 
 export function stepGame(s: GameState, dt: number): GameState {
@@ -64,17 +61,14 @@ export function stepGame(s: GameState, dt: number): GameState {
   const n = { ...s, pads: s.pads.map(p => ({ ...p })) }
   n.elapsed = Math.min(300, n.elapsed + dt)
   ;[n.target, n.price] = contract(n.elapsed)
-  n.storm = n.elapsed >= 255
-  n.wind = Math.max(.12, Math.min(1, .58 + Math.sin(n.elapsed * .21) * .22 + Math.sin(n.elapsed * .053) * .17))
-  n.sun = n.storm ? .1 : Math.max(.28, .84 + Math.sin(n.elapsed * .073) * .15 - (n.elapsed % 71 > 57 ? .4 : 0))
-  if (!n.windFault && (Math.floor(s.elapsed / 41) !== Math.floor(n.elapsed / 41)) && n.elapsed > 39) {
-    n.windFault = true; n.alignProgress = .38; n.toast = '⚠ TURBINE YAW DRIFT — ALIGN NOW'
+  if (!n.windFault && (Math.floor(s.elapsed / 57) !== Math.floor(n.elapsed / 57)) && n.elapsed > 64) {
+    n.windFault = true; n.alignProgress = .55; n.toast = '⚠ TURBINE BEARING DRIFT — RECALIBRATE'
   }
   const counts = (type: BuildingType) => n.pads.filter(p => p.building === type).length
-  const windCount = 1 + counts('wind')
+  const windCount = counts('wind')
   const solarCount = counts('solar')
-  const windGen = windCount * (n.storm ? 7 : 5) * n.wind * n.alignProgress
-  const solarGen = solarCount * 4 * n.sun
+  const windGen = (3 + windCount * 4.5) * n.alignProgress
+  const solarGen = solarCount * 3.5
   n.generation = windGen + solarGen
   const storageRate = 4 + counts('battery') * 4 + counts('flywheel') * 6
   n.capacity = 8 + counts('battery') * 8 + counts('flywheel')
@@ -95,8 +89,8 @@ export function stepGame(s: GameState, dt: number): GameState {
   const flywheels = counts('flywheel')
   n.flywheelHeat = flywheels ? Math.max(0, Math.min(100, n.flywheelHeat + (Math.abs(n.dispatch) > 4 ? 16 : -22) * dt)) : 0
   if (n.flywheelHeat >= 100) { n.intendedDispatch = 0; n.toast = 'FLYWHEEL TRIPPED // Cooling' }
-  if (Math.floor(s.elapsed / 30) !== Math.floor(n.elapsed / 30)) { n.cash -= 250; n.toast = 'DEBT INTEREST — $250' }
-  if (n.elapsed >= 300 || n.dangerSeconds >= 10) { n.finished = true; n.running = false }
+  if (n.debt > 0 && Math.floor(s.elapsed / 60) !== Math.floor(n.elapsed / 60)) { n.cash -= 100; n.toast = 'CREDIT INTEREST — $100' }
+  if (n.elapsed >= 300 || n.dangerSeconds >= 12) { n.finished = true; n.running = false }
   return n
 }
 

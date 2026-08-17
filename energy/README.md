@@ -4,4 +4,6 @@ This game is going to be all about building up as much energy production as poss
 
 I want the graphics to be the 2D isometric look of Starcraft. This should be a brightly lit landscape.
 
-Another key mechanic here is going to be that you have unreliable units: they require monitoring and steering. This won't be an idle game and you will need to micromanage. I would also like something else more active but I'm not sure, and I probably don't want combat; maybe we will have a balance of financial engineering and energy production. I really like the mechanic of going into debt in Offworld Trading Company and indeed this game is inspired by it.
+Another key mechanic here is going to be that you have unreliable units: they require monitoring and steering. This won't be an idle game and you will need to micromanage. I would also like something else more active but I'm not sure, and I probably don't want combat; maybe we will have a balance of financial engineering and energy production. I really like the mechanic of optionally going into debt in Offworld Trading Company and indeed this game is inspired by it.
+
+The prototype should focus on operating equipment and matching demand, not storms or weather. The player begins solvent and debt-free; borrowing is an optional tactical choice.

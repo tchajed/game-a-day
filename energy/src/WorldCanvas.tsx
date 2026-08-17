@@ -39,7 +39,7 @@ class GridScene extends Phaser.Scene {
     if(!this.gfx||!this.bridge)return
     const s=this.bridge.state,g=this.gfx,w=this.scale.width,h=this.scale.height,cx=w*.48,oy=Math.max(55,h*.08)
     g.clear();this.labels.forEach(t=>t.destroy());this.labels=[]
-    g.fillGradientStyle(s.storm?0x344b62:0x9adbd4,s.storm?0x344b62:0x9adbd4,0x183542,0x183542,1);g.fillRect(0,0,w,h)
+    g.fillGradientStyle(0x9adbd4,0x9adbd4,0x183542,0x183542,1);g.fillRect(0,0,w,h)
     g.fillStyle(0xffffff,.1);for(let i=0;i<12;i++)g.fillCircle((i*191+s.elapsed*4)%w,35+(i%4)*44,32+i%3*18)
     for(let y=0;y<9;y++)for(let x=0;x<10;x++){const p=iso(x,y,cx,oy);this.diamond(p.x,p.y,(x+y)%2?0x487e79:0x4f8982)}
     const left=iso(0,8,cx,oy),bottom=iso(9,8,cx,oy),right=iso(9,0,cx,oy)
