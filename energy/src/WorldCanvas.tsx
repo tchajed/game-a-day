@@ -124,10 +124,11 @@ class FrontierScene extends Phaser.Scene {
     graphics.strokePath()
   }
 
-  text(x: number, y: number, value: string, size = 10, color = '#dffbe7') {
+  text(x: number, y: number, value: string, size = 13, color = '#dffbe7') {
     const label = this.add.text(x, y, value, {
       fontFamily: 'Chakra Petch, monospace', fontSize: `${size}px`, fontStyle: 'bold', color,
       stroke: '#081914', strokeThickness: 3,
+      resolution: Math.min(window.devicePixelRatio * 2, 4),
     }).setOrigin(.5)
     this.labels.push(label)
   }
@@ -147,7 +148,7 @@ class FrontierScene extends Phaser.Scene {
       graphics.fillRect(x - 25, y + 11, 50, 5)
       graphics.fillStyle(0xffcf63, 1)
       graphics.fillRect(x - 24, y + 12, 48 * building.progress, 3)
-      this.text(x, y - 46, building.status === 'blueprint' ? 'ASSIGN ROBOT' : `${Math.floor(building.progress * 100)}%`, 9, '#ffdc86')
+      this.text(x, y - 48, building.status === 'blueprint' ? 'ASSIGN ROBOT' : `${Math.floor(building.progress * 100)}%`, 12, '#ffdc86')
       return
     }
 
@@ -202,7 +203,7 @@ class FrontierScene extends Phaser.Scene {
       graphics.lineStyle(2, accent, 1); graphics.strokeRect(x - 18, y - 24, 36, 28)
     }
 
-    if (!online && building.type !== 'pylon') this.text(x, y - 65, 'OFF GRID', 9, '#ff6677')
+    if (!online && building.type !== 'pylon') this.text(x, y - 67, 'OFF GRID', 12, '#ff6677')
   }
 
   drawRobot(worker: GameState['workers'][number], selected: boolean, time: number) {
@@ -224,7 +225,7 @@ class FrontierScene extends Phaser.Scene {
       graphics.lineStyle(2, 0xffdf88, .8)
       graphics.lineBetween(point.x + 9, point.y - 8, point.x + 20, point.y - 17 + Math.sin(time * 9) * 4)
     }
-    if (worker.status === 'stalled') this.text(point.x, point.y - 31, '!', 15, '#ff6677')
+    if (worker.status === 'stalled') this.text(point.x, point.y - 34, '!', 20, '#ff6677')
   }
 
   draw() {
@@ -280,7 +281,7 @@ class FrontierScene extends Phaser.Scene {
     graphics.fillStyle(0x173b42, 1); graphics.fillRect(hq.x - 25, hq.y - 43, 50, 29)
     graphics.fillStyle(0x63f2a5, 1); graphics.fillRect(hq.x - 19, hq.y - 37, 38, 7)
     graphics.lineStyle(3, 0x63f2a5, 1); graphics.strokeRect(hq.x - 28, hq.y - 46, 56, 35)
-    this.text(hq.x, hq.y + 32, 'GRID CORE', 10)
+    this.text(hq.x, hq.y + 34, 'GRID CORE', 13)
 
     const sortedBuildings = [...state.buildings].sort((a, b) => (a.x + a.y) - (b.x + b.y))
     sortedBuildings.forEach(building => this.drawBuilding(building, state.elapsed))
@@ -289,7 +290,7 @@ class FrontierScene extends Phaser.Scene {
 
     if (state.buildMode) {
       const spec = BUILDINGS[state.buildMode]
-      this.text(hq.x, hq.y + 49, `${spec.name.toUpperCase()} PLACEMENT ACTIVE`, 9, '#ffdc86')
+      this.text(hq.x, hq.y + 53, `${spec.name.toUpperCase()} PLACEMENT ACTIVE`, 12, '#ffdc86')
       if (state.buildMode !== 'pylon') {
         graphics.lineStyle(1, 0x63f2a5, .12)
         graphics.strokeCircle(hq.x, hq.y, FACILITY_RANGE * TILE_W / 1.5)
@@ -315,7 +316,7 @@ export default function WorldCanvas(props: Props) {
       backgroundColor: '#173b36',
       scene: current,
       scale: { mode: Phaser.Scale.RESIZE, width: '100%', height: '100%' },
-      render: { antialias: true, pixelArt: false },
+      render: { antialias: true, antialiasGL: true, pixelArt: false, roundPixels: false },
     })
     return () => {
       game.current?.destroy(true)
