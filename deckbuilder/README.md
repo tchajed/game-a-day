@@ -17,3 +17,8 @@ The interface is for deck building and should be easy to use. For now, and to ma
 ## Game design
 
 Obviously the crucial part of the game is the cards and how to earn them.
+
+## Prototype review
+
+- [`GAMEPLAY.md`](GAMEPLAY.md) states the current rules, optimal route, and design problems without presentation copy.
+- Run `bun run dev` and open [`/style-review.html`](style-review.html) to compare three alternate visual directions for the same game state.
