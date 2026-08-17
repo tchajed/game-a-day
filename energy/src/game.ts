@@ -61,7 +61,7 @@ export const WORLD_SIZE = 36
 export const HQ = { x: 18, y: 18 }
 export const PYLON_RANGE = 6.25
 export const FACILITY_RANGE = 4.75
-export const ROBOT_MTTF = 60
+export const ROBOT_MTTF = 30
 export const RESCUE_TIME = 2.5
 export const BASE_WORKER_DEPLOY_COST = 180
 
@@ -75,7 +75,7 @@ const distance = (a: { x: number; y: number }, b: { x: number; y: number }) => M
 // Deterministic samples from a shifted exponential distribution. Across many repairs,
 // operating time averages ROBOT_MTTF while still making each fault unpredictable.
 function failureInterval(id: number, repairs: number) {
-  const minimum = 10
+  const minimum = 6
   const value = Math.sin((id * 91 + repairs * 193 + 17) * 12.9898) * 43758.5453
   const uniform = Math.min(.999, Math.max(.001, value - Math.floor(value)))
   return minimum - Math.log(1 - uniform) * (ROBOT_MTTF - minimum)
