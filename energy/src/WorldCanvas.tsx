@@ -124,7 +124,7 @@ class FrontierScene extends Phaser.Scene {
     graphics.strokePath()
   }
 
-  text(x: number, y: number, value: string, size = 13, color = '#dffbe7') {
+  text(x: number, y: number, value: string, size = 16, color = '#dffbe7') {
     const label = this.add.text(x, y, value, {
       fontFamily: 'Chakra Petch, monospace', fontSize: `${size}px`, fontStyle: 'bold', color,
       stroke: '#081914', strokeThickness: 3,
@@ -148,7 +148,7 @@ class FrontierScene extends Phaser.Scene {
       graphics.fillRect(x - 25, y + 11, 50, 5)
       graphics.fillStyle(0xffcf63, 1)
       graphics.fillRect(x - 24, y + 12, 48 * building.progress, 3)
-      this.text(x, y - 48, building.status === 'blueprint' ? 'ASSIGN ROBOT' : `${Math.floor(building.progress * 100)}%`, 12, '#ffdc86')
+      this.text(x, y - 50, building.status === 'blueprint' ? 'ASSIGN UNIT' : `${Math.floor(building.progress * 100)}%`, 15, '#ffdc86')
       return
     }
 
@@ -178,7 +178,7 @@ class FrontierScene extends Phaser.Scene {
       }
     }
 
-    if (!online && building.type !== 'pylon') this.text(x, y - 67, 'OFF GRID', 12, '#ff6677')
+    if (!online && building.type !== 'pylon') this.text(x, y - 69, 'OFF GRID', 15, '#ff6677')
   }
 
   drawRobot(worker: GameState['workers'][number], selected: boolean, time: number) {
@@ -200,8 +200,8 @@ class FrontierScene extends Phaser.Scene {
       graphics.lineStyle(2, worker.status === 'rescuing' ? 0x63f2a5 : 0xffdf88, .9)
       graphics.lineBetween(point.x + 9, point.y - 8, point.x + 20, point.y - 17 + Math.sin(time * 9) * 4)
     }
-    if (worker.reliable) this.text(point.x, point.y - 31, '∞', 11, '#baffd8')
-    if (worker.status === 'stalled') this.text(point.x, point.y - 34, '!', 20, '#ff6677')
+    if (worker.reliable) this.text(point.x, point.y - 32, '∞', 14, '#baffd8')
+    if (worker.status === 'stalled') this.text(point.x, point.y - 36, '!', 24, '#ff6677')
   }
 
   draw() {
@@ -257,7 +257,7 @@ class FrontierScene extends Phaser.Scene {
     graphics.fillStyle(0x173b42, 1); graphics.fillRect(hq.x - 25, hq.y - 43, 50, 29)
     graphics.fillStyle(0x63f2a5, 1); graphics.fillRect(hq.x - 19, hq.y - 37, 38, 7)
     graphics.lineStyle(3, 0x63f2a5, 1); graphics.strokeRect(hq.x - 28, hq.y - 46, 56, 35)
-    this.text(hq.x, hq.y + 34, 'GRID CORE', 13)
+    this.text(hq.x, hq.y + 37, 'GRID CORE', 16)
 
     for (const worker of state.workers) {
       if (worker.rescueId === null) continue
@@ -274,9 +274,21 @@ class FrontierScene extends Phaser.Scene {
     const sortedWorkers = [...state.workers].sort((a, b) => (a.x + a.y) - (b.x + b.y))
     sortedWorkers.forEach(worker => this.drawRobot(worker, worker.id === state.selectedWorker, state.elapsed))
 
+    const placementError = state.placementError
+    if (placementError && state.elapsed < placementError.until) {
+      const point = iso(placementError.x, placementError.y)
+      const pulse = 1 + Math.sin(state.elapsed * 12) * .12
+      this.diamond(point.x, point.y, 0x591f29, 0xff6677, .82)
+      graphics.lineStyle(4, 0xff6677, 1)
+      graphics.lineBetween(point.x - 18, point.y - 10, point.x + 18, point.y + 10)
+      graphics.lineBetween(point.x + 18, point.y - 10, point.x - 18, point.y + 10)
+      graphics.strokeEllipse(point.x, point.y, 70 * pulse, 35 * pulse)
+      this.text(point.x, point.y - 42, `✕ ${placementError.message}`, 17, '#ff8a96')
+    }
+
     if (state.buildMode) {
       const spec = BUILDINGS[state.buildMode]
-      this.text(hq.x, hq.y + 53, `${spec.name.toUpperCase()} PLACEMENT ACTIVE`, 12, '#ffdc86')
+      this.text(hq.x, hq.y + 57, `${spec.name.toUpperCase()} PLACEMENT ACTIVE`, 15, '#ffdc86')
       if (state.buildMode !== 'pylon') {
         graphics.lineStyle(1, 0x63f2a5, .12)
         graphics.strokeCircle(hq.x, hq.y, FACILITY_RANGE * TILE_W / 1.5)

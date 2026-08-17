@@ -48,6 +48,12 @@ describe('unreliable robot energy operation', () => {
     expect(next.generation).toBe(3)
   })
 
+  test('rejected placement records an on-grid error marker', () => {
+    const state = placeBlueprint(initialState(), 'solar', 18, 18)
+    expect(state.placementError).toMatchObject({ x: 18, y: 18, message: 'SITE OBSTRUCTED' })
+    expect(state.placementError?.until).toBeGreaterThan(state.elapsed)
+  })
+
   test('robots must be assigned before blueprints are constructed', () => {
     let state = placeBlueprint(initialState(), 'pylon', 24, 19)
     const task = state.buildings.at(-1)!

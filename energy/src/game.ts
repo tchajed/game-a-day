@@ -36,6 +36,7 @@ export type GameState = {
   totalEnergy: number
   generation: number
   buildMode: BuildingType | null
+  placementError: { x: number; y: number; message: string; until: number } | null
   selectedWorker: number | null
   buildings: Building[]
   workers: Worker[]
@@ -157,6 +158,7 @@ export function initialState(debug = false): GameState {
     totalEnergy: 0,
     generation: 3,
     buildMode: null,
+    placementError: null,
     selectedWorker: 2,
     buildings,
     workers: [makeWorker(1, true, 0), makeWorker(2, false, 1), makeWorker(3, false, 2), makeWorker(4, false, 3)],
@@ -181,11 +183,16 @@ export function addWorker(state: GameState): GameState {
 }
 
 export function placeBlueprint(state: GameState, type: BuildingType, x: number, y: number): GameState {
+  const reject = (message: string, toast: string): GameState => ({
+    ...state,
+    placementError: { x, y, message, until: state.elapsed + 4.5 },
+    toast,
+  })
   const cost = getBuildingCost(state, type)
-  if (state.cash < cost) return { ...state, toast: `Need ${formatCredits(cost)} for ${BUILDINGS[type].name}.` }
-  if (x < 1 || y < 1 || x >= WORLD_SIZE - 1 || y >= WORLD_SIZE - 1) return { ...state, toast: 'That site is outside the survey boundary.' }
+  if (state.cash < cost) return reject('INSUFFICIENT CREDITS', `Need ${formatCredits(cost)} for ${BUILDINGS[type].name}.`)
+  if (x < 1 || y < 1 || x >= WORLD_SIZE - 1 || y >= WORLD_SIZE - 1) return reject('OUTSIDE SURVEY AREA', 'That site is outside the survey boundary.')
   if (distance({ x, y }, HQ) < 2.2 || state.buildings.some(building => distance(building, { x, y }) < 1.5)) {
-    return { ...state, toast: 'Site obstructed — leave room around each structure.' }
+    return reject('SITE OBSTRUCTED', 'Site obstructed — leave room around each structure.')
   }
   const building: Building = { id: state.nextId, type, x, y, status: 'blueprint', progress: 0, connected: false, parentId: null }
   return {
@@ -193,6 +200,7 @@ export function placeBlueprint(state: GameState, type: BuildingType, x: number, 
     cash: state.cash - cost,
     buildings: [...state.buildings, building],
     nextId: state.nextId + 1,
+    placementError: null,
     toast: `${BUILDINGS[type].name} planned. Select a working unit, then click its blueprint.`,
   }
 }
@@ -348,6 +356,7 @@ export function stepGame(state: GameState, dt: number): GameState {
     cash: state.cash + income,
     totalEnergy: state.totalEnergy + generation * dt / 3600,
     generation,
+    placementError: state.placementError && state.elapsed + dt >= state.placementError.until ? null : state.placementError,
     buildings: networked,
     workers,
     toast,
