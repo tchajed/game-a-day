@@ -73,7 +73,7 @@ export const WORLD_SIZE = 36
 export const HQ = { x: 18, y: 18 }
 export const PYLON_RANGE = 6.25
 export const FACILITY_RANGE = 4.75
-export const ROBOT_MTTF = 27
+export const ROBOT_MTTF = 21
 export const RESCUE_TIME = 2.4
 
 export const BUILDINGS: Record<BuildingType, BuildingSpec> = {
@@ -99,9 +99,9 @@ export const LEVELS: LevelSpec[] = [
   {
     number: '02',
     name: 'BROKEN FRONTIER',
-    directive: 'Build to 15 MW before the storm. Keep balanced triads close: specialists work faster, idle reserves do not wear out.',
-    goal: 'REACH 15 MW BEFORE 02:30',
-    targetGeneration: 15,
+    directive: 'Build to 18 MW before the storm. Keep balanced triads close: specialists work faster, idle reserves do not wear out.',
+    goal: 'REACH 18 MW BEFORE 02:30',
+    targetGeneration: 18,
     timeLimit: 150,
   },
 ]
@@ -217,8 +217,8 @@ export function initialState(debug = false, level = 0): GameState {
       buildings: [
         { id: 1, type: 'solar', x: 20, y: 17, status: 'complete', progress: 1, connected: true, parentId: null },
         { id: 2, type: 'pylon', x: 22, y: 19, status: 'complete', progress: 1, connected: true, parentId: null },
-        { id: 3, type: 'pylon', x: 27, y: 19, status: 'blueprint', progress: 0, connected: false, parentId: null },
-        { id: 4, type: 'solar', x: 30, y: 19, status: 'blueprint', progress: 0, connected: false, parentId: null },
+        { id: 3, type: 'pylon', x: 14, y: 18, status: 'blueprint', progress: 0, connected: false, parentId: null },
+        { id: 4, type: 'solar', x: 10, y: 18, status: 'blueprint', progress: 0, connected: false, parentId: null },
       ],
       workers,
       nextId: 10,

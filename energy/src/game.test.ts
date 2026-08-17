@@ -141,6 +141,10 @@ describe('grid and challenge level', () => {
     expect(state.buildings.filter(building => building.status === 'blueprint')).toHaveLength(6)
 
     for (let tick = 0; tick < 1450 && state.phase === 'playing'; tick++) {
+      // The last array must be funded by early exports, so the plan naturally has
+      // a second expansion wave instead of being queued entirely at the start.
+      if (state.nextId === 16 && state.cash >= getBuildingCost(state, 'solar')) state = placeBlueprint(state, 'solar', 29, 23)
+
       // Rescue first. Prefer idle responders so productive workers are only diverted
       // when a triad has no reserve available.
       const targeted = new Set(state.workers.map(worker => worker.rescueId).filter(id => id !== null))
@@ -164,9 +168,9 @@ describe('grid and challenge level', () => {
     }
 
     expect(state.phase).toBe('won')
-    expect(state.generation).toBe(15)
+    expect(state.generation).toBe(18)
     expect(state.elapsed).toBeLessThan(150)
-    expect(state.workers.reduce((sum, worker) => sum + worker.repairs, 0)).toBeGreaterThan(0)
+    expect(state.workers.reduce((sum, worker) => sum + worker.repairs, 0)).toBeGreaterThanOrEqual(2)
   })
 
   test('the storm ends a challenge that misses its output target', () => {

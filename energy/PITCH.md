@@ -1,7 +1,7 @@
 # GRIDWORKS
 
-**How many unreliable robots can you keep running at once?** Expand a frontier solar grid with a crew of fast, failure-prone construction units that break down after only 30 seconds of work on average. Every new unit accelerates construction—and adds another machine you may have to rescue when it collapses in the field. Divert working robots from valuable projects, chain together desperate repairs, and keep the perfectly reliable but painfully slow FAILSAFE-0 ready for the breakdown that would otherwise stop everything.
+**A pair always leaves someone stranded.** Command ARC, SERVO, and OPTIC robots whose repair skills form a one-way ring: each can save one type and must depend on another. Split balanced triads to race specialists toward pylons and solar arrays, hold fast responders in reserve, and improvise when a single failure turns your perfect plan into a cascading rescue. Learn the protocol in a focused tutorial, then build an 18 MW frontier grid before the storm arrives.
 
-![An unreliable robot crew awaits orders around the Grid Core](artifacts/energy-unreliable-first.png)
+![The Triad Protocol introduces the one-way repair ring](artifacts/energy-triad-tutorial.png)
 
-![A working unit races across the field to repair a failure](artifacts/energy-unreliable-rescue.png)
+![Balanced robot teams bring the frontier grid online](artifacts/energy-triad-frontier.png)

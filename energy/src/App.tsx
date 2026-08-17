@@ -3,7 +3,6 @@ import WorldCanvas from './WorldCanvas'
 import {
   BUILDINGS,
   LEVELS,
-  ROBOT_MTTF,
   ROLES,
   assignRescue,
   assignWorker,
@@ -154,7 +153,11 @@ export default function App() {
     if (!debug) return
     ;(window as unknown as { __ENERGY__: unknown }).__ENERGY__ = {
       getState: () => ref.current,
-      step: (milliseconds: number) => mutate(state => stepGame(state, milliseconds / 1000)),
+      step: (milliseconds: number) => mutate(state => {
+        let next = state
+        for (let remaining = milliseconds / 1000; remaining > 0 && next.phase === 'playing'; remaining -= .1) next = stepGame(next, Math.min(.1, remaining))
+        return next
+      }),
       setCash: (cash: number) => mutate(state => ({ ...state, cash })),
       level: (index: number) => mutate(() => initialState(true, Math.max(0, Math.min(1, index)))),
       restart: () => mutate(state => initialState(true, state.level)),
