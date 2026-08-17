@@ -1,9 +1,35 @@
-# Energy RTS
+# GRIDWORKS
 
-This game is going to be all about building up as much energy production as possible. It will play out like Starcraft's base building, but no combat. The goal is to have as many watts as possible. There will be some exponential growth here, in that you will use energy (or maybe money earned from selling it) to create new buildings. I also want storing energy to be realistic and require building storage facilities (like pumped storage hydro).
+GRIDWORKS is an endless isometric base-building game about growing a frontier power network. There is no contract or countdown: connected generators continuously earn credits, which fund increasingly expensive facilities and a wider grid.
 
-I want the graphics to be the 2D isometric look of Starcraft. This should be a brightly lit landscape.
+## Core loop
 
-Another key mechanic here is going to be that you have unreliable units: they require monitoring and steering. This won't be an idle game and you will need to micromanage. I would also like something else more active but I'm not sure, and I probably don't want combat; maybe we will have a balance of financial engineering and energy production. I really like the mechanic of optionally going into debt in Offworld Trading Company and indeed this game is inspired by it.
+1. Choose a facility and click the field to place its blueprint.
+2. Select a robot, then click the blueprint to assign construction.
+3. Build relay pylons outward from the Grid Core.
+4. Keep generators within range of the connected pylon network so their power can be exported.
+5. Reinvest the income in solar arrays, wind fields, geothermal stations, fusion yards, and robot garages.
 
-The prototype should focus on operating equipment and matching demand, not storms or weather. The player begins solvent and debt-free; borrowing is an optional tactical choice.
+Robots do not choose work themselves, and occasionally lose their task lock. Select a stalled robot and reboot it before issuing more orders.
+
+## Controls
+
+- **Drag:** pan across the 36×36 field
+- **Mouse wheel / + −:** zoom
+- **Click robot:** select it
+- **Click terrain:** move the selected robot, or place the selected blueprint
+- **Click blueprint:** assign the selected robot
+- **1–6:** choose a build tool
+- **Escape:** cancel the build tool
+- **Home button:** recenter on the Grid Core
+
+## Development
+
+```bash
+bun install
+bun run dev
+bun test
+bun run build
+```
+
+Use `?debug=true` for extra starting credits, a credit cheat, and the `window.__ENERGY__` playtesting API. Use `?music=off` to disable audio.
