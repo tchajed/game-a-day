@@ -63,6 +63,7 @@ export const PYLON_RANGE = 6.25
 export const FACILITY_RANGE = 4.75
 export const ROBOT_MTTF = 60
 export const RESCUE_TIME = 2.5
+export const BASE_WORKER_DEPLOY_COST = 180
 
 export const BUILDINGS: Record<BuildingType, BuildingSpec> = {
   pylon: { name: 'Relay pylon', cost: 35, output: 0, buildTime: 4, icon: '⌁', key: '1', note: 'Carries the grid 6 tiles' },
@@ -103,6 +104,11 @@ export function getBuildingCost(state: GameState, type: BuildingType) {
   const built = state.buildings.filter(building => building.type === type).length
   const growth = type === 'pylon' ? 1.04 : 1.09
   return Math.round(BUILDINGS[type].cost * growth ** built / 5) * 5
+}
+
+export function getWorkerDeployCost(state: GameState) {
+  const extraWorkers = Math.max(0, state.workers.filter(worker => !worker.reliable).length - 3)
+  return Math.round(BASE_WORKER_DEPLOY_COST * 1.3 ** extraWorkers / 5) * 5
 }
 
 export function recomputeNetwork(buildings: Building[]): Building[] {
@@ -171,14 +177,17 @@ export function initialState(debug = false): GameState {
 }
 
 export function addWorker(state: GameState): GameState {
+  const cost = getWorkerDeployCost(state)
+  if (state.cash < cost) return { ...state, toast: `Need ${formatCredits(cost)} to deploy another unit.` }
   const id = state.nextWorkerId
   return {
     ...state,
+    cash: state.cash - cost,
     workers: [...state.workers, makeWorker(id, false, state.workers.length)],
     nextWorkerId: id + 1,
     selectedWorker: id,
     buildMode: null,
-    toast: `UNIT-${String(id).padStart(2, '0')} deployed. More throughput means more failures to manage.`,
+    toast: `UNIT-${String(id).padStart(2, '0')} deployed for ${formatCredits(cost)}. More throughput means more failures.`,
   }
 }
 

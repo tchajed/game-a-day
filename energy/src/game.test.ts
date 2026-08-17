@@ -4,6 +4,7 @@ import {
   assignRescue,
   assignWorker,
   getBuildingCost,
+  getWorkerDeployCost,
   initialState,
   moveWorker,
   placeBlueprint,
@@ -106,11 +107,23 @@ describe('unreliable robot energy operation', () => {
     expect(assigned).toBe(state)
   })
 
-  test('players can instantly deploy as many standard units as they want', () => {
-    let state = initialState()
-    for (let i = 0; i < 12; i++) state = addWorker(state)
+  test('deploying units costs credits and gets more expensive', () => {
+    let state = { ...initialState(), cash: 1_000_000 }
+    const firstCost = getWorkerDeployCost(state)
+    const cashBefore = state.cash
+    state = addWorker(state)
+    expect(state.cash).toBe(cashBefore - firstCost)
+    expect(getWorkerDeployCost(state)).toBeGreaterThan(firstCost)
+    for (let i = 0; i < 11; i++) state = addWorker(state)
     expect(state.workers).toHaveLength(16)
     expect(state.workers.filter(worker => worker.reliable)).toHaveLength(1)
+  })
+
+  test('cannot deploy a unit without enough credits', () => {
+    const state = { ...initialState(), cash: 0 }
+    const next = addWorker(state)
+    expect(next.workers).toHaveLength(state.workers.length)
+    expect(next.cash).toBe(0)
   })
 
   test('repeat construction becomes gradually more expensive', () => {

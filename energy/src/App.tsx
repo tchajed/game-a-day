@@ -9,6 +9,7 @@ import {
   formatCredits,
   formatTime,
   getBuildingCost,
+  getWorkerDeployCost,
   initialState,
   moveWorker,
   placeBlueprint,
@@ -58,6 +59,7 @@ export default function App() {
   const [music, setMusic] = useState(false)
   const audio = useRef<AudioContext | null>(null)
   const stalled = state.workers.filter(worker => worker.status === 'stalled').length
+  const deployCost = getWorkerDeployCost(state)
 
   const selectBuild = useCallback((type: BuildingType) => {
     mutate(state => ({
@@ -196,7 +198,7 @@ export default function App() {
           <small>SYSTEM FEED</small><p>{state.toast}</p>
         </div>
         <div className="roster">
-          <div className="panel-title"><span>FIELD UNITS</span><button data-testid="add-worker" onClick={() => mutate(addWorker)}>+ DEPLOY UNIT</button></div>
+          <div className="panel-title"><span>FIELD UNITS</span><button data-testid="add-worker" className={state.cash < deployCost ? 'expensive' : ''} onClick={() => mutate(addWorker)}>+ UNIT {formatCredits(deployCost)}</button></div>
           <div className="roster-scroll">
             {state.workers.map(worker => <button
               key={worker.id}

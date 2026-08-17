@@ -1,6 +1,6 @@
 # GRIDWORKS
 
-GRIDWORKS is an endless operations game about scaling a solar grid with an unreliable robot crew. Standard units are fast and free to deploy, but fail after 60 seconds of operating time on average. A failed unit can only be restored when another unit physically reaches it, so every extra robot increases both construction throughput and the number of breakdowns demanding attention.
+GRIDWORKS is an endless operations game about scaling a solar grid with an unreliable robot crew. Standard units are fast but fail after 60 seconds of operating time on average. A failed unit can only be restored when another unit physically reaches it, so every increasingly expensive robot is a tradeoff between construction throughput and another breakdown demanding attention.
 
 ## Core loop
 
@@ -8,7 +8,7 @@ GRIDWORKS is an endless operations game about scaling a solar grid with an unrel
 2. Select a unit, then click a blueprint to dispatch it.
 3. Keep generators within range of the connected relay network so their power earns credits.
 4. When a unit fails, select a working unit and click the failure to send a field rescue.
-5. Deploy as many additional standard units as you are willing to supervise.
+5. Reinvest credits in additional units, whose deployment cost increases with crew size.
 
 `FAILSAFE-0` never fails, preventing total crew lockup, but it moves and works at only 40% of standard speed. All other units have an MTTF (mean time to failure) of 60 operating seconds. Idle time does not count.
 
