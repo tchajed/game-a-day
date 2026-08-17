@@ -12,8 +12,8 @@ export const games: GameConfig[] = [
     directory: "deckbuilder",
     slug: "null-protocol",
     date: "2026-08-17",
-    cover: "screenshots/null-protocol-contact.png",
-    crop: { left: 250, top: 40, width: 900, height: 540 },
+    cover: "screenshots/null-protocol-fieldbook-contact.png",
+    crop: { left: 245, top: 78, width: 900, height: 540 },
   },
   {
     directory: "energy",
