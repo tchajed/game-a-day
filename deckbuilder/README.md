@@ -9,3 +9,11 @@ Given that you have to play programmatically, I was thinking of also having card
 The setting is diplomacy with an alien race, which has two sub-factions (but the player doesn't know that at the start). The explanation for the game is that there's a time loop that we can enter to reset everything except for the deck, and within each loop we get to do lots of talks but also build up state. You play as a commander who can send out robot/AI negotiators.
 
 It would be good to have several distinct matches (like you know that you're going to have talks in some sequence, and each will be repeated a few times) so that you can create different decks - that construction isn't programmatic, and you can reuse cards between those decks.
+
+## Graphics
+
+The interface is for deck building and should be easy to use. For now, and to make it possible for me to debug this, also create a separate UI to play the matches manually - we'll get this right before developing any programming.
+
+## Game design
+
+Obviously the crucial part of the game is the cards and how to earn them.
