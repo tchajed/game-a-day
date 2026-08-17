@@ -1,147 +1,86 @@
-# NULL PROTOCOL: current gameplay and optimal strategy
+# NULL PROTOCOL: gameplay and progression
 
-This describes what the prototype actually does today, not the intended future programming game.
+This describes the current manual-play prototype.
 
-## The game in one sentence
+## Core loop
 
-In each conversation, play one of two cards per turn to reach a Trust target before you run out of exchanges or fill the Tension meter.
+Each contact presents a fixed sequence of alien signals. Play one of two cards per exchange to reach the Trust target before the exchanges end.
 
-## Rules as implemented
+- Every signal has visible **pressure**, which is added to the card’s Tension effect.
+- If Tension reaches its limit, the link collapses—even if the same play reaches the Trust target.
+- Signal-matched cards are much stronger than mismatched cards.
+- The six-card deck is not shuffled. Its first two cards form the opening hand; after each play, the next card is drawn from left to right.
+- The workshop now has explicit draw-order controls.
+- Winning either of the first two contacts unlocks one of three specialist cards and opens the workshop before the next contact.
 
-### Campaign
+The campaign is three contacts and is intended to take only a few attempts.
 
-- There are three conversations in a fixed order: Lyra-of-Mists, Archivist Tal, and the Confluence.
-- Each conversation has a fixed sequence of alien signals.
-- A conversation ends in success as soon as Trust reaches its target.
-- It ends in failure if Tension reaches its limit or the final exchange ends without enough Trust.
-- Failure restarts the same conversation.
-- Success in the first two conversations offers one of three cards to unlock, then immediately starts the next conversation.
-- The third success ends the prototype.
+## Starting methods
 
-### Deck and hand
+| Card | Effect |
+| --- | --- |
+| Active Listen | +1 Trust, −1 Tension, +1 Insight |
+| Mirror Rite | +4 Trust on Ritual; otherwise no Trust and +1 Tension |
+| Verify Claim | +4 Trust on Analytical; otherwise no Trust and +1 Tension |
+| Open Archive | +4 Trust, +1 Tension on Warm; otherwise +1 Trust, +2 Tension |
+| Signal Offering | +3 Trust, +2 Tension; with 2 Insight, +5 Trust, +1 Tension |
+| Measured Pause | −2 Tension; on Hostile, +3 Trust and −3 Tension |
 
-- A valid deck has exactly six cards.
-- The deck is **not shuffled**. Cards are drawn in the order shown in the deck workshop.
-- The first two cards form the opening hand.
-- Each exchange, choose one card from the two-card hand. The played card is discarded and the next card is drawn.
-- The unplayed card stays in hand.
-- No current conversation lasts long enough to recycle the discard pile.
-- An unlocked reward is added to the library, not automatically to the active deck.
-- To equip a reward, open the workshop, remove a card, add the reward, and deploy the deck.
-
-### Card effects
-
-- Cards add Trust, add or remove Tension, and sometimes record Insight.
-- Some cards get a larger effect when the current signal matches their condition.
-- Some cards get a larger effect based on the envoy's hidden faction.
-- Selecting a card shows its exact outcome before it is played.
-- Two accumulated Insights reveal the envoy as **Resonant** or **Exact** for that conversation.
-
-### Persistence
-
-What actually persists in browser storage:
-
-- the active deck;
-- unlocked cards.
-
-What does **not** currently persist after a failed conversation:
-
-- Insight;
-- transcript entries;
-- faction identification for the current envoy.
-
-This conflicts with some of the current UI copy about the archive surviving a loop.
-
-## Starting deck
-
-| Draw order | Card | Normal effect | Best use |
-| --- | --- | --- | --- |
-| 1 | Active Listen | +1 Trust, +1 Insight | Any exchange; used to identify factions |
-| 2 | Mirror Rite | +1 Trust | +3 Trust against a Ritual signal |
-| 3 | Verify Claim | +1 Trust | +3 Trust and +1 Insight against an Analytical signal |
-| 4 | Open Archive | +2 Trust, +1 Tension | +3 Trust against a Resonant envoy |
-| 5 | Signal Offering | +2 Trust, +1 Tension | Reliable finishing card |
-| 6 | Measured Pause | -2 Tension | Also +1 Trust against a Hostile signal |
-
-## Guaranteed optimal route with the starting deck
-
-These routes win without using reward cards.
+## Progression gates
 
 ### 1. Lyra-of-Mists
 
-Target: 7 Trust. Tension limit: 5. Four exchanges.
+- **12 Trust**, **6 Tension**, four exchanges.
+- Signals: Ritual → Warm → Guarded → Warm.
+- The starting draw order is a viable teaching line: Mirror Rite → Open Archive → Signal Offering → Active Listen.
+- That line finishes at 12 Trust and 5 Tension. A mismatched or overly aggressive opening can collapse the link.
 
-| Exchange | Signal | Play | Result | Total |
-| --- | --- | --- | --- | --- |
-| 1 | Ritual | Mirror Rite | +3 Trust | 3 Trust, 0 Tension |
-| 2 | Warm | Active Listen | +1 Trust, +1 Insight | 4 Trust, 0 Tension |
-| 3 | Guarded | Open Archive | +3 Trust, +1 Tension because Lyra is Resonant | **7 Trust, 1 Tension: win** |
+Reward choice:
 
-The fourth signal is never seen on the optimal route.
-
-Best reward for later: **Chorus Weave**. It gives +4 Trust against Resonant envoys and has no Tension cost. However, the campaign can be completed without equipping it.
+- **Shared Stillness:** safe, especially strong on Guarded.
+- **Chorus Weave:** consistently forceful, strongest on Warm, but adds Tension.
+- **Gentle Redaction:** safe, especially strong on Hostile.
 
 ### 2. Archivist Tal
 
-Target: 9 Trust. Tension limit: 5. Five exchanges.
+- **18 Trust**, **9 Tension**, five exchanges.
+- Signals: Analytical → Guarded → Analytical → Hostile → Warm.
+- No ordering or play sequence using only the six starting cards can reach accord.
+- Each Lyra reward enables at least one legal solution, but the player must equip it and arrange the draw order.
+- The three reward choices produce different routes: Stillness exploits the guarded exchange, Chorus supplies broad power at a tension cost, and Redaction turns Tal’s accusation into progress.
+- Tal also makes Insight tactical: combining two observation results calibrates Signal Offering from a risky +3 into an efficient +5.
 
-| Exchange | Signal | Play | Result | Total |
-| --- | --- | --- | --- | --- |
-| 1 | Analytical | Active Listen | +1 Trust, +1 Insight | 1 Trust, 0 Tension |
-| 2 | Guarded | Mirror Rite | +1 Trust | 2 Trust, 0 Tension |
-| 3 | Analytical | Verify Claim | +3 Trust, +1 Insight | 5 Trust, 0 Tension |
-| 4 | Hostile | Open Archive | +2 Trust, +1 Tension because Tal is Exact | 7 Trust, 1 Tension |
-| 5 | Analytical | Signal Offering | +2 Trust, +1 Tension | **9 Trust, 2 Tension: win** |
+Reward choice:
 
-This route uses every exchange and has no meaningful decision once the desired line is known.
-
-Best reward for the final conversation: **Irrevocable Oath** gives +4 Trust at the cost of +2 Tension. **Kind Boundary** is safer but is unlikely to be drawn at the useful Hostile exchange unless the deck order is deliberately rebuilt around it.
+- **Pattern Proof:** +6 Trust on Analytical.
+- **Kind Boundary:** +6 Trust and heavy cooling on Guarded or Hostile.
+- **Irrevocable Oath:** unconditional +6 Trust with dangerous Tension.
 
 ### 3. The Confluence
 
-Target: 11 Trust. Tension limit: 6. Five exchanges.
+- **22 Trust**, **12 Tension**, five exchanges.
+- Signals: Warm → Analytical → Ritual → Hostile → Guarded.
+- The starting cards plus a Lyra reward top out below the Trust target.
+- A card recovered from Tal is therefore required.
+- Every one of the nine possible Lyra/Tal reward pairs has at least one legal winning route. Aggressive Oath routes need cooling; Pattern routes reward exact sequencing; Boundary routes trade raw flexibility for safety.
 
-| Exchange | Signal | Play | Result | Total |
-| --- | --- | --- | --- | --- |
-| 1 | Warm | Active Listen | +1 Trust, +1 Insight | 1 Trust, 0 Tension |
-| 2 | Analytical | Verify Claim | +3 Trust, +1 Insight | 4 Trust, 0 Tension |
-| 3 | Ritual | Mirror Rite | +3 Trust | 7 Trust, 0 Tension |
-| 4 | Fractured/Hostile | Open Archive | +3 Trust, +1 Tension because the Confluence is Resonant | 10 Trust, 1 Tension |
-| 5 | Guarded | Signal Offering | +2 Trust, +1 Tension | **12 Trust, 2 Tension: win** |
+## What the player must now do
 
-If Chorus Weave replaced Measured Pause after the first reward, it is drawn for the final exchange and gives +4 instead of +2. The result is 14 Trust and 1 Tension.
+1. Read the signal sequence and pressure.
+2. Choose one specialist from each reward tier.
+3. Cut two methods to keep the deck at six cards.
+4. Gather Insight early enough to calibrate an Offering when that route needs it.
+5. Arrange the exact draw order while accounting for the card that remains in hand.
+6. Balance matched Trust gains against cumulative Tension.
 
-## What the player is really deciding
+This remains a deterministic, short sequencing puzzle suitable for the manual-play phase. The future programming layer can automate the same two-card-hand decisions.
 
-Before knowing the solution:
+## Balance checks
 
-1. infer which cards match signal labels;
-2. decide whether to spend a weak turn gathering Insight;
-3. trade Tension for larger Trust gains;
-4. decide which card to keep in hand for a later known signal;
-5. change deck composition and draw order between conversations.
+`src/game.test.ts` exhaustively searches distinct-card play sequences and verifies that:
 
-After knowing the solution, the fixed signals and fixed draw order reduce each conversation to a memorized script.
-
-## Design issues to validate
-
-1. **The programming mechanic is absent.** The prototype only validates manual card play.
-2. **Information is not currently necessary.** The three conversations are beatable with the starting deck and no faction knowledge.
-3. **The preview leaks hidden information.** Selecting a faction-dependent card shows the exact result before it is played, so the player can infer affiliation without earning Insight.
-4. **Loop persistence is incomplete.** The deck and unlocks persist, but Insights and logs do not.
-5. **Rewards are optional power, not required tools.** The starting deck solves the entire campaign.
-6. **Fixed order makes the puzzle deterministic.** This is good for learning and algorithm writing, but weak for replay unless later loops change hidden state or test generalization.
-7. **Tension is rarely threatening.** Every optimal starting-deck route finishes far below the limit.
-8. **Deck construction also controls draw order.** This is strategically powerful but not explained, and the workshop has no explicit reorder control.
-9. **Faction discovery currently has little payoff.** Resonant versus Exact mostly changes arithmetic instead of changing the negotiation rules.
-10. **There is no reason to repeat a successful conversation.** Lost reward choices cannot be revisited, and logs do not produce a durable knowledge advantage.
-
-## Questions for the next design pass
-
-- Should a program have to handle several possible signal sequences rather than memorize one sequence?
-- Should logs reveal rules that are impossible to infer from the live preview?
-- Should each alien faction require a genuinely different win condition, not just different bonuses?
-- Should reward cards be required to solve later conversations?
-- Should the player construct both a six-card deck and a small decision program, then watch it execute without intervention?
-- Should a failed loop preserve discovered rules while resetting only numerical state?
-- Should deck order be explicit and editable, or should the deck shuffle so the program must handle uncertainty?
+- Lyra is solvable with the starting deck;
+- Tal is impossible without a Lyra reward and solvable with each one;
+- the Confluence is impossible without a Tal reward;
+- all nine reward pairs can complete the finale;
+- reaching the Tension cap is always a failure.

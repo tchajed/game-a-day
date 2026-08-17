@@ -120,10 +120,10 @@ function App() {
   const [view, setView] = useState<View>('mission')
   const [loop, setLoop] = useState(7)
   const [deck, setDeck] = useState<string[]>(() => {
-    try { return JSON.parse(localStorage.getItem('null-deck') || 'null') || startingDeck } catch { return startingDeck }
+    try { return JSON.parse(localStorage.getItem('null-deck-v2') || 'null') || startingDeck } catch { return startingDeck }
   })
   const [unlocked, setUnlocked] = useState<string[]>(() => {
-    try { return JSON.parse(localStorage.getItem('null-unlocked') || 'null') || startingDeck } catch { return startingDeck }
+    try { return JSON.parse(localStorage.getItem('null-unlocked-v2') || 'null') || startingDeck } catch { return startingDeck }
   })
   const [game, setGame] = useState<GameState>(() => makeGame(0, deck))
   const [selected, setSelected] = useState<string | null>(null)
@@ -134,8 +134,8 @@ function App() {
   const encounter = encounters[game.encounterIndex]
   const signal = encounter.signals[Math.min(game.turn, encounter.signals.length - 1)]
 
-  useEffect(() => { localStorage.setItem('null-deck', JSON.stringify(deck)) }, [deck])
-  useEffect(() => { localStorage.setItem('null-unlocked', JSON.stringify(unlocked)) }, [unlocked])
+  useEffect(() => { localStorage.setItem('null-deck-v2', JSON.stringify(deck)) }, [deck])
+  useEffect(() => { localStorage.setItem('null-unlocked-v2', JSON.stringify(unlocked)) }, [unlocked])
   useEffect(() => { logsEndRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [game.logs])
 
   const stopMusic = () => {
@@ -162,12 +162,12 @@ function App() {
   const playCard = (cardId: string) => {
     setGame(current => {
       if (current.phase !== 'talk' || !current.hand.includes(cardId)) return current
-      const effect = resolveCard(cardId, encounters[current.encounterIndex], current.turn)
+      const effect = resolveCard(cardId, encounters[current.encounterIndex], current.turn, current.intel)
       const newTrust = Math.max(0, current.trust + effect.trust)
       const newTension = Math.max(0, current.tension + effect.tension)
       const newIntel = current.intel + effect.intel
       const nextTurn = current.turn + 1
-      const won = newTrust >= encounter.target
+      const won = newTrust >= encounter.target && newTension < encounter.tensionLimit
       const failed = newTension >= encounter.tensionLimit || (!won && nextTurn >= encounter.signals.length)
       const hand = current.hand.filter(id => id !== cardId)
       let drawPile = [...current.drawPile]
@@ -211,6 +211,7 @@ function App() {
     const nextIndex = game.encounterIndex + 1
     setGame(makeGame(nextIndex, deck))
     setSelected(null)
+    setView('workshop')
   }
   const restartCampaign = () => {
     setLoop(value => value + 1)
@@ -223,6 +224,15 @@ function App() {
       if (deck.length > 2) setDeck(items => items.filter(id => id !== cardId))
     } else if (deck.length < 6) setDeck(items => [...items, cardId])
   }
+  const moveDeckCard = (index: number, direction: -1 | 1) => {
+    const nextIndex = index + direction
+    if (nextIndex < 0 || nextIndex >= deck.length) return
+    setDeck(items => {
+      const reordered = [...items]
+      ;[reordered[index], reordered[nextIndex]] = [reordered[nextIndex], reordered[index]]
+      return reordered
+    })
+  }
   const applyDeck = () => {
     if (deck.length !== 6) return
     setGame(makeGame(game.encounterIndex, deck))
@@ -232,7 +242,7 @@ function App() {
 
   const factionKnown = game.intel >= 2 || game.encounterIndex === 2 || DEBUG
   const selectedCard = selected ? cards[selected] : null
-  const preview = selectedCard?.resolve(signal, encounter.faction)
+  const preview = selectedCard ? resolveCard(selectedCard.id, encounter, game.turn, game.intel) : undefined
   const missionSteps = encounters.map((item, index) => ({ ...item, status: index < game.encounterIndex ? 'done' : index === game.encounterIndex ? 'active' : 'locked' }))
   const allCardIds = useMemo(() => Object.keys(cards), [])
 
@@ -275,7 +285,7 @@ function App() {
           <div className="contact-body">
             <div className="portrait-wrap">
               <AlienPortrait encounter={encounter} speaking={game.phase === 'talk'} />
-              <div className={`signal-chip ${signal.kind}`}><AudioLines /><div><small>CURRENT SIGNAL</small><strong>{signal.label}</strong></div></div>
+              <div className={`signal-chip ${signal.kind}`}><AudioLines /><div><small>CURRENT SIGNAL</small><strong>{signal.label}</strong></div><b className="signal-pressure">+{signal.pressure} TENSION</b></div>
             </div>
             <div className="transcript-panel">
               <div className="panel-title"><Terminal /><span>CONVERSATION NOTES</span><i>WRITING</i></div>
@@ -302,7 +312,7 @@ function App() {
           <div className={`response-preview ${selectedCard ? 'ready' : ''}`}>
             {selectedCard && preview ? <>
               <div className="preview-top"><span>PROJECTED RESPONSE</span>{preview.matched && <b><Sparkles /> SIGNAL MATCH</b>}</div>
-              <div className="preview-values"><span className="plus">+{preview.trust} TRUST</span>{preview.tension !== 0 && <span className={preview.tension > 0 ? 'minus' : 'plus'}>{preview.tension > 0 ? '+' : ''}{preview.tension} TENSION</span>}{preview.intel > 0 && <span>+{preview.intel} INSIGHT</span>}</div>
+              <div className="preview-values"><span className={preview.trust > 0 ? 'plus' : ''}>+{preview.trust} TRUST</span><span className={preview.tension > 0 ? 'minus' : preview.tension < 0 ? 'plus' : ''}>{preview.tension > 0 ? '+' : ''}{preview.tension} TENSION <small>NET</small></span>{preview.intel > 0 && <span>+{preview.intel} INSIGHT</span>}</div>
               <button className="transmit" onClick={() => playCard(selectedCard.id)}>USE THIS METHOD <ChevronRight /></button>
             </> : <><Satellite /><p>Select one of the two drawn methods.<br /><span>The other remains in hand.</span></p></>}
           </div>
@@ -319,7 +329,7 @@ function App() {
             </>}
             {game.phase === 'failed' && <>
               <div className="result-icon danger"><X /></div><div className="eyebrow danger"><span /> LINK COLLAPSED</div>
-              <h2>This version of the<br />conversation is over.</h2><p>Your deck and archived insights persist. Reset the chamber and approach {encounter.envoy} again.</p>
+              <h2>This version of the<br />conversation is over.</h2><p>Your deck and recovered methods persist. Reset the chamber or reorder your draw before approaching {encounter.envoy} again.</p>
               <button className="primary-action" onClick={restartTalk}><RotateCcw /> BEGIN NEXT ATTEMPT</button>
               <button className="text-action" onClick={() => setView('workshop')}>REBUILD DECK FIRST</button>
             </>}
@@ -336,10 +346,10 @@ function App() {
       </main>}
 
       {view === 'workshop' && <main className="workshop-view">
-        <section className="workshop-head"><div><div className="eyebrow"><span /> Prepared techniques</div><h1>DECK OF METHODS</h1><p>Choose six methods for the next contact. Cards return every loop; knowledge does not.</p></div><div className={`deck-requirement ${deck.length === 6 ? 'valid' : ''}`}><span>{deck.length}</span><div><b>/ 6 METHODS</b><small>{deck.length === 6 ? 'LOADOUT VALID' : 'SELECT SIX TO DEPLOY'}</small></div></div></section>
+        <section className="workshop-head"><div><div className="eyebrow"><span /> Prepared techniques</div><h1>DECK OF METHODS</h1><p>Choose and order six methods for the next contact. Draw order runs left to right.</p></div><div className={`deck-requirement ${deck.length === 6 ? 'valid' : ''}`}><span>{deck.length}</span><div><b>/ 6 METHODS</b><small>{deck.length === 6 ? 'LOADOUT VALID' : 'SELECT SIX TO DEPLOY'}</small></div></div></section>
         <section className="deck-workspace">
-          <div className="active-deck"><div className="section-title"><div><small>ACTIVE LOADOUT</small><h2>Negotiator 01</h2></div><button onClick={() => setDeck(startingDeck)}><RotateCcw /> RESET</button></div>
-            <div className="deck-slots">{Array.from({ length: 6 }).map((_, index) => deck[index] ? <div className="slot-wrap" key={deck[index]}><CardView card={cards[deck[index]]} compact onClick={() => toggleDeckCard(deck[index])} /><button className="remove-card" onClick={() => toggleDeckCard(deck[index])}><X /></button></div> : <div className="empty-slot" key={`slot-${index}`}><span>+</span><small>EMPTY SLOT</small></div>)}</div>
+          <div className="active-deck"><div className="section-title"><div><small>ACTIVE LOADOUT • DRAW LEFT TO RIGHT</small><h2>Negotiator 01</h2></div><button onClick={() => setDeck(startingDeck)}><RotateCcw /> RESET</button></div>
+            <div className="deck-slots">{Array.from({ length: 6 }).map((_, index) => deck[index] ? <div className="slot-wrap" key={deck[index]}><CardView card={cards[deck[index]]} compact onClick={() => toggleDeckCard(deck[index])} /><button className="remove-card" onClick={() => toggleDeckCard(deck[index])}><X /></button><div className="slot-order"><button disabled={index === 0} onClick={() => moveDeckCard(index, -1)}>←</button><span>DRAW {index + 1}</span><button disabled={index === deck.length - 1} onClick={() => moveDeckCard(index, 1)}>→</button></div></div> : <div className="empty-slot" key={`slot-${index}`}><span>+</span><small>EMPTY SLOT</small></div>)}</div>
             <button className="deploy-button" disabled={deck.length !== 6} onClick={applyDeck}><Bot /> PREPARE FOR CONVERSATION <ChevronRight /></button>
           </div>
           <div className="library"><div className="section-title"><div><small>FIELD NOTEBOOK</small><h2>Known Methods</h2></div><span className="owned-count">{unlocked.length} / {allCardIds.length} RECOVERED</span></div>
@@ -361,7 +371,7 @@ function App() {
           </article>})}</div>
       </main>}
 
-      {help && <div className="help-overlay" onClick={() => setHelp(false)}><div className="help-modal" onClick={event => event.stopPropagation()}><button className="close-help" onClick={() => setHelp(false)}><X /></button><div className="eyebrow"><span /> FIELD MANUAL</div><h2>Read the signal.<br />Choose the response.</h2><ol><li><b>Reach Trust</b><span>Fill the green Accord meter before exchanges run out.</span></li><li><b>Watch Tension</b><span>If the red meter fills, the link collapses and the loop resets.</span></li><li><b>Gather Insights</b><span>Observation cards reveal which hidden faction an envoy belongs to.</span></li><li><b>Keep Better Cards</b><span>Successful talks award permanent methods. Build exactly six between contacts.</span></li></ol><button className="primary-action" onClick={() => setHelp(false)}>RETURN TO CONTACT</button></div></div>}
+      {help && <div className="help-overlay" onClick={() => setHelp(false)}><div className="help-modal" onClick={event => event.stopPropagation()}><button className="close-help" onClick={() => setHelp(false)}><X /></button><div className="eyebrow"><span /> FIELD MANUAL</div><h2>Read the signal.<br />Choose the response.</h2><ol><li><b>Reach Trust</b><span>Fill the green Accord meter before exchanges run out.</span></li><li><b>Watch Net Tension</b><span>Each signal adds its listed pressure to your card. A filled red meter collapses the link.</span></li><li><b>Plan the Draw</b><span>Your first two methods form the hand. Each play draws the next card from left to right.</span></li><li><b>Keep Better Cards</b><span>Later contacts require recovered methods. Choose one reward, then rebuild exactly six.</span></li></ol><button className="primary-action" onClick={() => setHelp(false)}>RETURN TO CONTACT</button></div></div>}
     </div>
   )
 }
