@@ -1,35 +1,56 @@
 import { describe, expect, test } from 'vitest'
-import { initialState, stepGame } from './game'
+import { assignWorker, getBuildingCost, initialState, placeBlueprint, recomputeNetwork, stepGame, type Building } from './game'
 
-describe('energy simulation', () => {
-  test('borrowing-compatible economy earns revenue while matching contract', () => {
+describe('endless energy base simulation', () => {
+  test('starts with a solvent base and no countdown or contract', () => {
     const state = initialState()
-    const next = stepGame(state, .1)
-    expect(next.elapsed).toBeCloseTo(.1)
-    expect(next.cash).toBeGreaterThan(22000)
+    expect(state.cash).toBe(560)
+    expect(state.generation).toBe(4)
+    expect(state.running).toBe(true)
+    expect(stepGame(state, 600).elapsed).toBe(600)
   })
 
-  test('final contract remains achievable without a weather spike', () => {
+  test('connected facilities generate credits forever', () => {
     const state = initialState()
-    state.elapsed = 254.95
-    const next = stepGame(state, .1)
-    expect(next.target).toBe(7)
-    expect(next.price).toBe(160)
+    const next = stepGame(state, 1)
+    expect(next.cash).toBeGreaterThan(state.cash)
+    expect(next.generation).toBe(4)
   })
 
-  test('a normal run starts solvent and exactly on contract', () => {
-    const state = initialState()
-    expect(state.debt).toBe(0)
-    expect(state.cash).toBe(22000)
-    expect(state.exportMW).toBe(state.target)
+  test('pylon chains carry power back to headquarters', () => {
+    const buildings: Building[] = [
+      { id: 1, type: 'pylon', x: 23, y: 18, status: 'complete', progress: 1, connected: false, parentId: null },
+      { id: 2, type: 'pylon', x: 29, y: 18, status: 'complete', progress: 1, connected: false, parentId: null },
+      { id: 3, type: 'wind', x: 32, y: 18, status: 'complete', progress: 1, connected: false, parentId: null },
+    ]
+    const connected = recomputeNetwork(buildings)
+    expect(connected.every(building => building.connected)).toBe(true)
+    expect(connected[1].parentId).toBe(1)
+    expect(connected[2].parentId).toBe(2)
   })
 
-  test('storage dispatch is clamped when empty', () => {
+  test('a generator beyond the distribution network stays offline', () => {
     const state = initialState()
-    state.stored = 0
-    state.intendedDispatch = 8
+    state.buildings.push({ id: 9, type: 'fusion', x: 2, y: 2, status: 'complete', progress: 1, connected: false, parentId: null })
     const next = stepGame(state, .1)
-    expect(next.dispatch).toBe(0)
-    expect(next.stored).toBe(0)
+    expect(next.buildings.find(building => building.id === 9)?.connected).toBe(false)
+    expect(next.generation).toBe(4)
+  })
+
+  test('robots must be assigned before blueprints are constructed', () => {
+    let state = placeBlueprint(initialState(), 'pylon', 24, 19)
+    const task = state.buildings.at(-1)!
+    state = stepGame(state, 10)
+    expect(state.buildings.at(-1)?.progress).toBe(0)
+    state = assignWorker(state, 1, task.id)
+    for (let i = 0; i < 100; i++) state = stepGame(state, .1)
+    expect(state.buildings.at(-1)?.status).toBe('complete')
+  })
+
+  test('repeat facilities become increasingly expensive', () => {
+    let state = initialState()
+    const first = getBuildingCost(state, 'wind')
+    state = placeBlueprint({ ...state, cash: 10000 }, 'wind', 12, 12)
+    expect(getBuildingCost(state, 'wind')).toBeGreaterThan(first)
   })
 })
