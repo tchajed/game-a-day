@@ -1,0 +1,469 @@
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Lora:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Patrick+Hand&display=swap');
+
+:root {
+  --paper: #eee6d2;
+  --paper-light: #f7f0df;
+  --paper-deep: #e3d7bd;
+  --sage-paper: #dce0c7;
+  --ink: #24372a;
+  --ink-soft: #5d6b5e;
+  --rust: #b55f32;
+  --rust-dark: #884324;
+  --moss: #6d8060;
+  --graphite: #2d332d;
+}
+
+body { background: var(--paper); }
+.app-shell {
+  color: var(--ink);
+  background: var(--paper);
+  font-family: Lora, Georgia, serif;
+}
+.app-shell::before {
+  opacity: .16;
+  background-image: radial-gradient(rgba(47, 55, 45, .32) .45px, transparent .55px);
+  background-size: 5px 5px;
+  mask-image: none;
+}
+button { color: inherit; }
+button:focus-visible { outline-color: var(--rust); }
+
+/* Header: a field notebook index rather than a control console. */
+header {
+  height: 78px;
+  grid-template-columns: 310px 1fr auto;
+  padding: 0 26px;
+  color: var(--ink);
+  background: rgba(238, 230, 210, .96);
+  border-bottom: 2px solid var(--ink);
+  backdrop-filter: none;
+}
+.brand {
+  color: var(--ink);
+  font-family: Patrick Hand, cursive;
+  font-size: 22px;
+  letter-spacing: .025em;
+}
+.brand b { color: var(--ink); font-weight: 400; }
+.brand-mark {
+  width: 42px;
+  height: 42px;
+  transform: rotate(-4deg);
+  color: var(--ink);
+  border: 2px solid var(--ink);
+  background: rgba(255,255,255,.2);
+  box-shadow: none;
+}
+.brand-mark svg { transform: none; width: 21px; }
+.brand small {
+  margin-top: -1px;
+  color: var(--ink-soft);
+  font: 10px Lora, serif;
+  letter-spacing: 0;
+}
+header nav { gap: 24px; }
+header nav button {
+  position: relative;
+  padding: 0 5px;
+  color: var(--ink-soft);
+  border: 0;
+  background: none;
+  font: 17px Patrick Hand, cursive;
+  text-transform: none;
+  letter-spacing: .01em;
+}
+header nav button svg { width: 17px; }
+header nav button:hover, header nav button.active {
+  color: var(--ink);
+  background: none;
+}
+header nav button.active::after {
+  content: '';
+  position: absolute;
+  left: 2px;
+  right: -3px;
+  bottom: 17px;
+  height: 2px;
+  background: var(--rust);
+  transform: rotate(-1.5deg);
+}
+header nav button span {
+  background: var(--rust);
+  color: var(--paper-light);
+  font: 10px IBM Plex Mono, monospace;
+}
+.loop-chip, .icon-button {
+  border: 1px solid var(--ink);
+  background: rgba(255,255,255,.16);
+  color: var(--ink);
+}
+.loop-chip { font: 11px Patrick Hand, cursive; letter-spacing: .04em; }
+.loop-chip svg { color: var(--rust); }
+.loop-chip b { color: var(--ink); }
+.icon-button:hover, .icon-button.lit { color: var(--rust); border-color: var(--rust); }
+
+/* Shared fieldbook typography. */
+.eyebrow {
+  color: var(--rust);
+  font: 15px Patrick Hand, cursive;
+  letter-spacing: .08em;
+}
+.eyebrow span { height: 2px; background: var(--rust); box-shadow: none; transform: rotate(-2deg); }
+.mission-rail h2, .stage-head h1, .hand-head h2, .result-modal h2,
+.workshop-head h1, .archive-header h1, .section-title h2, .archive-copy h2,
+.help-modal h2 { font-family: Patrick Hand, cursive; font-weight: 400; letter-spacing: .01em; }
+
+/* Conversation index. */
+.mission-view { grid-template-columns: 245px minmax(520px, 1fr) 345px; }
+.mission-rail {
+  border-right: 2px solid var(--ink);
+  background: var(--sage-paper);
+  padding: 31px 20px 22px;
+}
+.mission-rail h2 { font-size: 24px; line-height: .98; margin-top: 11px; }
+.mission-rail > p { color: var(--ink-soft); font-size: 12px; line-height: 1.55; }
+.mission-list::before { display: none; }
+.mission-step {
+  grid-template-columns: 34px 1fr 16px;
+  padding: 13px 5px;
+  border-top: 1px dashed rgba(36,55,42,.5);
+  opacity: .52;
+}
+.mission-step:last-child { border-bottom: 1px dashed rgba(36,55,42,.5); }
+.mission-step.active {
+  background: rgba(255,255,255,.2);
+  box-shadow: inset 3px 0 var(--rust);
+}
+.step-index {
+  width: 31px;
+  height: 31px;
+  color: var(--rust);
+  border: 0;
+  background: transparent;
+  font: 12px Patrick Hand, cursive;
+}
+.mission-step.active .step-index { color: var(--rust); border: 0; box-shadow: none; }
+.mission-step.done .step-index { color: var(--paper-light); background: var(--moss); border: 0; }
+.mission-step small { color: var(--rust-dark); font-family: Patrick Hand, cursive; font-size: 11px; }
+.mission-step strong { color: var(--ink); font: 14px Patrick Hand, cursive; }
+.mission-step span { color: var(--ink-soft); font: 10px Lora, serif; }
+.mission-step svg { color: var(--ink-soft); }
+.automation-card {
+  border: 1px solid var(--ink);
+  background: rgba(255,255,255,.18);
+  transform: rotate(-.5deg);
+}
+.automation-card > svg, .automation-card > svg:last-child { color: var(--ink); }
+.automation-card span { color: var(--rust); font: 10px Patrick Hand, cursive; }
+.automation-card strong { color: var(--ink); font: 14px Patrick Hand, cursive; }
+.automation-card small { color: var(--ink-soft); font-size: 10px; }
+
+/* Contact sheet. */
+.contact-stage { border-right: 2px solid var(--ink); padding: 25px 27px 21px; }
+.stage-head h1 { font-size: 34px; line-height: 1; margin-top: 4px; }
+.stage-head p { color: var(--ink-soft); font: 11px Lora, serif; }
+.stage-head p i { color: var(--rust); }
+.affiliation {
+  min-width: 155px;
+  border: 2px solid var(--rust);
+  padding: 8px 10px;
+  transform: rotate(1deg);
+  background: rgba(255,255,255,.12);
+}
+.affiliation small { color: var(--ink-soft); font: 11px Patrick Hand, cursive; }
+.affiliation strong { color: var(--ink); font: 16px Patrick Hand, cursive; }
+.affiliation span { color: var(--ink-soft); font: 10px Lora, serif; }
+.affiliation.known { border-color: var(--rust); }
+.affiliation.known strong, .affiliation.known span { color: var(--ink); }
+.contact-body { gap: 12px; }
+.portrait-wrap {
+  border: 0;
+  border-bottom: 2px solid var(--ink);
+  background: rgba(255,255,255,.08);
+}
+.portrait-wrap::before, .archive-portrait::before { display: none; }
+.portrait { filter: none; }
+.portrait svg { animation: none; }
+.alien-body, .portrait-1 .alien-body {
+  opacity: .16;
+  stroke: var(--ink);
+  stroke-width: 1.6;
+  filter: none;
+}
+.alien-mask, .portrait-1 .alien-mask, .portrait-2 .alien-mask {
+  fill: var(--paper);
+  stroke: var(--ink);
+  stroke-width: 1.7;
+}
+.alien-eye, .small-eye, .pupil { fill: var(--ink); filter: none; }
+.alien-eye.wide { stroke: var(--ink); }
+.alien-line, .portrait-1 .alien-line { stroke: var(--ink); opacity: .8; stroke-width: 1.5; }
+.orbit { border-color: rgba(36,55,42,.23); border-style: dashed; }
+.orbit::before, .orbit::after { background: var(--rust); box-shadow: none; }
+.speaking .orbit-a, .speaking .alien-eye { animation: none; }
+.scanline { display: none; }
+.portrait-tag {
+  color: var(--ink-soft);
+  font: 11px Patrick Hand, cursive;
+  letter-spacing: .06em;
+}
+.portrait-tag i { background: var(--rust); box-shadow: none; animation: none; }
+.signal-chip {
+  min-width: 190px;
+  border: 1px solid var(--ink);
+  border-left: 0;
+  border-top: 3px solid var(--rust);
+  background: var(--paper-light);
+  color: var(--ink);
+  box-shadow: 2px 3px 0 rgba(36,55,42,.16);
+  transform: translateX(-50%) rotate(-1deg);
+}
+.signal-chip svg, .signal-chip.hostile svg, .signal-chip.analytical svg, .signal-chip.ritual svg { color: var(--rust); }
+.signal-chip.hostile, .signal-chip.analytical, .signal-chip.ritual { border-color: var(--ink); border-top-color: var(--rust); }
+.signal-chip small { color: var(--ink-soft); font: 10px Patrick Hand, cursive; }
+.signal-chip strong { color: var(--ink); font: 16px Patrick Hand, cursive; }
+
+/* Notes and observations. */
+.transcript-panel {
+  border: 1px solid rgba(36,55,42,.45);
+  background: rgba(255,255,255,.18);
+  transform: rotate(.2deg);
+}
+.panel-title {
+  border-bottom-color: rgba(36,55,42,.35);
+  color: var(--ink);
+  font: 12px Patrick Hand, cursive;
+}
+.panel-title i { color: var(--rust); }
+.panel-title i::before { background: var(--rust); }
+.transcript { scrollbar-color: var(--moss) transparent; }
+.intro-copy {
+  color: var(--ink-soft);
+  border-left: 0;
+  border-bottom: 1px solid rgba(36,55,42,.28);
+  padding: 0 0 12px;
+  font-size: 12px;
+}
+.log > span { color: var(--rust); font: 11px Patrick Hand, cursive; }
+.log p { color: var(--ink); font-size: 12px; }
+.log.signal p { color: var(--ink); }
+.log.response {
+  border-left: 0;
+  padding: 8px 9px;
+  background: rgba(109,128,96,.12);
+  transform: rotate(-.3deg);
+}
+.log.response > span { color: var(--rust); }
+.log.intel { background: rgba(181,95,50,.09); }
+.log.intel > span { color: var(--rust); }
+.intel-strip { border-top-color: rgba(36,55,42,.35); color: var(--ink-soft); }
+.intel-strip > span { font: 11px Patrick Hand, cursive; }
+.intel-strip i { background: rgba(36,55,42,.15); }
+.intel-strip i.filled { background: var(--rust); box-shadow: none; }
+.intel-strip b { color: var(--ink); }
+
+.status-row { gap: 14px; }
+.meter-label span { color: var(--ink); font: 11px Patrick Hand, cursive; }
+.meter-label strong { color: var(--ink); font: 20px Patrick Hand, cursive; }
+.meter-label small { color: var(--ink-soft); font-family: Lora, serif; }
+.meter-track { height: 8px; background: rgba(36,55,42,.12); }
+.meter-track span { background: var(--moss); box-shadow: none; }
+.meter.tension .meter-label strong { color: var(--rust); }
+.meter.tension .meter-track span { background: var(--rust); box-shadow: none; }
+.turn-counter { border-color: rgba(36,55,42,.35); }
+.turn-counter small { color: var(--ink-soft); font: 10px Patrick Hand, cursive; }
+.turn-counter strong { color: var(--ink); font: 18px Patrick Hand, cursive; }
+.turn-counter span { color: var(--ink-soft); font-family: Lora, serif; }
+
+/* Response cards are loose technique cards tucked into the notebook. */
+.hand-panel { padding: 27px 18px 18px; background: var(--paper-deep); }
+.hand-head span { color: var(--rust); font: 11px Patrick Hand, cursive; }
+.hand-head h2 { font-size: 26px; }
+.deck-count { border-color: rgba(36,55,42,.35); }
+.deck-count span { color: var(--ink); font: 27px Patrick Hand, cursive; }
+.deck-count small { color: var(--ink-soft); font: 10px Patrick Hand, cursive; }
+.hand-cards { gap: 9px; }
+.card {
+  --accent: var(--rust);
+  color: var(--ink);
+  background: var(--paper-light);
+  border: 0;
+  box-shadow: 2px 4px 8px rgba(50,55,42,.17);
+  font-family: Lora, Georgia, serif;
+  overflow: visible;
+}
+.card:nth-child(odd) { transform: rotate(-.7deg); }
+.card:nth-child(even) { transform: rotate(.7deg); }
+.card:hover:not(:disabled), .card.selected {
+  transform: translateY(-3px) rotate(-.3deg);
+  border: 0;
+  box-shadow: 3px 6px 10px rgba(50,55,42,.2);
+}
+.card.selected::after {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border: 2px solid var(--rust);
+  transform: rotate(1deg);
+  pointer-events: none;
+}
+.card.observe, .card.connect, .card.commit, .card.stabilize { --accent: var(--rust); }
+.card::before { height: 2px; background: var(--rust); opacity: 1; transform: rotate(-.8deg); }
+.card::after { display: none; }
+.card-corners::before, .card-corners::after { display: none; }
+.card-top .family { color: var(--rust); font: 11px Patrick Hand, cursive; letter-spacing: .08em; }
+.glyph { color: var(--rust); font-family: Patrick Hand, cursive; }
+.card-art {
+  border: 1px dashed var(--ink-soft);
+  background: rgba(109,128,96,.08);
+}
+.card-art > span { color: var(--rust); font-family: Patrick Hand, cursive; text-shadow: none; }
+.card-art i { border-color: rgba(36,55,42,.4); }
+.card-copy strong { color: var(--ink); font: 18px Patrick Hand, cursive; }
+.card-copy p { color: var(--ink-soft); font-size: 11px; }
+.card-flavor { color: var(--ink-soft); border-top: 1px solid rgba(36,55,42,.22); font-family: Lora, serif; }
+.response-preview {
+  border-color: rgba(36,55,42,.45);
+  color: var(--ink-soft);
+  background: rgba(255,255,255,.08);
+}
+.response-preview.ready { border-color: rgba(36,55,42,.45); background: rgba(255,255,255,.18); }
+.preview-top { color: var(--ink-soft); font: 10px Patrick Hand, cursive; }
+.preview-top b, .preview-values .plus { color: var(--moss); }
+.preview-values span { color: var(--ink); font: 11px Patrick Hand, cursive; }
+.preview-values .minus { color: var(--rust); }
+.transmit {
+  background: var(--ink);
+  color: var(--paper-light);
+  font: 15px Patrick Hand, cursive;
+  letter-spacing: .04em;
+}
+.transmit:hover { background: #354c3a; }
+.manual-note { color: var(--ink-soft); font-size: 10px; }
+.manual-note svg, .manual-note b { color: var(--ink); }
+
+/* Results read as inserted pages. */
+.result-overlay, .help-overlay { background: rgba(45,51,45,.55); backdrop-filter: blur(2px); }
+.result-modal, .help-modal {
+  color: var(--ink);
+  border: 2px solid var(--ink);
+  background: var(--paper-light);
+  box-shadow: 8px 10px 0 rgba(36,55,42,.22);
+}
+.result-modal { transform: rotate(-.25deg); }
+.result-modal::before { height: 3px; background: var(--rust); }
+.result-icon { color: var(--ink); border-color: var(--ink); box-shadow: none; }
+.result-icon.danger { color: var(--rust); border-color: var(--rust); }
+.result-modal h2 { font-size: 39px; }
+.result-modal > p { color: var(--ink-soft); font-size: 13px; }
+.reward-cards .card { transform: none; }
+.result-modal.reward { padding: 21px 27px; }
+.result-modal.reward .result-icon { width: 38px; height: 38px; margin-bottom: 8px; }
+.result-modal.reward h2 { font-size: 33px; margin-block: 7px; }
+.result-modal.reward > p { margin-bottom: 11px; }
+.result-modal.reward .card.compact { height: 190px; }
+.result-modal.reward .card.compact .card-art { height: 52px; }
+.result-modal.reward .card-flavor { display: none; }
+.choose-note { color: var(--ink-soft); font: 10px Patrick Hand, cursive; }
+.primary-action, .deploy-button {
+  color: var(--paper-light);
+  background: var(--ink);
+  font: 15px Patrick Hand, cursive;
+}
+.primary-action:hover { background: #354c3a; }
+.text-action { color: var(--rust); font: 12px Patrick Hand, cursive; }
+.final-stats div { background: rgba(109,128,96,.1); }
+.final-stats b { color: var(--rust); font: 28px Patrick Hand, cursive; }
+.final-stats span { color: var(--ink-soft); font: 10px Patrick Hand, cursive; }
+
+/* Method deck. */
+.workshop-view, .archive-view { color: var(--ink); }
+.workshop-head, .archive-header { border-color: var(--ink); }
+.workshop-head h1, .archive-header h1 { font-size: 44px; }
+.workshop-head p, .archive-header p { color: var(--ink-soft); font-size: 13px; }
+.deck-requirement { border-color: var(--rust); }
+.deck-requirement > span { color: var(--rust); font: 45px Patrick Hand, cursive; }
+.deck-requirement b { color: var(--ink); font: 12px Patrick Hand, cursive; }
+.deck-requirement small { color: var(--rust); font: 10px Patrick Hand, cursive; }
+.deck-requirement.valid { border-color: var(--moss); }
+.deck-requirement.valid > span, .deck-requirement.valid small { color: var(--moss); }
+.section-title small { color: var(--rust); font: 11px Patrick Hand, cursive; }
+.section-title h2 { font-size: 25px; }
+.section-title button { color: var(--ink); border-color: var(--ink); background: rgba(255,255,255,.13); font: 11px Patrick Hand, cursive; }
+.deck-slots {
+  border: 1px solid var(--ink);
+  background: rgba(255,255,255,.1);
+}
+.empty-slot {
+  color: var(--ink-soft);
+  border-color: var(--ink-soft);
+  background: rgba(255,255,255,.08);
+}
+.empty-slot span { font-family: Patrick Hand, cursive; }
+.empty-slot small { font: 10px Patrick Hand, cursive; }
+.remove-card { border-color: var(--rust); background: var(--paper-light); color: var(--rust); }
+.owned-count { color: var(--ink-soft); font: 11px Patrick Hand, cursive; }
+.library-item.in-deck .card { border: 0; opacity: .65; }
+.deck-tag { background: var(--ink); border: 0; color: var(--paper-light); font: 9px Patrick Hand, cursive; }
+.locked-card { color: var(--ink-soft); border-color: var(--ink-soft); background: rgba(255,255,255,.08); }
+.locked-card strong { font: 11px Patrick Hand, cursive; }
+.locked-card span { color: var(--ink-soft); font-size: 9px; }
+
+/* Contact notes archive. */
+.archive-grid article {
+  border: 1px solid var(--ink);
+  color: var(--ink);
+  background: rgba(255,255,255,.12);
+  box-shadow: 3px 4px 0 rgba(36,55,42,.12);
+}
+.archive-grid article:nth-child(odd) { transform: rotate(-.25deg); }
+.archive-grid article:nth-child(even) { transform: rotate(.25deg); }
+.archive-portrait { background: rgba(109,128,96,.08); }
+.archive-copy { border-color: rgba(36,55,42,.4); }
+.archive-copy > small { color: var(--rust); font: 11px Patrick Hand, cursive; }
+.archive-copy h2 { font-size: 24px; }
+.archive-copy > span { color: var(--ink-soft); font-size: 11px; }
+.archive-copy dl div { border-color: rgba(36,55,42,.35); }
+.archive-copy dt { color: var(--ink-soft); font: 10px Patrick Hand, cursive; }
+.archive-copy dd { color: var(--rust); font: 12px Patrick Hand, cursive; }
+.archive-copy p { color: var(--ink-soft); font-size: 11px; }
+.archive-grid article.undiscovered { opacity: .48; }
+.undiscovered .archive-portrait { background: rgba(36,55,42,.04); }
+
+/* Help and debug. */
+.close-help { color: var(--ink); border-color: var(--ink); }
+.help-modal li { border-color: rgba(36,55,42,.3); }
+.help-modal li::before { color: var(--rust); font: 15px Patrick Hand, cursive; }
+.help-modal li b { font: 17px Patrick Hand, cursive; }
+.help-modal li span { color: var(--ink-soft); font-size: 11px; }
+.debug-tools { background: var(--paper-light); border-color: var(--rust); }
+.debug-tools b, .debug-tools button { color: var(--rust); }
+.debug-tools button { border-color: var(--rust); background: rgba(181,95,50,.08); }
+
+@media (max-width: 1200px) {
+  .mission-view { grid-template-columns: 205px minmax(470px, 1fr) 300px; }
+  .mission-rail h2 { font-size: 23px; }
+  .card-copy strong { font-size: 16px; }
+}
+@media (max-width: 900px) {
+  header { background: var(--paper); border-bottom-color: var(--ink); }
+  header nav { background: var(--paper-light); border-top: 2px solid var(--ink); }
+  header nav button { font-size: 15px; }
+  header nav button.active::after { bottom: 7px; }
+  .mission-rail { border-bottom: 2px solid var(--ink); }
+  .mission-list::before { display: block; background: var(--ink); }
+  .mission-step { border: 0; }
+  .contact-stage { border: 0; }
+  .hand-panel { border-top: 2px solid var(--ink); }
+  .result-overlay { inset: 78px 0 58px; }
+}
+@media (max-width: 600px) {
+  header { height: 66px; padding-inline: 11px; }
+  .brand { font-size: 18px; }
+  .brand-mark { width: 34px; height: 34px; }
+  .stage-head h1 { font-size: 27px; }
+  .affiliation { min-width: 115px; padding: 5px 7px; }
+  .affiliation strong { font-size: 14px; }
+  .card-copy strong { font-size: 16px; }
+  .workshop-head h1, .archive-header h1 { font-size: 34px; }
+}
