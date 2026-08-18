@@ -413,13 +413,56 @@ class WorldScene extends Phaser.Scene {
 
   private building(x: number, y: number, width: number, height: number, color: number, name: string) {
     const a = this.add;
-    a.rectangle(x + 7, y + 12, width, height, 0x213344, .18).setOrigin(0).setDepth(y - 2);
+    const compact = height <= 130;
+    const doorHeight = compact ? 54 : 72;
+    const windowY = compact ? y + 84 : y + Math.min(116, height - 48);
+    const labelY = compact ? y + 29 : y + 69;
+    const labelWidth = Math.min(width - 32, Math.max(88, name.length * 10 + 28));
+
+    // Layer the architecture as one y-sorted object, then add enough facade detail
+    // that each destination reads as a place rather than a blank route prop.
+    a.rectangle(x + 8, y + 12, width, height, 0x213344, .2).setOrigin(0).setDepth(y - 2);
     a.rectangle(x, y, width, height, 0xf4f1e5).setOrigin(0).setStrokeStyle(5, 0x31495b).setDepth(y - 1);
+    a.rectangle(x + width * .78, y - 17, 24, 48, 0x526879).setStrokeStyle(4, 0x31495b).setDepth(y - 1);
     a.polygon(x + width / 2, y + 10, [0,45, width/2,-15, width,45], color).setStrokeStyle(5, 0x31495b).setDepth(y);
-    a.rectangle(x + width / 2, y + height - 38, 42, 76, 0x2c465d).setDepth(y + 1);
-    a.rectangle(x + 35, y + 92, 42, 42, 0x9bd7e5).setStrokeStyle(4, 0x31495b).setDepth(y + 1);
-    const labelY = height <= 130 ? y + 28 : y + 58;
-    a.text(x + width / 2, labelY, name, monoStyle(14, '#24384c')).setOrigin(.5).setDepth(y + 2);
+    a.rectangle(x + width / 2, y + 52, width - 5, 10, color).setStrokeStyle(3, 0x31495b).setDepth(y + 1);
+    a.rectangle(x + width / 2, y + height - 7, width - 8, 14, 0xd6d2c2).setDepth(y + 1);
+
+    const addWindow = (wx: number) => {
+      a.rectangle(wx, windowY, 43, 48, 0x31495b).setDepth(y + 1);
+      a.rectangle(wx, windowY, 35, 40, 0x9bd7e5).setDepth(y + 2);
+      a.rectangle(wx, windowY, 3, 40, 0xe9fbff, .85).setDepth(y + 3);
+      a.rectangle(wx, windowY, 35, 3, 0xe9fbff, .85).setDepth(y + 3);
+      a.rectangle(wx - 10, windowY - 11, 7, 5, 0xcff3f7, .75).setDepth(y + 3);
+    };
+    addWindow(x + 35);
+    addWindow(x + width - 35);
+
+    const doorY = y + height - doorHeight / 2 - 6;
+    a.rectangle(x + width / 2, doorY, 48, doorHeight + 8, 0x31495b).setDepth(y + 2);
+    a.rectangle(x + width / 2, doorY, 38, doorHeight, 0x2c465d).setDepth(y + 3);
+    a.rectangle(x + width / 2 + 11, doorY + 2, 5, 5, 0xf4c65f).setDepth(y + 4);
+    a.rectangle(x + width / 2, y + height - 3, 68, 8, 0x596e78).setDepth(y + 4);
+
+    // A backed sign stays legible even on the café's short facade and busy roof.
+    a.rectangle(x + width / 2, labelY, labelWidth, 26, 0xfff8df).setStrokeStyle(3, 0x31495b).setDepth(y + 4);
+    a.text(x + width / 2, labelY, name, monoStyle(13, '#24384c')).setOrigin(.5).setDepth(y + 5);
+
+    if (name === 'CAFÉ++' || name === 'GIT & GO') {
+      const awningY = compact ? y + 59 : windowY - 28;
+      for (let i = 0; i < 6; i++) {
+        a.rectangle(x + 35 - 25 + i * 10, awningY, 10, 12, i % 2 ? 0xfff4d7 : color).setDepth(y + 4);
+      }
+      a.rectangle(x + 35, awningY + 7, 62, 4, 0x31495b).setDepth(y + 5);
+    }
+    if (name === 'DEV HQ' || name === 'QA LAB') {
+      a.rectangle(x + width / 2, y + height - 17, 24, 8, color).setDepth(y + 4);
+      a.rectangle(x + width / 2, y + height - 17, 4, 8, 0xf4f1e5).setDepth(y + 5);
+    }
+    if (name === 'SHIPYARD' || name === 'CLOUD 9') {
+      a.circle(x + width - 35, y + 27, 10, 0xfff8df).setStrokeStyle(3, 0x31495b).setDepth(y + 4);
+      a.circle(x + width - 35, y + 27, 3, color).setDepth(y + 5);
+    }
   }
 
   private sign(x: number, y: number, title: string, subtitle: string) {
