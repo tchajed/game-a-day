@@ -288,7 +288,7 @@ class WorldScene extends Phaser.Scene {
 
   create() {
     createTextures(this);
-    state.phase = 'overworld'; setStatus('Exploring Route 404. Use arrow keys or WASD to move east.');
+    state.phase = 'overworld'; setStatus('Exploring Route 529. Use arrow keys or WASD to move east.');
     this.physics.world.setBounds(0, 0, 2400, H);
     this.drawMap();
     this.player = this.physics.add.sprite(330, 410, 'hero').setScale(2.5).setCollideWorldBounds(true).setDepth(30).setSize(16, 14).setOffset(4, 15);
@@ -333,7 +333,7 @@ class WorldScene extends Phaser.Scene {
     }
     // City labels and route signs.
     this.sign(385, 500, 'STARTUP CITY', 'Population: pivoting');
-    this.sign(1040, 210, 'ROUTE 404', 'Bugs may be encountered');
+    this.sign(1040, 210, 'ROUTE 529', 'Bugs may be encountered');
     this.sign(1940, 435, 'SHIP CITY', 'Deploy with confidence');
     // NPC flavor.
     this.npc(520, 305, 0xea638c, 'intern');
@@ -395,7 +395,7 @@ class WorldScene extends Phaser.Scene {
   private showWelcome() {
     const bg = this.add.rectangle(42, H - 154, 600, 116, 0xfffbeb, .98).setOrigin(0).setStrokeStyle(4, 0x223b51).setScrollFactor(0);
     const tag = this.add.text(68, H - 139, 'RAVI · SRE', monoStyle(12, '#2d9475')).setScrollFactor(0);
-    const copy = this.add.text(68, H - 112, 'Morning! The deploy is due in Ship City.\nRoute 404 should be totally stable now.', textStyle(20, '#21364a')).setLineSpacing(6).setScrollFactor(0);
+    const copy = this.add.text(68, H - 112, 'Morning! The deploy is due in Ship City.\nRoute 529 should be totally stable now.', textStyle(20, '#21364a')).setLineSpacing(6).setScrollFactor(0);
     const prompt = this.add.text(610, H - 60, 'MOVE  →', monoStyle(12, '#62778a')).setOrigin(1).setScrollFactor(0);
     this.welcome = this.add.container(0, 0, [bg, tag, copy, prompt]).setDepth(120);
     this.time.delayedCall(5000, () => this.tweens.add({ targets: this.welcome, alpha: 0, y: 15, duration: 300, onComplete: () => this.welcome?.destroy() }));
@@ -443,7 +443,7 @@ class WorldScene extends Phaser.Scene {
     this.player.y = Phaser.Math.Clamp(this.player.y, 250, 590);
     this.player.setDepth(this.player.y + 10);
     const px = this.player.x;
-    this.location.setText(px < 590 ? 'STARTUP CITY' : px < 1850 ? 'ROUTE 404' : 'SHIP CITY');
+    this.location.setText(px < 590 ? 'STARTUP CITY' : px < 1850 ? 'ROUTE 529' : 'SHIP CITY');
     if (!state.completed[0] && px > 825) this.startEncounter(0);
     else if (state.completed[0] && !state.completed[1] && px > 1270) this.startEncounter(1);
     else if (state.completed[1] && !state.completed[2] && px > 1800) this.startEncounter(2);
@@ -839,7 +839,7 @@ class BattleScene extends Phaser.Scene {
 class EndScene extends Phaser.Scene {
   constructor() { super('EndScene'); }
   create() {
-    state.phase = 'complete'; setStatus('Deploy complete. You reached Ship City and won Route 404.');
+    state.phase = 'complete'; setStatus('Deploy complete. You reached Ship City and won Route 529.');
     this.add.rectangle(W/2, H/2, W, H, 0x10273a);
     for (let i = 0; i < 70; i++) {
       const color = [0x67dfb6, 0xf0ae4c, 0xe56c99, 0x53a9db][i % 4];
@@ -848,7 +848,7 @@ class EndScene extends Phaser.Scene {
     }
     addPill(this, W/2, 105, 'SPRINT COMPLETE', 0x2c8e72);
     this.add.text(W/2, 190, 'DEPLOYED!', textStyle(70, '#ffffff', '800')).setOrigin(.5);
-    this.add.text(W/2, 277, 'Route 404 → Ship City', monoStyle(18, '#82d9c1')).setOrigin(.5);
+    this.add.text(W/2, 277, 'Route 529 → Ship City', monoStyle(18, '#82d9c1')).setOrigin(.5);
     this.add.rectangle(W/2, 407, 680, 150, 0xf9f5e7).setStrokeStyle(5, 0x385266);
     this.add.text(W/2, 371, '3 BLOCKERS RESOLVED', monoStyle(14, '#526779')).setOrigin(.5);
     this.add.text(W/2, 415, '✓ BUG FIXED    ✓ LEAK PATCHED    ✓ SCOPE ALIGNED', textStyle(18, '#193348', '800')).setOrigin(.5);
