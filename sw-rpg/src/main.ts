@@ -543,6 +543,7 @@ class BattleScene extends Phaser.Scene {
   partyGroup!: Phaser.GameObjects.Container;
   private advanceCallback?: () => void;
   private advanceArmed = false;
+  private seenMoveEffects = new Set<number>();
   turn = 0;
 
   constructor() { super('BattleScene'); }
@@ -774,9 +775,10 @@ class BattleScene extends Phaser.Scene {
       const move = moves[moveIndex];
       const effect = move.outcomes[this.foe.asset].effectiveness;
       const effectCopy = effect === 'super' ? 'SUPER EFFECTIVE' : effect === 'not' ? 'NOT VERY EFFECTIVE' : effect === 'none' ? 'NO EFFECT' : 'NORMAL EFFECT';
+      const detail = this.seenMoveEffects.has(moveIndex) ? `${move.category}  ·  ${effectCopy}` : move.category;
       const column = i % 2;
       const row = Math.floor(i / 2);
-      addChoice(532 + column * 460, 582 + row * 70, 438, move.title, `${move.category}  ·  ${effectCopy}`, move.color, String(i + 1), () => this.takeAction(i));
+      addChoice(532 + column * 460, 582 + row * 70, 438, move.title, detail, move.color, String(i + 1), () => this.takeAction(i));
     });
     addChoice(159, 672, 244, `SWAP TO ${other.name}`, `${state.partyHp[1 - state.activeMember]}/100 FOCUS`, other.color, 'S', () => this.swapMember());
     setStatus(`Battle with ${this.foe.name}. ${member.name} is active. Choose attack 1–4, or press S to swap.`);
@@ -792,6 +794,7 @@ class BattleScene extends Phaser.Scene {
     const moveIndex = member.moves[index];
     const move = moves[moveIndex];
     const outcome = move.outcomes[this.foe.asset];
+    this.seenMoveEffects.add(moveIndex);
     if (move.shields) this.shield = true;
     audio.sfx(560 + moveIndex * 55, .18);
     if (outcome.damage > 0 && this.enemyArt) this.tweens.add({ targets: this.enemyArt, x: this.enemyArt.x + 16, duration: 55, yoyo: true, repeat: 4 });
@@ -869,6 +872,7 @@ class BattleScene extends Phaser.Scene {
       this.enemyArt = undefined;
       this.foeIndex++;
       this.foe = this.encounter.enemies[this.foeIndex];
+      this.seenMoveEffects.clear();
       this.showTrainer();
       this.enemyName.setText('PM ALEX');
       this.enemyMeta.setText(`${this.encounter.trainer?.role}  ·  1 REQUEST LEFT`);
