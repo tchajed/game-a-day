@@ -15,4 +15,6 @@ bun run dev
 
 Move with **WASD** or the **arrow keys**. In battle, press **1–2** to attack or **3** to swap between Maya and Inez; swapping uses the active member's turn. Click or press **Space/Enter** to advance combat dialogue. The route contains two wild blockers followed by a stakeholder battle where PM Alex sends out two escalating requests, and takes about five minutes to complete.
 
+The Tone.js score switches between **Eastbound Adventure**, a bright 16-bar overworld theme, and **Interrupt Storm**, a faster 16-bar battle theme. Both are authored as multitrack MIDI in `scripts/generate-soundtracks.ts`; run `bun run music:generate` to rebuild the `.mid` files.
+
 Use `?music=off` to disable music. Use `?debug=true` to show the encounter-skip control; press **N** to skip the next fight. Automated playtests can use the small `window.__SW_RPG__` API (`getState`, `startBattle`, `chooseAction`, `continueDialogue`, `winBattle`, and `reset`).

@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { GameAudio } from './audio';
 import './style.css';
 
 type EnemyProfile = {
@@ -136,44 +137,7 @@ function setStatus(message: string) {
   document.body.dataset.encounter = String(state.encounter);
 }
 
-class TinyAudio {
-  private ctx?: AudioContext;
-  private timer?: number;
-  private step = 0;
-  enabled = new URLSearchParams(location.search).get('music') !== 'off';
-
-  unlock() {
-    if (!this.enabled) return;
-    this.ctx ??= new AudioContext();
-    this.ctx.resume();
-    if (!this.timer) this.timer = window.setInterval(() => this.note(), 260);
-  }
-  private note() {
-    if (!this.ctx || !this.enabled) return;
-    const notes = [261.6, 329.6, 392, 493.9, 392, 329.6, 293.7, 392];
-    const osc = this.ctx.createOscillator();
-    const gain = this.ctx.createGain();
-    osc.type = 'triangle'; osc.frequency.value = notes[this.step++ % notes.length];
-    gain.gain.setValueAtTime(0.025, this.ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.2);
-    osc.connect(gain).connect(this.ctx.destination); osc.start(); osc.stop(this.ctx.currentTime + 0.21);
-  }
-  sfx(freq = 440, duration = 0.12, type: OscillatorType = 'square') {
-    if (!this.ctx) return;
-    const osc = this.ctx.createOscillator(); const gain = this.ctx.createGain();
-    osc.type = type; osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
-    osc.frequency.exponentialRampToValueAtTime(freq * 0.7, this.ctx.currentTime + duration);
-    gain.gain.setValueAtTime(0.05, this.ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + duration);
-    osc.connect(gain).connect(this.ctx.destination); osc.start(); osc.stop(this.ctx.currentTime + duration);
-  }
-  toggle() {
-    this.enabled = !this.enabled;
-    if (this.enabled) this.unlock();
-    return this.enabled;
-  }
-}
-const audio = new TinyAudio();
+const audio = new GameAudio();
 const musicButton = document.querySelector<HTMLButtonElement>('#music-toggle')!;
 function syncMusicButton() {
   musicButton.textContent = audio.enabled ? '♫ MUSIC ON' : '♫ MUSIC OFF';
@@ -322,6 +286,7 @@ class WorldScene extends Phaser.Scene {
 
   create() {
     createTextures(this);
+    audio.setTheme('overworld');
     state.phase = 'overworld'; setStatus('Exploring Route 529. Use arrow keys or WASD to move east.');
     this.physics.world.setBounds(0, 0, 2400, H);
     this.drawMap();
@@ -433,6 +398,7 @@ class WorldScene extends Phaser.Scene {
   }
 
   private onResume() {
+    audio.setTheme('overworld');
     state.phase = 'overworld'; this.inTransition = false;
     const i = state.encounter;
     this.player.x = [990, 1440, 1980][i];
@@ -518,6 +484,7 @@ class BattleScene extends Phaser.Scene {
   }
 
   create() {
+    audio.setTheme('battle');
     this.encounter = encounters[state.encounter];
     this.foeIndex = 0;
     this.foe = this.encounter.enemies[0];
@@ -856,6 +823,7 @@ class BattleScene extends Phaser.Scene {
 class EndScene extends Phaser.Scene {
   constructor() { super('EndScene'); }
   create() {
+    audio.setTheme('overworld');
     state.phase = 'complete'; setStatus('Deploy complete. You reached Ship City and won Route 529.');
     this.add.rectangle(W/2, H/2, W, H, 0x10273a);
     for (let i = 0; i < 70; i++) {

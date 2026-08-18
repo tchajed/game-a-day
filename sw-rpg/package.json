@@ -5,11 +5,14 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc --noEmit && vite build",
+    "music:generate": "bun scripts/generate-soundtracks.ts",
+    "build": "bun run music:generate && tsc --noEmit && vite build",
     "preview": "vite preview"
   },
   "dependencies": {
-    "phaser": "latest"
+    "@tonejs/midi": "^2.0.28",
+    "phaser": "latest",
+    "tone": "^15.1.22"
   },
   "devDependencies": {
     "typescript": "latest",
