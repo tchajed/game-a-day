@@ -9,6 +9,13 @@ export type GameConfig = {
 // Slugs, release dates, artwork, and card accents live here rather than in the games.
 export const games: GameConfig[] = [
   {
+    directory: "sw-rpg",
+    slug: "route-529",
+    date: "2026-08-18",
+    cover: "screenshots/route-529-battle.png",
+    crop: { left: 147, top: 0, width: 866, height: 577 },
+  },
+  {
     directory: "deckbuilder",
     slug: "null-protocol",
     date: "2026-08-17",

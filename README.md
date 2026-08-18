@@ -6,6 +6,7 @@ A collection of games each built in one day, with AI assistance. Each game focus
 
 | Game | Directory | Description |
 | --- | --- | --- |
+| [Route 529](sw-rpg/) | `sw-rpg` | Battle bugs, memory leaks, and scope creep on a software team’s road to Ship City. |
 | [NULL PROTOCOL](deckbuilder/) | `deckbuilder` | Read alien signals, build trust, and recover better diplomacy protocols across time loops. |
 | [Signal / Sequence](ltl/) | `ltl` | Monitor a stream of signals and catch violations of temporal rules. |
 | [Parking Simulator](parking/) | `parking` | Wrestle with the controls of a top-down parallel-parking challenge. |
