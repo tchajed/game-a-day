@@ -418,7 +418,8 @@ class WorldScene extends Phaser.Scene {
     a.polygon(x + width / 2, y + 10, [0,45, width/2,-15, width,45], color).setStrokeStyle(5, 0x31495b).setDepth(y);
     a.rectangle(x + width / 2, y + height - 38, 42, 76, 0x2c465d).setDepth(y + 1);
     a.rectangle(x + 35, y + 92, 42, 42, 0x9bd7e5).setStrokeStyle(4, 0x31495b).setDepth(y + 1);
-    a.text(x + width / 2, y + 58, name, monoStyle(14, '#24384c')).setOrigin(.5).setDepth(y + 2);
+    const labelY = height <= 130 ? y + 28 : y + 58;
+    a.text(x + width / 2, labelY, name, monoStyle(14, '#24384c')).setOrigin(.5).setDepth(y + 2);
   }
 
   private sign(x: number, y: number, title: string, subtitle: string) {
@@ -438,7 +439,7 @@ class WorldScene extends Phaser.Scene {
 
   private makeHud() {
     // Keep the top edge quiet: location context only, no checklist or objective tracker.
-    this.location = this.add.text(W / 2, 36, 'STARTUP CITY', monoStyle(13, '#ffffff')).setOrigin(.5).setScrollFactor(0).setDepth(101).setBackgroundColor('#213e55').setPadding(14, 7);
+    this.location = this.add.text(W / 2, 36, 'STARTUP CITY', monoStyle(13, '#ffffff')).setOrigin(.5).setScrollFactor(0).setDepth(1001).setBackgroundColor('#213e55').setPadding(14, 7);
   }
 
   private showWelcome() {
@@ -446,13 +447,14 @@ class WorldScene extends Phaser.Scene {
     const tag = this.add.text(68, H - 139, 'RAVI · SRE', monoStyle(12, '#2d9475')).setScrollFactor(0);
     const copy = this.add.text(68, H - 112, 'Morning! The deploy is due in Ship City.\nRoute 529 should be totally stable now.', textStyle(20, '#21364a')).setLineSpacing(6).setScrollFactor(0);
     const prompt = this.add.text(610, H - 60, 'MOVE  →', monoStyle(12, '#62778a')).setOrigin(1).setScrollFactor(0);
-    this.welcome = this.add.container(0, 0, [bg, tag, copy, prompt]).setDepth(120);
+    // Screen-space dialogue must sort above every y-sorted world object.
+    this.welcome = this.add.container(0, 0, [bg, tag, copy, prompt]).setDepth(1010);
     this.time.delayedCall(5000, () => this.tweens.add({ targets: this.welcome, alpha: 0, y: 15, duration: 300, onComplete: () => this.welcome?.destroy() }));
   }
 
   private makeDebugTools() {
-    const bg = this.add.rectangle(W - 260, H - 58, 230, 38, 0x672448, .92).setScrollFactor(0).setDepth(130).setInteractive({ useHandCursor: true });
-    const label = this.add.text(W - 260, H - 58, '[DEBUG] N · skip fight', monoStyle(12, '#ffffff')).setOrigin(.5).setScrollFactor(0).setDepth(131);
+    const bg = this.add.rectangle(W - 260, H - 58, 230, 38, 0x672448, .92).setScrollFactor(0).setDepth(1020).setInteractive({ useHandCursor: true });
+    const label = this.add.text(W - 260, H - 58, '[DEBUG] N · skip fight', monoStyle(12, '#ffffff')).setOrigin(.5).setScrollFactor(0).setDepth(1021);
     bg.on('pointerdown', () => this.debugSkip()); label.setInteractive({ useHandCursor: true }).on('pointerdown', () => this.debugSkip());
     this.input.keyboard!.on('keydown-N', () => this.debugSkip());
   }
