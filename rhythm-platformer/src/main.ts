@@ -4,6 +4,8 @@ import {
   ACTION_WINDOW_MS,
   BEAT_MS,
   BPM,
+  LANDING_TOLERANCE,
+  RUN_SPEED,
   beatToMs,
   createLevel,
   timingDeltaMs,
@@ -25,6 +27,8 @@ declare global {
     __BEATBOUND__?: {
       getState: () => DebugState;
       press: (action: Action) => void;
+      setDirection: (direction: -1 | 0 | 1) => void;
+      setDuck: (held: boolean) => void;
       restart: () => void;
       level: BeatEvent[];
     };
@@ -33,8 +37,12 @@ declare global {
 
 const params = new URLSearchParams(location.search);
 const DEBUG = params.get('debug') === 'true';
-const AUTOPLAY = DEBUG && params.get('autoplay') === 'true';
+const AUTOPLAY = params.get('autoplay') === 'true';
 const START_MUTED = params.get('music') === 'off';
+const requestedSlow = Number(params.get('slow'));
+const INITIAL_SPEED = DEBUG && params.has('slow')
+  ? Phaser.Math.Clamp(Number.isFinite(requestedSlow) && requestedSlow > 0 ? requestedSlow : 0.35, 0.2, 1)
+  : 1;
 const COLORS = {
   ink: 0x090b18,
   panel: 0x11152c,
@@ -48,13 +56,20 @@ const COLORS = {
 
 class GameScene extends Phaser.Scene {
   private level = createLevel();
-  private audio = new BeatAudio(this.level, START_MUTED);
+  private speedScale = INITIAL_SPEED;
+  private audio = new BeatAudio(this.level, START_MUTED, this.speedScale);
   private phase: DebugState['phase'] = 'ready';
   private startAt = 0;
+  private lastClock = 0;
   private elapsedMs = 0;
   private nextEvent = 0;
   private combo = 0;
   private accepted = new Set<number>();
+  private validated = new Set<number>();
+  private moveAxis: -1 | 0 | 1 = 0;
+  private leftHeld = false;
+  private rightHeld = false;
+  private duckHeld = false;
   private character!: Phaser.GameObjects.Container;
   private characterBody!: Phaser.GameObjects.Graphics;
   private indicator!: Phaser.GameObjects.Graphics;
@@ -91,6 +106,8 @@ class GameScene extends Phaser.Scene {
         combo: this.combo,
       }),
       press: (action) => this.press(action),
+      setDirection: (direction) => { this.moveAxis = direction; },
+      setDuck: (held) => { this.duckHeld = held; },
       restart: () => this.restart(),
       level: this.level,
     };
@@ -127,7 +144,7 @@ class GameScene extends Phaser.Scene {
         route.fillStyle(COLORS.mint, 0.55).fillRect(left + 12, event.from.y + 28, width - 24, 3);
         this.drawFlyer(route, (event.from.x + event.to.x) / 2, event.from.y - 11, event.index);
       } else {
-        this.drawSpikes(route, event.from.x + (event.to.x > event.from.x ? 74 : -74), event.from.y + 28, event.to.x > event.from.x ? 1 : -1);
+        this.drawSpikes(route, event.from.x + (event.to.x > event.from.x ? 110 : -110), event.from.y + 28, event.to.x > event.from.x ? 1 : -1);
       }
       this.drawPlatform(route, event.to.x, event.to.y);
     }
@@ -213,14 +230,16 @@ class GameScene extends Phaser.Scene {
       </div>
       <button id="start" aria-label="Start Beatbound">
         <span class="start-card">
-          <small>${BPM} BPM · ONE BUTTON AT A TIME</small>
+          <small>${BPM} BPM · MOVE IT YOURSELF</small>
           <strong>PRESS TO<br>DROP THE BEAT</strong>
-          <em>SPACE / ↑ = JUMP &nbsp; · &nbsp; ↓ = DUCK</em>
+          <em>A / D = RUN &nbsp; · &nbsp; SPACE = JUMP &nbsp; · &nbsp; S = DUCK</em>
         </span>
       </button>
       <div id="mobile-controls">
+        <button class="action-button move-button" data-move="-1">←</button>
         <button class="action-button" data-action="jump">↑ JUMP</button>
         <button class="action-button" data-action="duck">↓ DUCK</button>
+        <button class="action-button move-button" data-move="1">→</button>
       </div>`;
     document.body.append(ui);
 
@@ -241,18 +260,43 @@ class GameScene extends Phaser.Scene {
       this.soundButton.textContent = muted ? '♪ OFF' : '♪ ON';
     });
     ui.querySelectorAll<HTMLButtonElement>('[data-action]').forEach((button) => {
+      const action = button.dataset.action as Action;
       button.addEventListener('pointerdown', (event) => {
         event.preventDefault();
         event.stopPropagation();
+        if (action === 'duck') this.duckHeld = true;
         if (this.phase === 'ready') void this.startGame();
-        else this.press(button.dataset.action as Action);
+        else this.press(action);
       });
+      if (action === 'duck') {
+        const release = () => { this.duckHeld = false; };
+        button.addEventListener('pointerup', release);
+        button.addEventListener('pointercancel', release);
+        button.addEventListener('pointerleave', release);
+      }
+    });
+    ui.querySelectorAll<HTMLButtonElement>('[data-move]').forEach((button) => {
+      const direction = Number(button.dataset.move) as -1 | 1;
+      const release = () => { if (this.moveAxis === direction) this.moveAxis = 0; };
+      button.addEventListener('pointerdown', (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        this.moveAxis = direction;
+      });
+      button.addEventListener('pointerup', release);
+      button.addEventListener('pointercancel', release);
+      button.addEventListener('pointerleave', release);
     });
   }
 
   private bindInputs(): void {
     this.input.keyboard?.on('keydown', (event: KeyboardEvent) => {
-      if (['Space', 'ArrowUp', 'ArrowDown'].includes(event.code)) event.preventDefault();
+      if (['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(event.code)) event.preventDefault();
+      if (event.code === 'KeyA' || event.code === 'ArrowLeft') this.leftHeld = true;
+      if (event.code === 'KeyD' || event.code === 'ArrowRight') this.rightHeld = true;
+      this.syncMoveAxis();
+      if (event.code === 'KeyS' || event.code === 'ArrowDown') this.duckHeld = true;
+      if (event.repeat) return;
       if (this.phase === 'ready') {
         if (event.code === 'Space' || event.code === 'Enter') void this.startGame();
         return;
@@ -263,8 +307,33 @@ class GameScene extends Phaser.Scene {
       }
       if (event.code === 'Space' || event.code === 'ArrowUp' || event.code === 'KeyW') this.press('jump');
       if (event.code === 'ArrowDown' || event.code === 'KeyS') this.press('duck');
-      if (DEBUG && event.code === 'KeyN') this.press(this.level[this.nextEvent]?.action ?? 'jump');
+      if (DEBUG && event.code === 'KeyN') this.debugHitNext();
+      if (DEBUG && event.code === 'KeyT') this.toggleSlowMotion();
     });
+    this.input.keyboard?.on('keyup', (event: KeyboardEvent) => {
+      if (event.code === 'KeyA' || event.code === 'ArrowLeft') this.leftHeld = false;
+      if (event.code === 'KeyD' || event.code === 'ArrowRight') this.rightHeld = false;
+      if (event.code === 'KeyS' || event.code === 'ArrowDown') this.duckHeld = false;
+      this.syncMoveAxis();
+    });
+  }
+
+  private syncMoveAxis(): void {
+    this.moveAxis = this.leftHeld === this.rightHeld ? 0 : this.leftHeld ? -1 : 1;
+  }
+
+  private debugHitNext(): void {
+    const event = this.level[this.nextEvent];
+    if (!event) return;
+    this.moveAxis = event.to.x > event.from.x ? 1 : -1;
+    this.duckHeld = event.action === 'duck';
+    this.press(event.action);
+  }
+
+  private toggleSlowMotion(): void {
+    this.speedScale = this.speedScale < 1 ? 1 : 0.35;
+    this.audio.setSpeed(this.speedScale);
+    this.feedback(this.speedScale < 1 ? 'SLOW 35%' : 'FULL SPEED', COLORS.mint);
   }
 
   private async startGame(): Promise<void> {
@@ -272,7 +341,8 @@ class GameScene extends Phaser.Scene {
     await this.audio.start();
     this.phase = 'playing';
     this.startAt = performance.now() + 80;
-    this.feedback('LISTEN…', COLORS.white);
+    this.lastClock = this.startAt;
+    this.feedback(this.speedScale < 1 ? `SLOW ${Math.round(this.speedScale * 100)}%` : 'LISTEN…', COLORS.white);
   }
 
   private restart(): void {
@@ -340,11 +410,17 @@ class GameScene extends Phaser.Scene {
       return;
     }
 
-    this.elapsedMs = Math.max(0, performance.now() - this.startAt);
+    const now = performance.now();
+    if (now < this.startAt) return;
+    const gameDeltaMs = Math.min(50, now - this.lastClock) * this.speedScale;
+    this.lastClock = now;
+    this.elapsedMs += gameDeltaMs;
     const event = this.level[this.nextEvent];
 
     if (AUTOPLAY && event && !this.autoPressed.has(event.index) && this.elapsedMs >= beatToMs(event.beat)) {
       this.autoPressed.add(event.index);
+      this.moveAxis = event.to.x > event.from.x ? 1 : -1;
+      this.duckHeld = event.action === 'duck';
       this.press(event.action);
     }
 
@@ -352,7 +428,9 @@ class GameScene extends Phaser.Scene {
       this.fail(`MISSED ${event.action.toUpperCase()}`);
     }
 
-    this.updateCharacter();
+    this.updateCharacter(gameDeltaMs);
+    this.validateLandings();
+    this.checkHazardCollisions();
     this.drawIndicator(this.elapsedMs);
 
     const beat = this.elapsedMs / BEAT_MS;
@@ -361,37 +439,92 @@ class GameScene extends Phaser.Scene {
 
     const targetScroll = Math.min(0, this.character.y - 500);
     this.cameras.main.scrollY = Phaser.Math.Linear(this.cameras.main.scrollY, targetScroll, 0.075);
-    this.progressText.setText(`CLIMB ${String(this.nextEvent + 1).padStart(2, '0')}`);
+    this.progressText.setText(`CLIMB ${String(Math.min(this.nextEvent + 1, this.level.length)).padStart(2, '0')}`);
 
     if (this.debugText) {
       const nextDelta = event ? Math.round(timingDeltaMs(this.elapsedMs, event)) : 0;
-      this.debugText.setText(`DEBUG · ${AUTOPLAY ? 'AUTOPLAY' : 'MANUAL'}\nnext=${this.nextEvent} Δ=${nextDelta}ms\nwindow=±${ACTION_WINDOW_MS}ms · N=hit`);
+      this.debugText.setText(`DEBUG · ${AUTOPLAY ? 'AUTOPLAY' : 'MANUAL'} · ${Math.round(this.speedScale * 100)}%\nnext=${this.nextEvent} Δ=${nextDelta}ms · x=${Math.round(this.character.x)}\n±${ACTION_WINDOW_MS}ms · N=assist · T=slow`);
     }
 
     const finalEvent = this.level[this.level.length - 1];
-    if (this.nextEvent === this.level.length && this.elapsedMs > beatToMs(finalEvent.beat + 2)) this.win();
+    if (this.nextEvent === this.level.length && this.validated.has(finalEvent.index)) this.win();
   }
 
-  private updateCharacter(): void {
+  private activeEvent(): BeatEvent | undefined {
     let active: BeatEvent | undefined;
     for (const event of this.level) {
       if (this.accepted.has(event.index) && this.elapsedMs >= beatToMs(event.beat)) active = event;
     }
+    return active;
+  }
+
+  private updateCharacter(gameDeltaMs: number): void {
+    const active = this.activeEvent();
     if (!active) return;
 
-    const progress = Phaser.Math.Clamp((this.elapsedMs - beatToMs(active.beat)) / beatToMs(2), 0, 1);
-    const eased = Phaser.Math.Easing.Sine.InOut(progress);
-    this.character.x = Phaser.Math.Linear(active.from.x, active.to.x, eased);
-    this.character.y = Phaser.Math.Linear(active.from.y, active.to.y, eased);
+    const duration = beatToMs(2);
+    const progress = Phaser.Math.Clamp((this.elapsedMs - beatToMs(active.beat)) / duration, 0, 1);
+    if (progress < 1) {
+      this.character.x = Phaser.Math.Clamp(this.character.x + this.moveAxis * RUN_SPEED * (gameDeltaMs / 1000), 76, 824);
+    }
+    this.character.y = Phaser.Math.Linear(active.from.y, active.to.y, Phaser.Math.Easing.Sine.InOut(progress));
+    this.character.rotation = 0;
 
     if (active.action === 'jump') {
       this.character.y -= Math.sin(progress * Math.PI) * 128;
       this.character.setScale(1 + Math.sin(progress * Math.PI) * 0.08, 1 - Math.sin(progress * Math.PI) * 0.08);
       this.character.rotation = Math.sin(progress * Math.PI * 2) * 0.06 * (active.to.x > active.from.x ? 1 : -1);
+    } else if (this.duckHeld && progress < 1) {
+      this.character.y += 16;
+      this.character.setScale(1.16, 0.38);
     } else {
-      const duck = Math.sin(progress * Math.PI);
-      this.character.setScale(1 + duck * 0.18, 1 - duck * 0.46);
-      this.character.rotation = 0;
+      this.character.setScale(1);
+    }
+  }
+
+  private validateLandings(): void {
+    for (const event of this.level) {
+      if (!this.accepted.has(event.index) || this.validated.has(event.index)) continue;
+      if (this.elapsedMs < beatToMs(event.beat + 2)) continue;
+      if (Math.abs(this.character.x - event.to.x) > LANDING_TOLERANCE) {
+        this.fail(event.action === 'jump' ? 'MISSED THE LEDGE' : 'MISSED THE EXIT');
+        return;
+      }
+      this.character.x = event.to.x;
+      this.character.y = event.to.y;
+      this.character.setScale(1);
+      this.validated.add(event.index);
+    }
+  }
+
+  private checkHazardCollisions(): void {
+    const event = this.activeEvent();
+    if (!event || this.validated.has(event.index)) return;
+    const progress = (this.elapsedMs - beatToMs(event.beat)) / beatToMs(2);
+    if (progress < 0 || progress > 1) return;
+
+    const halfWidth = 28 * this.character.scaleX;
+    const halfHeight = 31 * this.character.scaleY;
+    const left = this.character.x - halfWidth;
+    const right = this.character.x + halfWidth;
+    const top = this.character.y - halfHeight;
+    const bottom = this.character.y + halfHeight;
+
+    if (event.action === 'jump') {
+      const direction = event.to.x > event.from.x ? 1 : -1;
+      const first = event.from.x + direction * 110;
+      const last = event.from.x + direction * 136;
+      const hazardLeft = Math.min(first, last) - 9;
+      const hazardRight = Math.max(first, last) + 9;
+      const hazardTop = event.from.y + 2;
+      if (right > hazardLeft && left < hazardRight && bottom > hazardTop) this.fail('HIT THE SPIKES');
+    } else {
+      const flyerX = (event.from.x + event.to.x) / 2;
+      const flyerLeft = flyerX - 34;
+      const flyerRight = flyerX + 34;
+      const flyerTop = event.from.y - 25;
+      const flyerBottom = event.from.y + 3;
+      if (right > flyerLeft && left < flyerRight && bottom > flyerTop && top < flyerBottom) this.fail('HIT THE FLYER');
     }
   }
 
@@ -422,10 +555,16 @@ class GameScene extends Phaser.Scene {
         g.lineBetween(840, y + 10, 830, y);
         g.lineBetween(840, y + 10, 850, y);
       }
+      const direction = event.to.x > event.from.x ? 1 : -1;
+      g.fillStyle(COLORS.white, 0.9).fillCircle(877, y, 10);
+      g.lineStyle(3, COLORS.ink, 0.9).lineBetween(877 - direction * 5, y, 877 + direction * 5, y);
+      g.lineBetween(877 + direction * 5, y, 877 + direction * 1, y - 4);
+      g.lineBetween(877 + direction * 5, y, 877 + direction * 1, y + 4);
     }
 
     const next = this.level[this.nextEvent];
-    this.promptText.setText(next ? next.action.toUpperCase() : 'FINISH!').setColor(next?.action === 'duck' ? '#61f4cb' : '#ffdd57');
+    const direction = next ? (next.to.x > next.from.x ? '→' : '←') : '';
+    this.promptText.setText(next ? `${direction} ${next.action.toUpperCase()}` : 'FINISH!').setColor(next?.action === 'duck' ? '#61f4cb' : '#ffdd57');
   }
 }
 

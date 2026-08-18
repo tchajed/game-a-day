@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 import {
   ACTION_WINDOW_MS,
   BEAT_MS,
+  LANDING_TOLERANCE,
+  RUN_SPEED,
   TRAVEL_BEATS,
   beatToMs,
   createLevel,
@@ -50,11 +52,23 @@ describe('procedural beat route', () => {
     expect(validateLevel(level).precise).toBe(true);
   });
 
-  it('completes under a perfect-input simulation', () => {
+  it('completes under a perfect-input simulation with manual left/right movement', () => {
     let cleared = 0;
+    const runDistance = RUN_SPEED * (beatToMs(TRAVEL_BEATS) / 1000);
     for (const event of level) {
-      if (isOnBeat(beatToMs(event.beat), event)) cleared += 1;
+      const direction = event.to.x > event.from.x ? 1 : -1;
+      const simulatedX = event.from.x + direction * runDistance;
+      if (isOnBeat(beatToMs(event.beat), event) && Math.abs(simulatedX - event.to.x) <= LANDING_TOLERANCE) cleared += 1;
     }
     expect(cleared).toBe(level.length);
+  });
+
+  it('cannot clear a crossing by standing still or running the wrong way', () => {
+    for (const event of level) {
+      const direction = event.to.x > event.from.x ? 1 : -1;
+      const wrongWayX = event.from.x - direction * RUN_SPEED * (beatToMs(TRAVEL_BEATS) / 1000);
+      expect(Math.abs(event.from.x - event.to.x)).toBeGreaterThan(LANDING_TOLERANCE);
+      expect(Math.abs(wrongWayX - event.to.x)).toBeGreaterThan(LANDING_TOLERANCE);
+    }
   });
 });

@@ -14,7 +14,7 @@ export class BeatAudio {
   private muted = false;
   private started = false;
 
-  constructor(private events: BeatEvent[], muted: boolean) {
+  constructor(private events: BeatEvent[], muted: boolean, private speed = 1) {
     this.muted = muted;
   }
 
@@ -48,7 +48,7 @@ export class BeatAudio {
     this.transport.stop();
     this.transport.cancel();
     this.transport.position = 0;
-    this.transport.bpm.value = BPM;
+    this.transport.bpm.value = BPM * this.speed;
     this.transport.swing = 0.08;
     this.transport.swingSubdivision = '8n';
 
@@ -76,7 +76,7 @@ export class BeatAudio {
         } else {
           this.cue?.triggerAttackRelease('G3', '16n', time, 0.75);
         }
-      }, cueBeat * (60 / BPM)));
+      }, `${cueBeat * this.transport.PPQ}i`));
     }
 
     this.transport.start('+0.08');
@@ -87,6 +87,11 @@ export class BeatAudio {
     const time = Tone.now();
     const note = action === 'jump' ? 'C7' : 'C4';
     this.cue?.triggerAttackRelease(note, '32n', time, quality === 'perfect' ? 0.8 : 0.45);
+  }
+
+  setSpeed(speed: number): void {
+    this.speed = speed;
+    this.transport.bpm.rampTo(BPM * speed, 0.05);
   }
 
   setMuted(muted: boolean): void {

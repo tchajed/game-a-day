@@ -2,6 +2,8 @@ export const BPM = 132;
 export const BEAT_MS = 60_000 / BPM;
 export const ACTION_WINDOW_MS = 125;
 export const TRAVEL_BEATS = 2;
+export const RUN_SPEED = 650;
+export const LANDING_TOLERANCE = 88;
 
 export type Action = 'jump' | 'duck';
 
@@ -83,6 +85,10 @@ export function validateLevel(events: BeatEvent[]): ValidationResult {
     const distance = Math.abs(event.to.x - event.from.x);
     if (distance < 400 || distance > 620) {
       errors.push(`Event ${index} has an invalid horizontal crossing`);
+    }
+    const manualRunDistance = RUN_SPEED * (beatToMs(TRAVEL_BEATS) / 1000);
+    if (Math.abs(manualRunDistance - distance) > LANDING_TOLERANCE) {
+      errors.push(`Event ${index} cannot be reached with manual movement`);
     }
     const rise = event.from.y - event.to.y;
     if (event.action === 'jump' && rise !== 96) {

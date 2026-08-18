@@ -10,7 +10,7 @@ For this game I don't want to focus on graphics, so use simple shapes and graphi
 
 ## Prototype
 
-Beatbound is a 16-cue vertical run at 132 BPM. Press **Space/↑** to jump and **↓** to duck when each cue crosses the white timing line. The soundtrack, level route, hazards, and cue chart are procedural/code-only.
+Beatbound is a 16-cue vertical platforming run at 132 BPM. You control every crossing: hold **A/D** or **←/→** to run, press **Space/↑** to jump, and hold **S/↓** to duck when each cue crosses the white timing line. Spikes, flyers, gaps, and ledge landings all have collision checks; the soundtrack, route, hazards, and cue chart are procedural/code-only.
 
 ```bash
 bun install
@@ -19,5 +19,6 @@ bun run dev
 
 - `bun run test` validates route continuity, beat quantization, and the ±125 ms timing window.
 - `?music=off` starts muted.
-- `?debug=true&autoplay=true` runs the perfect-input playtest; `?debug=true` exposes timing state and the `N` cue-skip key.
-- `window.__BEATBOUND__` provides `getState()`, `press(action)`, and `restart()` for browser automation.
+- `?debug=true&autoplay=true` runs the perfect-input movement playtest. In debug mode, press `N` for assisted input and `T` to toggle 35% slow motion.
+- `?debug=true&slow=0.35` starts the music, movement, cue track, and timing windows at 35% speed (values from `0.2` to `1` are supported).
+- `window.__BEATBOUND__` provides `getState()`, `press(action)`, `setDirection()`, `setDuck()`, and `restart()` for browser automation.
