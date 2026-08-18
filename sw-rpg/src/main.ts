@@ -126,25 +126,55 @@ function addPill(scene: Phaser.Scene, x: number, y: number, label: string, fill:
 function createTextures(scene: Phaser.Scene) {
   if (scene.textures.exists('hero')) return;
   const g = scene.add.graphics();
-  // Hero: readable modern overworld sprite.
-  g.fillStyle(0x172436).fillEllipse(32, 57, 34, 13);
-  g.fillStyle(0xf2bb8f).fillCircle(32, 22, 13);
-  g.fillStyle(0x343045).fillRoundedRect(19, 8, 27, 12, 6).fillRect(19, 15, 28, 5);
-  g.fillStyle(0x42a5d9).fillRoundedRect(16, 32, 32, 25, 8);
-  g.fillStyle(0xffd35c).fillRect(29, 32, 6, 22);
-  g.fillStyle(0x243c59).fillRoundedRect(18, 53, 12, 14, 4).fillRoundedRect(35, 53, 12, 14, 4);
-  g.fillStyle(0xffffff).fillCircle(27, 21, 2).fillCircle(38, 21, 2);
-  g.generateTexture('hero', 64, 72); g.clear();
-  // Tree.
-  g.fillStyle(0x5c4731).fillRoundedRect(27, 45, 12, 28, 4);
-  g.fillStyle(0x206446).fillCircle(21, 37, 20).fillCircle(43, 35, 20).fillCircle(32, 19, 23);
-  g.fillStyle(0x3e8a57).fillCircle(23, 22, 10).fillCircle(42, 29, 11);
-  g.generateTexture('tree', 68, 76); g.clear();
-  // Tall-code tuft.
-  g.lineStyle(5, 0x2e7f64, 1);
-  g.beginPath().moveTo(8, 35).lineTo(5, 9).moveTo(17, 35).lineTo(20, 5).moveTo(28, 35).lineTo(31, 12).strokePath();
-  g.lineStyle(2, 0x80c97f, 1).beginPath().moveTo(10, 34).lineTo(12, 14).moveTo(25, 34).lineTo(23, 12).strokePath();
-  g.generateTexture('grass', 38, 40); g.destroy();
+  // All character art is authored on a tiny grid, then nearest-neighbor scaled.
+  // Hero (24 × 30).
+  g.fillStyle(0x172436).fillRect(5, 4, 14, 4).fillRect(3, 7, 18, 3);
+  g.fillStyle(0xf2bb8f).fillRect(6, 10, 12, 8).fillRect(8, 18, 8, 2);
+  g.fillStyle(0x26384a).fillRect(7, 12, 3, 2).fillRect(15, 12, 3, 2);
+  g.fillStyle(0x42a5d9).fillRect(4, 20, 16, 7);
+  g.fillStyle(0xffd35c).fillRect(11, 20, 3, 7);
+  g.fillStyle(0x243c59).fillRect(5, 27, 6, 3).fillRect(14, 27, 6, 3);
+  g.generateTexture('hero', 24, 30); g.clear();
+  // Tree (24 × 30).
+  g.fillStyle(0x60452f).fillRect(10, 19, 5, 11);
+  g.fillStyle(0x19563a).fillRect(4, 7, 16, 14).fillRect(7, 3, 11, 20).fillRect(1, 11, 22, 7);
+  g.fillStyle(0x3b8a54).fillRect(7, 5, 7, 5).fillRect(3, 11, 6, 5).fillRect(14, 9, 6, 6);
+  g.generateTexture('tree', 24, 30); g.clear();
+  // Tall-code tuft (12 × 12).
+  g.fillStyle(0x24694f).fillRect(1, 3, 2, 9).fillRect(5, 0, 2, 12).fillRect(9, 4, 2, 8);
+  g.fillStyle(0x69ba70).fillRect(3, 6, 2, 2).fillRect(7, 3, 2, 2);
+  g.generateTexture('grass', 12, 12); g.clear();
+  // Maya's battle backsprite (48 × 52).
+  g.fillStyle(0x183047).fillRect(9, 44, 28, 8);
+  g.fillStyle(0x253e5d).fillRect(14, 31, 22, 16);
+  g.fillStyle(0x2c9ec2).fillRect(5, 20, 35, 20).fillRect(9, 15, 27, 8);
+  g.fillStyle(0xd9976e).fillRect(14, 5, 20, 16).fillRect(17, 21, 14, 3);
+  g.fillStyle(0x30283a).fillRect(11, 2, 25, 8).fillRect(10, 7, 7, 8).fillRect(32, 7, 5, 6);
+  g.fillStyle(0xe9f1f2).fillRect(27, 25, 20, 16);
+  g.fillStyle(0x315f79).fillRect(34, 31, 7, 3);
+  g.generateTexture('dev-back', 48, 52); g.clear();
+  // Null Pointer (40 × 40).
+  g.fillStyle(0x28384a).fillRect(4, 3, 8, 8).fillRect(28, 3, 8, 8).fillRect(5, 13, 30, 23).fillRect(10, 8, 20, 30);
+  g.fillStyle(0xffd35c).fillRect(6, 5, 5, 6).fillRect(29, 5, 5, 6);
+  g.fillStyle(0xf05b4f).fillRect(8, 14, 24, 21).fillRect(12, 10, 16, 27);
+  g.fillStyle(0xffffff).fillRect(12, 18, 5, 5).fillRect(24, 18, 5, 5);
+  g.fillStyle(0x172436).fillRect(14, 20, 2, 2).fillRect(25, 20, 2, 2).fillRect(15, 29, 10, 2);
+  g.generateTexture('enemy-0', 40, 40); g.clear();
+  // Memory Leak (44 × 40).
+  g.fillStyle(0x342c57).fillRect(3, 19, 38, 17).fillRect(7, 10, 30, 28).fillRect(13, 5, 20, 34);
+  g.fillStyle(0x8d63d2).fillRect(5, 20, 34, 15).fillRect(9, 11, 26, 25).fillRect(15, 7, 16, 30);
+  g.fillStyle(0xa779e8).fillRect(9, 15, 8, 8).fillRect(17, 9, 12, 5);
+  g.fillStyle(0xffffff).fillRect(12, 19, 6, 6).fillRect(27, 19, 6, 6);
+  g.fillStyle(0x273247).fillRect(14, 21, 3, 3).fillRect(28, 21, 3, 3).fillRect(18, 30, 10, 2);
+  g.fillStyle(0x7553bd).fillRect(6, 35, 8, 5).fillRect(31, 34, 9, 6);
+  g.generateTexture('enemy-1', 44, 40); g.clear();
+  // One Tiny Change (48 × 44).
+  g.fillStyle(0x1d3554).fillRect(6, 13, 36, 28).fillRect(2, 5, 14, 13).fillRect(17, 1, 16, 15).fillRect(34, 7, 13, 14);
+  g.fillStyle(0x3977cd).fillRect(8, 15, 32, 24);
+  g.fillStyle(0xffffff).fillRect(4, 7, 10, 9).fillRect(19, 3, 12, 10).fillRect(36, 9, 9, 10).fillRect(13, 21, 6, 6).fillRect(29, 21, 6, 6);
+  g.fillStyle(0xe45555).fillRect(7, 10, 5, 2).fillRect(22, 7, 6, 2).fillRect(38, 12, 5, 2);
+  g.fillStyle(0xdbeaff).fillRect(16, 33, 16, 2);
+  g.generateTexture('enemy-2', 48, 44); g.destroy();
 }
 
 class WorldScene extends Phaser.Scene {
@@ -162,7 +192,7 @@ class WorldScene extends Phaser.Scene {
     state.phase = 'overworld'; setStatus('Exploring Route 404. Use arrow keys or WASD to move east.');
     this.physics.world.setBounds(0, 0, 2400, H);
     this.drawMap();
-    this.player = this.physics.add.sprite(330, 410, 'hero').setCollideWorldBounds(true).setDepth(30).setSize(38, 38).setOffset(13, 30);
+    this.player = this.physics.add.sprite(330, 410, 'hero').setScale(2.5).setCollideWorldBounds(true).setDepth(30).setSize(16, 14).setOffset(4, 15);
     this.player.setPosition(state.completed[2] ? 1990 : state.completed[1] ? 1460 : state.completed[0] ? 1010 : 330, 410);
     this.cameras.main.setBounds(0, 0, 2400, H).startFollow(this.player, true, 0.09, 0.09).setZoom(1);
     const keyboard = this.input.keyboard!;
@@ -186,7 +216,7 @@ class WorldScene extends Phaser.Scene {
     // Route grass patches: encounter foreshadowing.
     for (const [cx, cy] of [[770, 330], [850, 500], [1190, 290], [1290, 510], [1530, 300], [1600, 470]]) {
       add.rectangle(cx, cy, 150, 86, 0x74b96e, 0.7).setStrokeStyle(3, 0x5ba45f).setDepth(-14);
-      for (let i = 0; i < 9; i++) add.image(cx - 55 + (i % 5) * 27, cy - 25 + Math.floor(i / 5) * 45, 'grass').setScale(0.7).setDepth(-12);
+      for (let i = 0; i < 9; i++) add.image(cx - 55 + (i % 5) * 27, cy - 25 + Math.floor(i / 5) * 45, 'grass').setScale(2.4).setDepth(-12);
     }
     // Water and bridges at the lower edge.
     add.rectangle(1200, 674, 2400, 92, 0x58b8d5).setDepth(-17);
@@ -200,7 +230,7 @@ class WorldScene extends Phaser.Scene {
     this.building(2070, 500, 215, 120, 0x58ad8c, 'CLOUD 9');
     // Trees lining route.
     for (const [x, y] of [[580,160],[660,230],[760,145],[885,200],[1000,130],[1130,170],[1270,145],[1400,180],[1530,140],[1680,180],[1790,150],[610,570],[720,610],[960,580],[1100,610],[1430,590],[1590,585],[1760,570]]) {
-      add.image(x, y, 'tree').setDepth(y);
+      add.image(x, y, 'tree').setScale(3).setDepth(y);
     }
     // City labels and route signs.
     this.sign(385, 500, 'STARTUP CITY', 'Population: pivoting');
@@ -381,49 +411,21 @@ class BattleScene extends Phaser.Scene {
   }
 
   private drawCombatants() {
-    this.enemyArt = this.makeEnemy(940, 250, state.encounter).setScale(.2).setAlpha(0);
+    this.enemyArt = this.makeEnemy(940, 258, state.encounter).setScale(.2).setAlpha(0);
     this.tweens.add({ targets: this.enemyArt, scale: 1, alpha: 1, duration: 480, ease: 'Back.out' });
     const dev = this.add.container(270, 438).setDepth(10);
-    const shadow = this.add.ellipse(0, 98, 180, 42, 0x173b43, .25);
-    const legs = this.add.rectangle(0, 58, 82, 100, 0x253e5d).setStrokeStyle(6, 0x14283c);
-    const hoodie = this.add.polygon(0, 5, [-70,55,-55,-35,-30,-68,32,-65,66,-27,62,63], 0x2c9ec2).setStrokeStyle(7, 0x14283c);
-    const head = this.add.circle(0, -92, 46, 0xd9976e).setStrokeStyle(7, 0x14283c);
-    const hair = this.add.arc(-6, -106, 43, 180, 365, false, 0x30283a).setStrokeStyle(5, 0x14283c);
-    const laptop = this.add.rectangle(30, 12, 92, 64, 0xe9f1f2).setStrokeStyle(7, 0x14283c).setRotation(-.13);
-    const logo = this.add.text(30, 12, '</>', monoStyle(14, '#2c6e8e')).setOrigin(.5).setRotation(-.13);
-    dev.add([shadow, legs, hoodie, head, hair, laptop, logo]);
-    this.tweens.add({ targets: dev, y: 430, duration: 1100, yoyo: true, repeat: -1, ease: 'Sine.inOut' });
+    const shadow = this.add.rectangle(0, 105, 190, 32, 0x315f4d, .28);
+    const sprite = this.add.image(0, 0, 'dev-back').setScale(5);
+    dev.add([shadow, sprite]);
+    this.tweens.add({ targets: dev, y: 430, duration: 800, yoyo: true, repeat: -1, ease: 'Stepped' });
   }
 
   private makeEnemy(x: number, y: number, kind: number) {
     const c = this.add.container(x, y).setDepth(8);
-    const shadow = this.add.ellipse(0, 120, 210, 50, 0x143c43, .25);
-    if (kind === 0) {
-      const body = this.add.circle(0, 25, 86, this.encounter.color).setStrokeStyle(8, 0x28384a);
-      const ears = this.add.polygon(-65, -40, [-28,0,0,-55,24,8], this.encounter.accent).setStrokeStyle(7, 0x28384a);
-      const ear2 = this.add.polygon(65, -40, [-24,8,0,-55,28,0], this.encounter.accent).setStrokeStyle(7, 0x28384a);
-      const eyes = [this.add.circle(-28, 5, 11, 0xffffff), this.add.circle(28, 5, 11, 0xffffff), this.add.circle(-27, 7, 5, 0x172436), this.add.circle(27, 7, 5, 0x172436)];
-      const symbol = this.add.text(0, 50, 'null', monoStyle(22, '#6b2429')).setOrigin(.5);
-      c.add([shadow, ears, ear2, body, ...eyes, symbol]);
-    } else if (kind === 1) {
-      const blobs = [this.add.circle(-55, 48, 60, 0x7553bd), this.add.circle(48, 40, 72, 0x8d63d2), this.add.circle(0, -5, 82, 0x9a70dc)];
-      blobs.forEach(b => b.setStrokeStyle(7, 0x342c57));
-      const eyes = [this.add.circle(-27, -13, 13, 0xffffff), this.add.circle(30, -13, 13, 0xffffff), this.add.circle(-27, -11, 6, 0x273247), this.add.circle(30, -11, 6, 0x273247)];
-      const drips = [this.add.circle(-74, 98, 24, 0x7553bd), this.add.circle(72, 104, 28, 0x8d63d2)];
-      const text = this.add.text(0, 55, '8.6 GB', monoStyle(16, '#e8dfff')).setOrigin(.5);
-      c.add([shadow, ...blobs, ...drips, ...eyes, text]);
-    } else {
-      // A many-headed feature request emerging from Alex's phone.
-      const body = this.add.rectangle(0, 30, 175, 145, 0x3977cd).setStrokeStyle(8, 0x1d3554);
-      const card1 = this.add.rectangle(-50, -60, 86, 60, 0xffffff).setStrokeStyle(5, 0x1d3554).setRotation(-.15);
-      const card2 = this.add.rectangle(30, -85, 92, 65, 0xffffff).setStrokeStyle(5, 0x1d3554).setRotation(.12);
-      const card3 = this.add.rectangle(72, -38, 78, 56, 0xffffff).setStrokeStyle(5, 0x1d3554).setRotation(.2);
-      const marks = [-50, 30, 72].map((px, i) => this.add.text(px, [-60,-85,-38][i], i === 1 ? 'ASAP' : '+1', monoStyle(i === 1 ? 12 : 18, '#e45555')).setOrigin(.5).setRotation([-.15,.12,.2][i]));
-      const eye1 = this.add.circle(-30, 12, 12, 0xffffff), eye2 = this.add.circle(30, 12, 12, 0xffffff);
-      const mouth = this.add.text(0, 58, '“tiny”', monoStyle(17, '#dbeaff')).setOrigin(.5);
-      c.add([shadow, body, card1, card2, card3, ...marks, eye1, eye2, mouth]);
-    }
-    this.tweens.add({ targets: c, y: y - 8, duration: 900, yoyo: true, repeat: -1, ease: 'Sine.inOut' });
+    const shadow = this.add.rectangle(0, 110, 220, 34, 0x315f4d, .3);
+    const sprite = this.add.image(0, 0, `enemy-${kind}`).setScale(5);
+    c.add([shadow, sprite]);
+    this.tweens.add({ targets: c, y: y - 8, duration: 720, yoyo: true, repeat: -1, ease: 'Stepped' });
     return c;
   }
 
@@ -571,12 +573,12 @@ const game = new Phaser.Game({
   width: W,
   height: H,
   backgroundColor: '#10273a',
-  pixelArt: false,
-  antialias: true,
+  pixelArt: true,
+  antialias: false,
   physics: { default: 'arcade', arcade: { debug: false } },
   scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
   scene: [WorldScene, BattleScene, EndScene],
-  render: { roundPixels: true }
+  render: { pixelArt: true, antialias: false, antialiasGL: false, roundPixels: true }
 });
 
 // Small, stable hooks for automated playtesting.
