@@ -447,7 +447,7 @@ class BattleScene extends Phaser.Scene {
     this.add.rectangle(0, 535, W, 185, 0x132b3f).setOrigin(0).setStrokeStyle(5, 0x315267).setDepth(30);
     this.message = this.add.text(55, 570, '', textStyle(25, '#f8fbff')).setWordWrapWidth(790).setLineSpacing(8).setDepth(32);
     // Party chips.
-    const party = this.add.container(1040, 576).setDepth(33);
+    const party = this.add.container(1120, 576).setDepth(33);
     party.add(this.add.text(0, -20, 'ON CALL', monoStyle(11, '#7ee0c3')).setOrigin(.5));
     [['M',0x42a5d9], ['I',0xe56c99], ['R',0xf0ae4c]].forEach(([letter, color], i) => {
       party.add(this.add.circle(-70 + i * 70, 24, 24, color as number).setStrokeStyle(3, 0xffffff, .7));
@@ -484,7 +484,7 @@ class BattleScene extends Phaser.Scene {
     setStatus(`Battle with ${this.encounter.name}. Choose action 1 breakpoint, 2 test, 3 metrics, or 4 hotfix.`);
   }
 
-  private takeAction(index: number) {
+  takeAction(index: number) {
     if (this.processing) return;
     this.processing = true; this.actionGroup.destroy(); this.turn++;
     let damage = 0, copy = '';
@@ -585,6 +585,10 @@ const game = new Phaser.Game({
   startBattle: (index = 0) => {
     state.encounter = Phaser.Math.Clamp(index, 0, 2); state.phase = 'battle';
     const world = game.scene.getScene('WorldScene'); world.scene.pause(); world.scene.launch('BattleScene');
+  },
+  chooseAction: (index = 0) => {
+    const battle = game.scene.getScene('BattleScene') as BattleScene;
+    if (battle.scene.isActive()) battle.takeAction(Phaser.Math.Clamp(index, 0, 3));
   },
   winBattle: () => {
     const battle = game.scene.getScene('BattleScene') as BattleScene;
