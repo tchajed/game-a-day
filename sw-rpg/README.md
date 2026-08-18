@@ -13,6 +13,6 @@ bun install
 bun run dev
 ```
 
-Move with **WASD** or the **arrow keys**. In battle, click an action or press **1–4**. The route contains two wild blockers followed by a stakeholder battle, and takes about five minutes to complete.
+Move with **WASD** or the **arrow keys**. In battle, press **1–2** to attack or **3** to swap between Maya and Inez; swapping uses the active member's turn. Click or press **Space/Enter** to advance combat dialogue. The route contains two wild blockers followed by a stakeholder battle, and takes about five minutes to complete.
 
-Use `?music=off` to disable music. Use `?debug=true` to show the encounter-skip control; press **N** to skip the next fight. Automated playtests can use the small `window.__SW_RPG__` API (`getState`, `startBattle`, `chooseAction`, `winBattle`, and `reset`).
+Use `?music=off` to disable music. Use `?debug=true` to show the encounter-skip control; press **N** to skip the next fight. Automated playtests can use the small `window.__SW_RPG__` API (`getState`, `startBattle`, `chooseAction`, `continueDialogue`, `winBattle`, and `reset`).

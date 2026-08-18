@@ -16,15 +16,65 @@ type Encounter = {
 type GameState = {
   encounter: number;
   completed: boolean[];
-  playerHp: number;
+  partyHp: [number, number];
+  activeMember: number;
   phase: 'overworld' | 'battle' | 'complete';
+};
+
+type Effectiveness = 'super' | 'normal' | 'not' | 'none';
+
+type Move = {
+  title: string;
+  damage: [number, number, number];
+  effectiveness: [Effectiveness, Effectiveness, Effectiveness];
+  line: string;
+  shields?: boolean;
+};
+
+type PartyMember = {
+  name: string;
+  role: string;
+  initial: string;
+  color: number;
+  texture: string;
+  moves: [number, number];
 };
 
 const W = 1280;
 const H = 720;
 const DEBUG = new URLSearchParams(location.search).get('debug') === 'true';
-const state: GameState = { encounter: 0, completed: [false, false, false], playerHp: 100, phase: 'overworld' };
+const state: GameState = {
+  encounter: 0,
+  completed: [false, false, false],
+  partyHp: [100, 100],
+  activeMember: 0,
+  phase: 'overworld'
+};
 const touch = { up: false, down: false, left: false, right: false };
+
+const partyMembers: PartyMember[] = [
+  { name: 'MAYA', role: 'STAFF ENGINEER · LV.12', initial: 'M', color: 0x42a5d9, texture: 'dev-back', moves: [0, 1] },
+  { name: 'INEZ', role: 'QA ENGINEER · LV.11', initial: 'I', color: 0xe56c99, texture: 'inez-back', moves: [2, 3] }
+];
+
+const moves: Move[] = [
+  {
+    title: 'SET BREAKPOINT', damage: [24, 8, 0], effectiveness: ['super', 'not', 'none'],
+    line: '“Ah. There you are.”'
+  },
+  {
+    title: 'SHIP HOTFIX', damage: [16, 14, 8], effectiveness: ['normal', 'normal', 'not'],
+    line: 'Deploy now. Ask questions during the retro.'
+  },
+  {
+    title: 'WRITE A TEST', damage: [11, 13, 24], effectiveness: ['normal', 'normal', 'super'],
+    line: 'The failure is now reproducible.', shields: true
+  },
+  {
+    title: 'CHECK METRICS', damage: [9, 25, 13], effectiveness: ['not', 'super', 'normal'],
+    line: 'The graph is extremely accusatory!'
+  }
+];
 
 const encounters: Encounter[] = [
   {
@@ -153,6 +203,15 @@ function createTextures(scene: Phaser.Scene) {
   g.fillStyle(0xe9f1f2).fillRect(27, 25, 20, 16);
   g.fillStyle(0x315f79).fillRect(34, 31, 7, 3);
   g.generateTexture('dev-back', 48, 52); g.clear();
+  // Inez's battle backsprite (48 × 52).
+  g.fillStyle(0x312b46).fillRect(9, 44, 28, 8);
+  g.fillStyle(0x4d365f).fillRect(14, 31, 22, 16);
+  g.fillStyle(0xd65f8c).fillRect(5, 20, 35, 20).fillRect(9, 15, 27, 8);
+  g.fillStyle(0xb97455).fillRect(14, 5, 20, 16).fillRect(17, 21, 14, 3);
+  g.fillStyle(0x211d2f).fillRect(10, 1, 27, 8).fillRect(8, 6, 8, 15).fillRect(33, 6, 6, 15);
+  g.fillStyle(0xf5f0dc).fillRect(27, 25, 20, 16);
+  g.fillStyle(0xc24d77).fillRect(34, 31, 7, 3);
+  g.generateTexture('inez-back', 48, 52); g.clear();
   // Null Pointer (40 × 40).
   g.fillStyle(0x28384a).fillRect(4, 3, 8, 8).fillRect(28, 3, 8, 8).fillRect(5, 13, 30, 23).fillRect(10, 8, 20, 30);
   g.fillStyle(0xffd35c).fillRect(6, 5, 5, 6).fillRect(29, 5, 5, 6);
@@ -368,15 +427,22 @@ class WorldScene extends Phaser.Scene {
 class BattleScene extends Phaser.Scene {
   encounter!: Encounter;
   enemyHp = 0;
-  playerHp = state.playerHp;
   shield = false;
   processing = true;
   enemyBar!: Phaser.GameObjects.Rectangle;
   playerBar!: Phaser.GameObjects.Rectangle;
   message!: Phaser.GameObjects.Text;
-  actionGroup!: Phaser.GameObjects.Container;
+  continuePrompt!: Phaser.GameObjects.Text;
+  actionGroup?: Phaser.GameObjects.Container;
   enemyArt!: Phaser.GameObjects.Container;
   enemyName!: Phaser.GameObjects.Text;
+  playerSprite!: Phaser.GameObjects.Image;
+  memberName!: Phaser.GameObjects.Text;
+  memberRole!: Phaser.GameObjects.Text;
+  hpText!: Phaser.GameObjects.Text;
+  partyGroup!: Phaser.GameObjects.Container;
+  private advanceCallback?: () => void;
+  private advanceArmed = false;
   turn = 0;
 
   constructor() { super('BattleScene'); }
@@ -388,6 +454,12 @@ class BattleScene extends Phaser.Scene {
     this.drawCombatants();
     this.drawHud();
     this.cameras.main.fadeIn(280, 255, 255, 255);
+    this.input.on('pointerdown', () => this.advanceMessage());
+    this.input.keyboard!.on('keydown-SPACE', () => this.advanceMessage());
+    this.input.keyboard!.on('keydown-ENTER', () => this.advanceMessage());
+    this.input.keyboard!.on('keydown-ONE', () => this.takeAction(0));
+    this.input.keyboard!.on('keydown-TWO', () => this.takeAction(1));
+    this.input.keyboard!.on('keydown-THREE', () => this.takeAction(2));
     this.time.delayedCall(500, () => this.showMessage(this.encounter.intro, () => this.showActions()));
     if (DEBUG) this.input.keyboard!.on('keydown-K', () => this.win());
   }
@@ -415,8 +487,8 @@ class BattleScene extends Phaser.Scene {
     this.tweens.add({ targets: this.enemyArt, scale: 1, alpha: 1, duration: 480, ease: 'Back.out' });
     const dev = this.add.container(270, 438).setDepth(10);
     const shadow = this.add.rectangle(0, 105, 190, 32, 0x315f4d, .28);
-    const sprite = this.add.image(0, 0, 'dev-back').setScale(5);
-    dev.add([shadow, sprite]);
+    this.playerSprite = this.add.image(0, 0, partyMembers[state.activeMember].texture).setScale(5);
+    dev.add([shadow, this.playerSprite]);
     this.tweens.add({ targets: dev, y: 430, duration: 800, yoyo: true, repeat: -1, ease: 'Stepped' });
   }
 
@@ -437,69 +509,135 @@ class BattleScene extends Phaser.Scene {
     this.add.text(284, 158, 'BLOCKER', monoStyle(11, '#637689')).setOrigin(1, .5).setDepth(21);
     this.add.rectangle(300, 158, 196, 14, 0xd7dedb).setOrigin(0, .5).setDepth(21);
     this.enemyBar = this.add.rectangle(300, 158, 196, 14, 0x48c590).setOrigin(0, .5).setDepth(22);
-    // Player card.
+    // Active party member card.
     this.add.rectangle(735, 400, 495, 128, 0xfffdf4, .98).setOrigin(0).setStrokeStyle(4, 0x233a50).setDepth(20);
-    this.add.text(762, 418, 'MAYA', textStyle(27, '#182c40', '800')).setDepth(21);
-    this.add.text(850, 426, 'STAFF ENGINEER  ·  LV.12', monoStyle(11, '#637689')).setDepth(21);
+    this.memberName = this.add.text(762, 418, '', textStyle(27, '#182c40', '800')).setDepth(21);
+    this.memberRole = this.add.text(850, 426, '', monoStyle(11, '#637689')).setDepth(21);
     this.add.text(762, 465, 'FOCUS', monoStyle(11, '#637689')).setDepth(21);
     this.add.rectangle(825, 471, 330, 16, 0xd7dedb).setOrigin(0, .5).setDepth(21);
-    this.playerBar = this.add.rectangle(825, 471, 330 * (this.playerHp / 100), 16, 0x48c590).setOrigin(0, .5).setDepth(22);
-    this.add.text(1178, 471, `${this.playerHp}/100`, monoStyle(11, '#35495c')).setOrigin(.5).setDepth(23).setName('hp-text');
+    this.playerBar = this.add.rectangle(825, 471, 330, 16, 0x48c590).setOrigin(0, .5).setDepth(22);
+    this.hpText = this.add.text(1178, 471, '', monoStyle(11, '#35495c')).setOrigin(.5).setDepth(23);
     // Dialogue / actions base.
     this.add.rectangle(0, 535, W, 185, 0x132b3f).setOrigin(0).setStrokeStyle(5, 0x315267).setDepth(30);
     this.message = this.add.text(55, 570, '', textStyle(25, '#f8fbff')).setWordWrapWidth(790).setLineSpacing(8).setDepth(32);
-    // Party chips.
-    const party = this.add.container(1120, 576).setDepth(33);
-    party.add(this.add.text(0, -20, 'ON CALL', monoStyle(11, '#7ee0c3')).setOrigin(.5));
-    [['M',0x42a5d9], ['I',0xe56c99], ['R',0xf0ae4c]].forEach(([letter, color], i) => {
-      party.add(this.add.circle(-70 + i * 70, 24, 24, color as number).setStrokeStyle(3, 0xffffff, .7));
-      party.add(this.add.text(-70 + i * 70, 24, letter as string, textStyle(15, '#ffffff', '800')).setOrigin(.5));
-    });
-    party.add(this.add.text(0, 65, 'MAYA  ·  INEZ  ·  RAVI', monoStyle(10, '#a7bbca')).setOrigin(.5));
+    this.continuePrompt = this.add.text(980, 689, 'CLICK / SPACE / ENTER  ▾', monoStyle(11, '#7ee0c3')).setOrigin(1).setDepth(34).setVisible(false);
+    this.partyGroup = this.add.container(1120, 576).setDepth(33);
+    this.refreshPlayerHud();
   }
 
-  private showMessage(copy: string, onDone?: () => void) {
-    this.processing = true; this.actionGroup?.destroy(); this.message.setText(copy);
+  private refreshPlayerHud() {
+    const member = partyMembers[state.activeMember];
+    const hp = state.partyHp[state.activeMember];
+    this.memberName.setText(member.name);
+    this.memberRole.setText(member.role);
+    this.playerSprite.setTexture(member.texture);
+    this.playerBar.setDisplaySize(330 * (hp / 100), 16).setFillStyle(hp < 35 ? 0xf05b4f : hp < 60 ? 0xf0ae4c : 0x48c590);
+    this.hpText.setText(`${hp}/100`);
+    this.partyGroup.removeAll(true);
+    this.partyGroup.add(this.add.text(0, -20, 'ON CALL · 2', monoStyle(11, '#7ee0c3')).setOrigin(.5));
+    partyMembers.forEach((partyMember, i) => {
+      const x = -45 + i * 90;
+      const active = i === state.activeMember;
+      this.partyGroup.add(this.add.circle(x, 24, 24, partyMember.color).setStrokeStyle(active ? 4 : 2, active ? 0xffd35c : 0xffffff, active ? 1 : .45));
+      this.partyGroup.add(this.add.text(x, 24, partyMember.initial, textStyle(15, '#ffffff', '800')).setOrigin(.5));
+      this.partyGroup.add(this.add.text(x, 57, `${partyMember.name} ${state.partyHp[i]}`, monoStyle(9, active ? '#ffd35c' : '#a7bbca')).setOrigin(.5));
+    });
+  }
+
+  private showMessage(copy: string, onDone?: () => void, requireInput = false) {
+    this.processing = true;
+    this.actionGroup?.destroy();
+    this.actionGroup = undefined;
+    this.advanceArmed = false;
+    this.advanceCallback = undefined;
+    this.continuePrompt.setVisible(false);
+    this.message.setText(copy);
+    if (requireInput) {
+      this.advanceCallback = onDone;
+      this.time.delayedCall(140, () => {
+        if (!this.advanceCallback) return;
+        this.advanceArmed = true;
+        this.continuePrompt.setVisible(true);
+      });
+      return;
+    }
     this.time.delayedCall(Math.max(700, Math.min(1450, copy.length * 22)), () => onDone?.());
   }
 
+  continueDialogue() { this.advanceMessage(); }
+
+  private advanceMessage() {
+    if (!this.advanceArmed) return;
+    this.advanceArmed = false;
+    this.continuePrompt.setVisible(false);
+    const callback = this.advanceCallback;
+    this.advanceCallback = undefined;
+    callback?.();
+  }
+
   private showActions() {
-    this.processing = false; this.message.setText('Choose a response');
+    this.processing = false;
+    this.message.setText(`What will ${partyMembers[state.activeMember].name} do?`);
     this.actionGroup = this.add.container(430, 550).setDepth(40);
-    const actions = [
-      { key: '1', title: 'SET BREAKPOINT', by: 'MAYA · precise', color: 0x2c91bd },
-      { key: '2', title: 'WRITE A TEST', by: 'INEZ · shields', color: 0xdd658c },
-      { key: '3', title: 'CHECK METRICS', by: 'RAVI · critical', color: 0x46a67d },
-      { key: '4', title: 'SHIP HOTFIX', by: 'TEAM · risky', color: 0xe2963f }
-    ];
-    actions.forEach((action, i) => {
-      const x = (i % 2) * 295, y = Math.floor(i / 2) * 76;
-      const bg = this.add.rectangle(x, y, 274, 62, action.color).setOrigin(0).setStrokeStyle(2, 0xffffff, .35).setInteractive({ useHandCursor: true });
-      const num = this.add.text(x + 17, y + 12, action.key, monoStyle(13, '#ffffff'));
-      const title = this.add.text(x + 44, y + 9, action.title, textStyle(16, '#ffffff', '800'));
-      const by = this.add.text(x + 44, y + 34, action.by, monoStyle(10, '#e8f4f5'));
+    const member = partyMembers[state.activeMember];
+    const actionMoves = member.moves.map(moveIndex => moves[moveIndex]);
+    actionMoves.forEach((move, i) => {
+      const x = i * 295;
+      const bg = this.add.rectangle(x, 0, 274, 62, member.color).setOrigin(0).setStrokeStyle(2, 0xffffff, .35).setInteractive({ useHandCursor: true });
+      const num = this.add.text(x + 18, 21, String(i + 1), monoStyle(13, '#ffffff'));
+      const title = this.add.text(x + 48, 19, move.title, textStyle(16, '#ffffff', '800'));
       bg.on('pointerover', () => bg.setScale(1.025)).on('pointerout', () => bg.setScale(1)).on('pointerdown', () => this.takeAction(i));
-      this.actionGroup.add([bg, num, title, by]);
+      this.actionGroup!.add([bg, num, title]);
     });
-    const keys = ['ONE','TWO','THREE','FOUR'];
-    keys.forEach((key, i) => this.input.keyboard!.once(`keydown-${key}`, () => this.takeAction(i)));
-    setStatus(`Battle with ${this.encounter.name}. Choose action 1 breakpoint, 2 test, 3 metrics, or 4 hotfix.`);
+    const other = partyMembers[1 - state.activeMember];
+    const swap = this.add.rectangle(0, 76, 569, 62, 0x5b647c).setOrigin(0).setStrokeStyle(2, 0xffffff, .35).setInteractive({ useHandCursor: true });
+    const swapNum = this.add.text(18, 97, '3', monoStyle(13, '#ffffff'));
+    const swapTitle = this.add.text(48, 95, `SWAP → ${other.name}`, textStyle(16, '#ffffff', '800'));
+    swap.on('pointerover', () => swap.setScale(1.012)).on('pointerout', () => swap.setScale(1)).on('pointerdown', () => this.takeAction(2));
+    this.actionGroup.add([swap, swapNum, swapTitle]);
+    setStatus(`Battle with ${this.encounter.name}. ${member.name} is active. Choose attack 1 or 2, or press 3 to swap.`);
   }
 
   takeAction(index: number) {
-    if (this.processing) return;
-    this.processing = true; this.actionGroup.destroy(); this.turn++;
-    let damage = 0, copy = '';
-    if (index === 0) { damage = 13 + (this.turn === 1 ? 7 : 0); copy = 'MAYA set a breakpoint.\n“Ah. There you are.”'; }
-    if (index === 1) { damage = 10; this.shield = true; copy = 'INEZ wrote a failing test.\nThe next interruption is blocked!'; }
-    if (index === 2) { damage = this.enemyHp < this.encounter.maxHp / 2 ? 25 : 16; copy = 'RAVI checked the metrics.\nThe graph is extremely accusatory!'; }
-    if (index === 3) { damage = Phaser.Math.Between(18, 29); copy = damage > 24 ? 'The team shipped a hotfix.\nIt works! Nobody breathe.' : 'The team shipped a hotfix.\nIt mostly works!'; }
-    audio.sfx(560 + index * 90, .18);
-    this.tweens.add({ targets: this.enemyArt, x: this.enemyArt.x + 16, duration: 55, yoyo: true, repeat: 4 });
+    if (this.processing || index < 0 || index > 2) return;
+    if (index === 2) { this.swapMember(); return; }
+    this.processing = true;
+    this.actionGroup?.destroy();
+    this.actionGroup = undefined;
+    this.turn++;
+    const member = partyMembers[state.activeMember];
+    const moveIndex = member.moves[index];
+    const move = moves[moveIndex];
+    const damage = move.damage[state.encounter];
+    const effectiveness = move.effectiveness[state.encounter];
+    if (move.shields) this.shield = true;
+    audio.sfx(560 + moveIndex * 90, .18);
+    if (damage > 0) this.tweens.add({ targets: this.enemyArt, x: this.enemyArt.x + 16, duration: 55, yoyo: true, repeat: 4 });
     this.damageEnemy(damage);
-    this.showMessage(`${copy}\n${damage} progress!`, () => {
+    const result = effectiveness === 'super' ? `It's super effective!\n${damage} progress!`
+      : effectiveness === 'not' ? `It's not very effective...\n${damage} progress.`
+      : effectiveness === 'none' ? `It doesn't do anything.`
+      : `${damage} progress!`;
+    const shieldCopy = move.shields ? ' · Next interruption guarded.' : '';
+    this.showMessage(`${member.name} used ${move.title}!\n${move.line}\n${result}${shieldCopy}`, () => {
       if (this.enemyHp <= 0) this.win(); else this.enemyTurn();
+    }, true);
+  }
+
+  private swapMember() {
+    this.processing = true;
+    this.actionGroup?.destroy();
+    this.actionGroup = undefined;
+    this.turn++;
+    const outgoing = partyMembers[state.activeMember];
+    state.activeMember = 1 - state.activeMember;
+    const incoming = partyMembers[state.activeMember];
+    audio.sfx(420, .2, 'triangle');
+    this.tweens.add({
+      targets: this.playerSprite, alpha: 0, duration: 140, yoyo: true,
+      onYoyo: () => this.refreshPlayerHud()
     });
+    this.showMessage(`${outgoing.name} tagged out.\n${incoming.name} joined the incident!`, () => this.enemyTurn(), true);
   }
 
   private damageEnemy(amount: number) {
@@ -509,26 +647,34 @@ class BattleScene extends Phaser.Scene {
   }
 
   private enemyTurn() {
-    const blocked = this.shield; this.shield = false;
+    const blocked = this.shield;
+    this.shield = false;
     const amount = blocked ? 2 : Phaser.Math.Between(8, 14) + state.encounter * 2;
-    this.playerHp = Math.max(0, this.playerHp - amount);
+    const active = state.activeMember;
+    const member = partyMembers[active];
+    state.partyHp[active] = Math.max(0, state.partyHp[active] - amount);
     audio.sfx(180, .25, 'sawtooth');
     this.cameras.main.shake(180, .009);
-    this.tweens.add({ targets: this.playerBar, displayWidth: 330 * (this.playerHp / 100), duration: 350 });
-    const hpText = this.children.getByName('hp-text') as Phaser.GameObjects.Text;
-    hpText.setText(`${this.playerHp}/100`);
-    if (this.playerHp < 35) this.playerBar.setFillStyle(0xf05b4f);
-    const tail = blocked ? '\nThe test caught most of it.' : `\nMaya lost ${amount} focus.`;
+    this.refreshPlayerHud();
+    const tail = blocked ? '\nThe test caught most of it.' : `\n${member.name} lost ${amount} focus.`;
     this.showMessage(`${this.encounter.attack}${tail}`, () => {
-      if (this.playerHp <= 0) this.recover(); else this.showActions();
-    });
+      if (state.partyHp[active] <= 0) this.recover(); else this.showActions();
+    }, true);
   }
 
   private recover() {
-    this.playerHp = 60; state.playerHp = 60;
-    this.playerBar.setDisplaySize(330 * .6, 16).setFillStyle(0xf0ae4c);
-    (this.children.getByName('hp-text') as Phaser.GameObjects.Text).setText('60/100');
-    this.showMessage('RAVI deployed the emergency rubber duck.\nMaya recovered 60 focus!', () => this.showActions());
+    const exhausted = partyMembers[state.activeMember];
+    const otherIndex = 1 - state.activeMember;
+    if (state.partyHp[otherIndex] > 0) {
+      state.activeMember = otherIndex;
+      const incoming = partyMembers[state.activeMember];
+      this.refreshPlayerHud();
+      this.showMessage(`${exhausted.name} is out of focus!\n${incoming.name} takes over.`, () => this.showActions(), true);
+      return;
+    }
+    state.partyHp = [60, 60];
+    this.refreshPlayerHud();
+    this.showMessage('The emergency rubber duck has been deployed.\nThe team recovered 60 focus!', () => this.showActions(), true);
   }
 
   win() {
@@ -536,11 +682,11 @@ class BattleScene extends Phaser.Scene {
     this.processing = true; audio.sfx(880, .4, 'triangle');
     this.tweens.add({ targets: this.enemyArt, alpha: 0, scale: .3, y: this.enemyArt.y + 80, duration: 520, ease: 'Back.in' });
     state.completed[state.encounter] = true;
-    state.playerHp = Math.min(100, this.playerHp + 24);
+    state.partyHp = state.partyHp.map(hp => Math.min(100, hp + 24)) as [number, number];
     setStatus(this.encounter.defeated);
-    this.showMessage(`${this.encounter.defeated}\n+24 FOCUS  ·  +1 TEAM MORALE`, () => {
-      this.time.delayedCall(650, () => { this.scene.stop(); this.scene.resume('WorldScene'); });
-    });
+    this.showMessage(`${this.encounter.defeated}\n+24 TEAM FOCUS  ·  +1 TEAM MORALE`, () => {
+      this.time.delayedCall(350, () => { this.scene.stop(); this.scene.resume('WorldScene'); });
+    }, true);
   }
 }
 
@@ -563,7 +709,10 @@ class EndScene extends Phaser.Scene {
     this.add.text(W/2, 461, 'The deploy was flawless. Please ignore monitoring.', textStyle(17, '#607387')).setOrigin(.5);
     const replay = this.add.rectangle(W/2, 570, 245, 58, 0x3c9fc0).setStrokeStyle(3, 0xffffff, .35).setInteractive({ useHandCursor: true });
     this.add.text(W/2, 570, 'RUN IT BACK', monoStyle(15, '#ffffff')).setOrigin(.5);
-    replay.on('pointerdown', () => { state.completed = [false,false,false]; state.playerHp = 100; state.encounter = 0; this.scene.start('WorldScene'); });
+    replay.on('pointerdown', () => {
+      state.completed = [false,false,false]; state.partyHp = [100, 100]; state.activeMember = 0; state.encounter = 0;
+      this.scene.start('WorldScene');
+    });
   }
 }
 
@@ -583,18 +732,25 @@ const game = new Phaser.Game({
 
 // Small, stable hooks for automated playtesting.
 (window as Window & { __SW_RPG__?: object }).__SW_RPG__ = {
-  getState: () => ({ ...state, completed: [...state.completed] }),
+  getState: () => ({ ...state, completed: [...state.completed], partyHp: [...state.partyHp] }),
   startBattle: (index = 0) => {
     state.encounter = Phaser.Math.Clamp(index, 0, 2); state.phase = 'battle';
     const world = game.scene.getScene('WorldScene'); world.scene.pause(); world.scene.launch('BattleScene');
   },
   chooseAction: (index = 0) => {
     const battle = game.scene.getScene('BattleScene') as BattleScene;
-    if (battle.scene.isActive()) battle.takeAction(Phaser.Math.Clamp(index, 0, 3));
+    if (battle.scene.isActive()) battle.takeAction(Phaser.Math.Clamp(index, 0, 2));
+  },
+  continueDialogue: () => {
+    const battle = game.scene.getScene('BattleScene') as BattleScene;
+    if (battle.scene.isActive()) battle.continueDialogue();
   },
   winBattle: () => {
     const battle = game.scene.getScene('BattleScene') as BattleScene;
     if (battle.scene.isActive()) battle.win();
   },
-  reset: () => { state.completed = [false,false,false]; state.playerHp = 100; state.encounter = 0; game.scene.start('WorldScene'); }
+  reset: () => {
+    state.completed = [false,false,false]; state.partyHp = [100, 100]; state.activeMember = 0; state.encounter = 0;
+    game.scene.start('WorldScene');
+  }
 };
