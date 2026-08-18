@@ -32,12 +32,9 @@ type GameState = {
   phase: 'overworld' | 'battle' | 'complete';
 };
 
-type Effectiveness = 'super' | 'normal' | 'not' | 'none';
-
 type Move = {
   title: string;
   damage: [number, number, number];
-  effectiveness: [Effectiveness, Effectiveness, Effectiveness];
   line: string;
   shields?: boolean;
 };
@@ -71,19 +68,19 @@ const partyMembers: PartyMember[] = [
 
 const moves: Move[] = [
   {
-    title: 'SET BREAKPOINT', damage: [24, 8, 0], effectiveness: ['super', 'not', 'none'],
+    title: 'SET BREAKPOINT', damage: [24, 8, 0],
     line: '“Ah. There you are.”'
   },
   {
-    title: 'SHIP HOTFIX', damage: [16, 14, 8], effectiveness: ['normal', 'normal', 'not'],
+    title: 'SHIP HOTFIX', damage: [16, 14, 8],
     line: 'Deploy now. Ask questions during the retro.'
   },
   {
-    title: 'WRITE A TEST', damage: [11, 13, 24], effectiveness: ['normal', 'normal', 'super'],
+    title: 'WRITE A TEST', damage: [11, 13, 24],
     line: 'The failure is now reproducible.', shields: true
   },
   {
-    title: 'CHECK METRICS', damage: [9, 25, 13], effectiveness: ['not', 'super', 'normal'],
+    title: 'CHECK METRICS', damage: [9, 25, 13],
     line: 'The graph is extremely accusatory!'
   }
 ];
@@ -212,17 +209,55 @@ function addPill(scene: Phaser.Scene, x: number, y: number, label: string, fill:
 }
 
 function createTextures(scene: Phaser.Scene) {
-  if (scene.textures.exists('hero')) return;
+  if (scene.textures.exists('hero-down')) return;
   const g = scene.add.graphics();
-  // All character art is authored on a tiny grid, then nearest-neighbor scaled.
-  // Hero (24 × 30).
-  g.fillStyle(0x172436).fillRect(5, 4, 14, 4).fillRect(3, 7, 18, 3);
-  g.fillStyle(0xf2bb8f).fillRect(6, 10, 12, 8).fillRect(8, 18, 8, 2);
-  g.fillStyle(0x26384a).fillRect(7, 12, 3, 2).fillRect(15, 12, 3, 2);
-  g.fillStyle(0x42a5d9).fillRect(4, 20, 16, 7);
-  g.fillStyle(0xffd35c).fillRect(11, 20, 3, 7);
-  g.fillStyle(0x243c59).fillRect(5, 27, 6, 3).fillRect(14, 27, 6, 3);
-  g.generateTexture('hero', 24, 30); g.clear();
+  // All overworld character art is authored on a tiny grid, then nearest-neighbor scaled.
+  // Maya, facing the camera (28 × 36).
+  g.fillStyle(0x213148).fillRect(7, 2, 14, 3).fillRect(4, 5, 20, 6).fillRect(6, 10, 17, 3);
+  g.fillStyle(0xb84f57).fillRect(5, 4, 4, 8).fillRect(20, 5, 4, 7);
+  g.fillStyle(0xf0b487).fillRect(7, 12, 14, 8).fillRect(5, 21, 3, 8).fillRect(20, 21, 3, 8);
+  g.fillStyle(0x25384c).fillRect(9, 14, 3, 2).fillRect(17, 14, 3, 2).fillRect(12, 18, 5, 1);
+  g.fillStyle(0x268db5).fillRect(7, 20, 15, 10).fillRect(4, 22, 4, 7).fillRect(21, 22, 4, 7);
+  g.fillStyle(0xe8f2eb).fillRect(9, 21, 11, 3);
+  g.fillStyle(0xffca4f).fillRect(13, 24, 3, 6);
+  g.fillStyle(0x243958).fillRect(8, 30, 6, 5).fillRect(16, 30, 6, 5);
+  g.fillStyle(0xf4eee2).fillRect(6, 34, 8, 2).fillRect(16, 34, 8, 2);
+  g.generateTexture('hero-down', 28, 36); g.clear();
+  // Maya, rear view. This echoes the battle stance without battle-level detail.
+  g.fillStyle(0x213148).fillRect(7, 2, 14, 3).fillRect(4, 5, 20, 8).fillRect(6, 11, 17, 3);
+  g.fillStyle(0xb84f57).fillRect(5, 4, 4, 9).fillRect(20, 5, 4, 8);
+  g.fillStyle(0xf0b487).fillRect(5, 21, 3, 8).fillRect(20, 21, 3, 8);
+  g.fillStyle(0x268db5).fillRect(7, 14, 15, 16).fillRect(4, 20, 4, 9).fillRect(21, 20, 4, 9);
+  g.fillStyle(0x175d82).fillRect(10, 17, 9, 7).fillRect(12, 19, 5, 2);
+  g.fillStyle(0xe8f2eb).fillRect(8, 14, 13, 3);
+  g.fillStyle(0xffca4f).fillRect(13, 24, 3, 6);
+  g.fillStyle(0x243958).fillRect(8, 30, 6, 5).fillRect(16, 30, 6, 5);
+  g.fillStyle(0xf4eee2).fillRect(6, 34, 8, 2).fillRect(16, 34, 8, 2);
+  g.generateTexture('hero-up', 28, 36); g.clear();
+  // Maya, side-on (28 × 36).
+  g.fillStyle(0xb84f57).fillRect(8, 3, 13, 9).fillRect(6, 6, 5, 9);
+  g.fillStyle(0xf0b487).fillRect(11, 10, 11, 10).fillRect(21, 13, 3, 4).fillRect(7, 22, 3, 8);
+  g.fillStyle(0x24384d).fillRect(19, 13, 2, 2);
+  g.fillStyle(0x268db5).fillRect(9, 20, 13, 10).fillRect(6, 22, 5, 8);
+  g.fillStyle(0xe8f2eb).fillRect(12, 21, 10, 3);
+  g.fillStyle(0xffca4f).fillRect(11, 25, 3, 5);
+  g.fillStyle(0x243958).fillRect(10, 30, 5, 5).fillRect(18, 30, 6, 5);
+  g.fillStyle(0xf4eee2).fillRect(8, 34, 7, 2).fillRect(18, 34, 8, 2);
+  g.generateTexture('hero-side', 28, 36); g.clear();
+  // Small but expressive route NPCs.
+  g.fillStyle(0x5a352c).fillRect(5, 1, 10, 5).fillRect(3, 4, 14, 4);
+  g.fillStyle(0xe7ad80).fillRect(5, 8, 10, 8);
+  g.fillStyle(0x25384c).fillRect(7, 10, 2, 2).fillRect(12, 10, 2, 2);
+  g.fillStyle(0xe75f8e).fillRect(3, 16, 14, 10).fillRect(1, 18, 3, 8).fillRect(17, 18, 3, 8);
+  g.fillStyle(0x452c5b).fillRect(4, 26, 5, 5).fillRect(11, 26, 5, 5);
+  g.generateTexture('npc-intern', 20, 31); g.clear();
+  g.fillStyle(0x372b46).fillRect(4, 1, 13, 5).fillRect(2, 5, 16, 5);
+  g.fillStyle(0xb97858).fillRect(5, 9, 10, 8);
+  g.fillStyle(0x25384c).fillRect(7, 11, 2, 2).fillRect(12, 11, 2, 2);
+  g.fillStyle(0x6f58c9).fillRect(3, 17, 14, 10).fillRect(1, 19, 3, 8).fillRect(17, 19, 3, 8);
+  g.fillStyle(0xf4f0e3).fillRect(7, 18, 6, 7);
+  g.fillStyle(0x253858).fillRect(4, 27, 5, 4).fillRect(11, 27, 5, 4);
+  g.generateTexture('npc-alex', 20, 31); g.clear();
   // Tree (24 × 30).
   g.fillStyle(0x60452f).fillRect(10, 19, 5, 11);
   g.fillStyle(0x19563a).fillRect(4, 7, 16, 14).fillRect(7, 3, 11, 20).fillRect(1, 11, 22, 7);
@@ -272,14 +307,13 @@ function createTextures(scene: Phaser.Scene) {
   g.fillStyle(0xe45555).fillRect(7, 10, 5, 2).fillRect(22, 7, 6, 2).fillRect(38, 12, 5, 2);
   g.fillStyle(0xdbeaff).fillRect(16, 33, 16, 2);
   g.generateTexture('enemy-2', 48, 44); g.destroy();
-  ['hero', 'tree', 'grass', 'dev-back', 'inez-back', 'enemy-0', 'enemy-1', 'enemy-2']
+  ['hero-down', 'hero-up', 'hero-side', 'npc-intern', 'npc-alex', 'tree', 'grass', 'dev-back', 'inez-back', 'enemy-0', 'enemy-1', 'enemy-2']
     .forEach(key => scene.textures.get(key).setFilter(Phaser.Textures.FilterMode.NEAREST));
 }
 
 class WorldScene extends Phaser.Scene {
   player!: Phaser.Physics.Arcade.Sprite;
   keys!: Record<string, Phaser.Input.Keyboard.Key>;
-  objective!: Phaser.GameObjects.Text;
   location!: Phaser.GameObjects.Text;
   private inTransition = false;
   private welcome?: Phaser.GameObjects.Container;
@@ -291,7 +325,7 @@ class WorldScene extends Phaser.Scene {
     state.phase = 'overworld'; setStatus('Exploring Route 529. Use arrow keys or WASD to move east.');
     this.physics.world.setBounds(0, 0, 2400, H);
     this.drawMap();
-    this.player = this.physics.add.sprite(330, 410, 'hero').setScale(2.5).setCollideWorldBounds(true).setDepth(30).setSize(16, 14).setOffset(4, 15);
+    this.player = this.physics.add.sprite(330, 410, 'hero-down').setScale(2.25).setCollideWorldBounds(true).setDepth(30).setSize(17, 15).setOffset(5, 18);
     this.player.setPosition(state.completed[2] ? 1990 : state.completed[1] ? 1460 : state.completed[0] ? 1010 : 330, 410);
     this.cameras.main.setBounds(0, 0, 2400, H).startFollow(this.player, true, 0.09, 0.09).setZoom(1);
     const keyboard = this.input.keyboard!;
@@ -362,34 +396,17 @@ class WorldScene extends Phaser.Scene {
     this.add.text(x, y + 13, subtitle, textStyle(13, '#526578')).setOrigin(.5).setDepth(y + 2);
   }
 
-  private npc(x: number, y: number, color: number, id: string) {
+  private npc(x: number, y: number, _color: number, id: string) {
     const c = this.add.container(x, y).setDepth(y);
-    const shadow = this.add.ellipse(0, 34, 36, 12, 0x1d3a35, .25);
-    const body = this.add.rectangle(0, 12, 28, 38, color).setStrokeStyle(3, 0x26394b);
-    const head = this.add.circle(0, -15, 13, 0xe6ad81).setStrokeStyle(3, 0x26394b);
-    c.add([shadow, body, head]).setData('id', id);
+    const shadow = this.add.ellipse(0, 27, 38, 12, 0x1d3a35, .25);
+    const sprite = this.add.image(0, -2, `npc-${id}`).setScale(2.15);
+    c.add([shadow, sprite]).setData('id', id);
     this.tweens.add({ targets: c, y: y - 3, duration: 900, yoyo: true, repeat: -1, ease: 'Sine.inOut' });
   }
 
   private makeHud() {
-    const panel = this.add.rectangle(28, 24, 400, 92, 0x14283c, .94).setOrigin(0).setScrollFactor(0).setStrokeStyle(2, 0xffffff, .18).setDepth(100);
-    this.add.text(48, 39, 'CURRENT SPRINT', monoStyle(12, '#7ee0c3')).setScrollFactor(0).setDepth(101);
-    this.objective = this.add.text(48, 61, this.objectiveCopy(), textStyle(23, '#ffffff', '800')).setScrollFactor(0).setDepth(101);
-    const hint = this.add.text(48, 92, 'MOVE  WASD / ARROWS', monoStyle(11, '#9ab0c2')).setScrollFactor(0).setDepth(101);
+    // Keep the top edge quiet: location context only, no checklist or objective tracker.
     this.location = this.add.text(W / 2, 36, 'STARTUP CITY', monoStyle(13, '#ffffff')).setOrigin(.5).setScrollFactor(0).setDepth(101).setBackgroundColor('#213e55').setPadding(14, 7);
-    const dots = this.add.container(W - 270, 74).setScrollFactor(0).setDepth(101);
-    for (let i = 0; i < 3; i++) {
-      const done = state.completed[i];
-      dots.add(this.add.circle(i * 70, 0, 18, done ? 0x67dfb6 : 0x304b61).setStrokeStyle(2, done ? 0xb9ffe8 : 0x628096));
-      dots.add(this.add.text(i * 70, 0, done ? '✓' : String(i + 1), textStyle(15, done ? '#173a32' : '#b9c8d4', '800')).setOrigin(.5));
-      if (i < 2) dots.add(this.add.rectangle(i * 70 + 35, 0, 34, 3, done ? 0x67dfb6 : 0x304b61));
-    }
-    panel.setData('hint', hint);
-  }
-
-  private objectiveCopy() {
-    const count = state.completed.filter(Boolean).length;
-    return count < 2 ? `Resolve blockers  ${count}/2` : count < 3 ? 'Face the stakeholder' : 'Reach Ship City';
   }
 
   private showWelcome() {
@@ -413,7 +430,6 @@ class WorldScene extends Phaser.Scene {
     if (next === -1) { this.player.x = 2130; return; }
     state.completed[next] = true; state.encounter = next;
     this.player.x = [1010, 1460, 1990][next];
-    this.objective.setText(this.objectiveCopy());
   }
 
   private onResume() {
@@ -421,7 +437,6 @@ class WorldScene extends Phaser.Scene {
     const i = state.encounter;
     this.player.x = [990, 1440, 1980][i];
     this.player.y = i === 1 ? 410 : 390;
-    this.objective.setText(this.objectiveCopy());
     this.flashCamera(0xffffff, 180);
     setStatus(`${encounters[i].name} resolved. Continue east toward Ship City.`);
   }
@@ -437,7 +452,13 @@ class WorldScene extends Phaser.Scene {
     if (this.keys.S.isDown || this.keys.DOWN.isDown || touch.down) y += 1;
     const velocity = new Phaser.Math.Vector2(x, y).normalize().scale(245);
     this.player.setVelocity(velocity.x, velocity.y);
-    if (x) this.player.setFlipX(x < 0);
+    if (x) {
+      this.player.setTexture('hero-side').setFlipX(x < 0);
+    } else if (y < 0) {
+      this.player.setTexture('hero-up').setFlipX(false);
+    } else if (y > 0) {
+      this.player.setTexture('hero-down').setFlipX(false);
+    }
     if (x || y) this.player.rotation = Math.sin(this.time.now / 90) * .035;
     else this.player.rotation = 0;
     this.player.y = Phaser.Math.Clamp(this.player.y, 250, 590);
@@ -502,6 +523,8 @@ class BattleScene extends Phaser.Scene {
     this.foe = this.encounter.enemies[0];
     this.enemyHp = this.foe.maxHp;
     state.phase = 'battle'; setStatus(this.encounter.intro.replace('\n', ' '));
+    ['maya', 'inez', 'alex', 'null-pointer', 'memory-leak', 'quick-question', 'one-tiny-change']
+      .forEach(name => this.textures.get(`battle-${name}`).setFilter(Phaser.Textures.FilterMode.NEAREST));
     this.drawArena();
     this.drawCombatants();
     this.drawHud();
@@ -603,12 +626,12 @@ class BattleScene extends Phaser.Scene {
     this.add.rectangle(825, 471, 330, 16, 0xd7dedb).setOrigin(0, .5).setDepth(21);
     this.playerBar = this.add.rectangle(825, 471, 330, 16, 0x48c590).setOrigin(0, .5).setDepth(22);
     this.hpText = this.add.text(1178, 471, '', monoStyle(11, '#35495c')).setOrigin(.5).setDepth(23);
-    // Light dialogue tray, ready for the Pokémon-like move cards.
-    this.add.rectangle(0, 535, W, 185, 0xf8f6ed).setOrigin(0).setStrokeStyle(5, 0x21374b).setDepth(30);
-    this.add.rectangle(0, 535, W, 8, 0x59b8d2).setOrigin(0).setDepth(31);
-    this.message = this.add.text(55, 570, '', textStyle(25, '#172b3e')).setWordWrapWidth(880).setLineSpacing(8).setDepth(32);
-    this.continuePrompt = this.add.text(980, 689, 'CLICK / SPACE / ENTER  ▾', monoStyle(11, '#287b95')).setOrigin(1).setDepth(34).setVisible(false);
-    this.partyGroup = this.add.container(1120, 576).setDepth(33);
+    // Dialogue always owns the foreground; combatants and status cards cannot cover it.
+    this.add.rectangle(0, 535, W, 185, 0xf8f6ed).setOrigin(0).setStrokeStyle(5, 0x21374b).setDepth(1000);
+    this.add.rectangle(0, 535, W, 8, 0x59b8d2).setOrigin(0).setDepth(1001);
+    this.message = this.add.text(55, 570, '', textStyle(25, '#172b3e')).setWordWrapWidth(880).setLineSpacing(8).setDepth(1002);
+    this.continuePrompt = this.add.text(980, 689, 'CLICK / SPACE / ENTER  ▾', monoStyle(11, '#287b95')).setOrigin(1).setDepth(1004).setVisible(false);
+    this.partyGroup = this.add.container(1120, 576).setDepth(1003);
     this.refreshPlayerHud();
   }
 
@@ -674,7 +697,7 @@ class BattleScene extends Phaser.Scene {
     this.processing = false;
     this.message.setText('');
     this.partyGroup.setVisible(false);
-    this.actionGroup = this.add.container(0, 0).setDepth(40);
+    this.actionGroup = this.add.container(0, 0).setDepth(1010);
     const member = partyMembers[state.activeMember];
     const other = partyMembers[1 - state.activeMember];
 
@@ -714,9 +737,7 @@ class BattleScene extends Phaser.Scene {
 
     member.moves.forEach((moveIndex, i) => {
       const move = moves[moveIndex];
-      const effect = move.effectiveness[state.encounter];
-      const effectCopy = effect === 'super' ? 'SUPER EFFECTIVE' : effect === 'not' ? 'NOT VERY EFFECTIVE' : effect === 'none' ? 'NO EFFECT' : 'NORMAL EFFECT';
-      addChoice(600 + i * 405, 583, 380, move.title, `${categories[moveIndex]}  ·  ${effectCopy}  ·  PP 10/10`, colors[moveIndex], String(i + 1), () => this.takeAction(i));
+      addChoice(600 + i * 405, 583, 380, move.title, `${categories[moveIndex]}  ·  PP 10/10`, colors[moveIndex], String(i + 1), () => this.takeAction(i));
     });
     addChoice(802, 663, 785, `SWAP TO ${other.name}`, `${other.role}  ·  ${state.partyHp[1 - state.activeMember]}/100 FOCUS`, other.color, '3', () => this.takeAction(2));
     setStatus(`Battle with ${this.foe.name}. ${member.name} is active. Choose attack 1 or 2, or press 3 to swap.`);
@@ -733,15 +754,11 @@ class BattleScene extends Phaser.Scene {
     const moveIndex = member.moves[index];
     const move = moves[moveIndex];
     const damage = move.damage[state.encounter];
-    const effectiveness = move.effectiveness[state.encounter];
     if (move.shields) this.shield = true;
     audio.sfx(560 + moveIndex * 90, .18);
     if (damage > 0 && this.enemyArt) this.tweens.add({ targets: this.enemyArt, x: this.enemyArt.x + 16, duration: 55, yoyo: true, repeat: 4 });
     this.damageEnemy(damage);
-    const result = effectiveness === 'super' ? `It's super effective!\n${damage} progress!`
-      : effectiveness === 'not' ? `It's not very effective...\n${damage} progress.`
-      : effectiveness === 'none' ? `It doesn't do anything.`
-      : `${damage} progress!`;
+    const result = damage > 0 ? `${damage} progress!` : 'No progress this time.';
     const shieldCopy = move.shields ? ' · Next interruption guarded.' : '';
     this.showMessage(`${member.name} used ${move.title}!\n${move.line}\n${result}${shieldCopy}`, () => {
       if (this.enemyHp <= 0) this.finishFoe(); else this.enemyTurn();
