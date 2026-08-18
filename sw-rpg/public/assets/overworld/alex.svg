@@ -8,8 +8,8 @@
     <path fill="#e49a65" d="M25 35h8v6h-8z"/>
     <path fill="#8f3437" d="M14 40q5-4 12-4h7q8 0 12 5l3 18H10z"/>
     <path fill="#f6eddf" d="M23 39h12l4 20H19z"/>
-    <path fill="#a84645" d="m15 42-8 8-1 12 8 1 7-16m23-5 6 7v13l-8 1-5-16"/>
-    <path fill="#e49a65" d="m6 61 8 2-1 5q-3 3-6 0-2-2-1-7Z"/>
+    <path fill="#a84645" d="M15 42q-5 3-7 8L7 62l8 1 5-16m24-5q5 3 6 8v12l-8 1-5-16"/>
+    <path fill="#e49a65" d="m7 61 8 1-1 6q-3 3-6 0-2-2-1-7Z"/>
     <path fill="#343441" d="M37 43h10v19H37z"/>
     <path fill="#343441" d="M16 58h25l2 16H31l-2-10-3 10H13z"/>
     <path fill="#f7f0df" d="M12 72h14v7H10q-1-5 2-7Zm18 0h14q3 2 2 7H30z"/>
