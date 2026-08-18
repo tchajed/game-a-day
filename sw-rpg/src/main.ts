@@ -239,56 +239,15 @@ function addPill(scene: Phaser.Scene, x: number, y: number, label: string, fill:
   return [bg, text];
 }
 
+function setImageHeight(image: Phaser.GameObjects.Image, height: number) {
+  const source = image.texture.getSourceImage() as HTMLImageElement;
+  return image.setScale(height / source.height);
+}
+
 function createTextures(scene: Phaser.Scene) {
-  if (scene.textures.exists('hero-down')) return;
+  if (scene.textures.exists('tree')) return;
   const g = scene.add.graphics();
-  // All overworld character art is authored on a tiny grid, then nearest-neighbor scaled.
-  // Maya, facing the camera (28 × 36).
-  g.fillStyle(0x213148).fillRect(7, 2, 14, 3).fillRect(4, 5, 20, 6).fillRect(6, 10, 17, 3);
-  g.fillStyle(0xb84f57).fillRect(5, 4, 4, 8).fillRect(20, 5, 4, 7);
-  g.fillStyle(0xf0b487).fillRect(7, 12, 14, 8).fillRect(5, 21, 3, 8).fillRect(20, 21, 3, 8);
-  g.fillStyle(0x25384c).fillRect(9, 14, 3, 2).fillRect(17, 14, 3, 2).fillRect(12, 18, 5, 1);
-  g.fillStyle(0x268db5).fillRect(7, 20, 15, 10).fillRect(4, 22, 4, 7).fillRect(21, 22, 4, 7);
-  g.fillStyle(0xe8f2eb).fillRect(9, 21, 11, 3);
-  g.fillStyle(0xffca4f).fillRect(13, 24, 3, 6);
-  g.fillStyle(0x243958).fillRect(8, 30, 6, 5).fillRect(16, 30, 6, 5);
-  g.fillStyle(0xf4eee2).fillRect(6, 34, 8, 2).fillRect(16, 34, 8, 2);
-  g.generateTexture('hero-down', 28, 36); g.clear();
-  // Maya, rear view. This echoes the battle stance without battle-level detail.
-  g.fillStyle(0x213148).fillRect(7, 2, 14, 3).fillRect(4, 5, 20, 8).fillRect(6, 11, 17, 3);
-  g.fillStyle(0xb84f57).fillRect(5, 4, 4, 9).fillRect(20, 5, 4, 8);
-  g.fillStyle(0xf0b487).fillRect(5, 21, 3, 8).fillRect(20, 21, 3, 8);
-  g.fillStyle(0x268db5).fillRect(7, 14, 15, 16).fillRect(4, 20, 4, 9).fillRect(21, 20, 4, 9);
-  g.fillStyle(0x175d82).fillRect(10, 17, 9, 7).fillRect(12, 19, 5, 2);
-  g.fillStyle(0xe8f2eb).fillRect(8, 14, 13, 3);
-  g.fillStyle(0xffca4f).fillRect(13, 24, 3, 6);
-  g.fillStyle(0x243958).fillRect(8, 30, 6, 5).fillRect(16, 30, 6, 5);
-  g.fillStyle(0xf4eee2).fillRect(6, 34, 8, 2).fillRect(16, 34, 8, 2);
-  g.generateTexture('hero-up', 28, 36); g.clear();
-  // Maya, side-on (28 × 36).
-  g.fillStyle(0xb84f57).fillRect(8, 3, 13, 9).fillRect(6, 6, 5, 9);
-  g.fillStyle(0xf0b487).fillRect(11, 10, 11, 10).fillRect(21, 13, 3, 4).fillRect(7, 22, 3, 8);
-  g.fillStyle(0x24384d).fillRect(19, 13, 2, 2);
-  g.fillStyle(0x268db5).fillRect(9, 20, 13, 10).fillRect(6, 22, 5, 8);
-  g.fillStyle(0xe8f2eb).fillRect(12, 21, 10, 3);
-  g.fillStyle(0xffca4f).fillRect(11, 25, 3, 5);
-  g.fillStyle(0x243958).fillRect(10, 30, 5, 5).fillRect(18, 30, 6, 5);
-  g.fillStyle(0xf4eee2).fillRect(8, 34, 7, 2).fillRect(18, 34, 8, 2);
-  g.generateTexture('hero-side', 28, 36); g.clear();
-  // Small but expressive route NPCs.
-  g.fillStyle(0x5a352c).fillRect(5, 1, 10, 5).fillRect(3, 4, 14, 4);
-  g.fillStyle(0xe7ad80).fillRect(5, 8, 10, 8);
-  g.fillStyle(0x25384c).fillRect(7, 10, 2, 2).fillRect(12, 10, 2, 2);
-  g.fillStyle(0xe75f8e).fillRect(3, 16, 14, 10).fillRect(1, 18, 3, 8).fillRect(17, 18, 3, 8);
-  g.fillStyle(0x452c5b).fillRect(4, 26, 5, 5).fillRect(11, 26, 5, 5);
-  g.generateTexture('npc-intern', 20, 31); g.clear();
-  g.fillStyle(0x372b46).fillRect(4, 1, 13, 5).fillRect(2, 5, 16, 5);
-  g.fillStyle(0xb97858).fillRect(5, 9, 10, 8);
-  g.fillStyle(0x25384c).fillRect(7, 11, 2, 2).fillRect(12, 11, 2, 2);
-  g.fillStyle(0x6f58c9).fillRect(3, 17, 14, 10).fillRect(1, 19, 3, 8).fillRect(17, 19, 3, 8);
-  g.fillStyle(0xf4f0e3).fillRect(7, 18, 6, 7);
-  g.fillStyle(0x253858).fillRect(4, 27, 5, 4).fillRect(11, 27, 5, 4);
-  g.generateTexture('npc-alex', 20, 31); g.clear();
+  // Compact map props stay on a tiny nearest-neighbor grid; characters use smooth SVG art.
   // Tree (24 × 30).
   g.fillStyle(0x60452f).fillRect(10, 19, 5, 11);
   g.fillStyle(0x19563a).fillRect(4, 7, 16, 14).fillRect(7, 3, 11, 20).fillRect(1, 11, 22, 7);
@@ -297,49 +256,8 @@ function createTextures(scene: Phaser.Scene) {
   // Tall-code tuft (12 × 12).
   g.fillStyle(0x24694f).fillRect(1, 3, 2, 9).fillRect(5, 0, 2, 12).fillRect(9, 4, 2, 8);
   g.fillStyle(0x69ba70).fillRect(3, 6, 2, 2).fillRect(7, 3, 2, 2);
-  g.generateTexture('grass', 12, 12); g.clear();
-  // Maya's battle backsprite (48 × 52).
-  g.fillStyle(0x183047).fillRect(9, 44, 28, 8);
-  g.fillStyle(0x253e5d).fillRect(14, 31, 22, 16);
-  g.fillStyle(0x2c9ec2).fillRect(5, 20, 35, 20).fillRect(9, 15, 27, 8);
-  g.fillStyle(0xd9976e).fillRect(14, 5, 20, 16).fillRect(17, 21, 14, 3);
-  g.fillStyle(0x30283a).fillRect(11, 2, 25, 8).fillRect(10, 7, 7, 8).fillRect(32, 7, 5, 6);
-  g.fillStyle(0xe9f1f2).fillRect(27, 25, 20, 16);
-  g.fillStyle(0x315f79).fillRect(34, 31, 7, 3);
-  g.generateTexture('dev-back', 48, 52); g.clear();
-  // Inez's battle backsprite (48 × 52).
-  g.fillStyle(0x312b46).fillRect(9, 44, 28, 8);
-  g.fillStyle(0x4d365f).fillRect(14, 31, 22, 16);
-  g.fillStyle(0xd65f8c).fillRect(5, 20, 35, 20).fillRect(9, 15, 27, 8);
-  g.fillStyle(0xb97455).fillRect(14, 5, 20, 16).fillRect(17, 21, 14, 3);
-  g.fillStyle(0x211d2f).fillRect(10, 1, 27, 8).fillRect(8, 6, 8, 15).fillRect(33, 6, 6, 15);
-  g.fillStyle(0xf5f0dc).fillRect(27, 25, 20, 16);
-  g.fillStyle(0xc24d77).fillRect(34, 31, 7, 3);
-  g.generateTexture('inez-back', 48, 52); g.clear();
-  // Null Pointer (40 × 40).
-  g.fillStyle(0x28384a).fillRect(4, 3, 8, 8).fillRect(28, 3, 8, 8).fillRect(5, 13, 30, 23).fillRect(10, 8, 20, 30);
-  g.fillStyle(0xffd35c).fillRect(6, 5, 5, 6).fillRect(29, 5, 5, 6);
-  g.fillStyle(0xf05b4f).fillRect(8, 14, 24, 21).fillRect(12, 10, 16, 27);
-  g.fillStyle(0xffffff).fillRect(12, 18, 5, 5).fillRect(24, 18, 5, 5);
-  g.fillStyle(0x172436).fillRect(14, 20, 2, 2).fillRect(25, 20, 2, 2).fillRect(15, 29, 10, 2);
-  g.generateTexture('enemy-0', 40, 40); g.clear();
-  // Memory Leak (44 × 40).
-  g.fillStyle(0x342c57).fillRect(3, 19, 38, 17).fillRect(7, 10, 30, 28).fillRect(13, 5, 20, 34);
-  g.fillStyle(0x8d63d2).fillRect(5, 20, 34, 15).fillRect(9, 11, 26, 25).fillRect(15, 7, 16, 30);
-  g.fillStyle(0xa779e8).fillRect(9, 15, 8, 8).fillRect(17, 9, 12, 5);
-  g.fillStyle(0xffffff).fillRect(12, 19, 6, 6).fillRect(27, 19, 6, 6);
-  g.fillStyle(0x273247).fillRect(14, 21, 3, 3).fillRect(28, 21, 3, 3).fillRect(18, 30, 10, 2);
-  g.fillStyle(0x7553bd).fillRect(6, 35, 8, 5).fillRect(31, 34, 9, 6);
-  g.generateTexture('enemy-1', 44, 40); g.clear();
-  // One Tiny Change (48 × 44).
-  g.fillStyle(0x1d3554).fillRect(6, 13, 36, 28).fillRect(2, 5, 14, 13).fillRect(17, 1, 16, 15).fillRect(34, 7, 13, 14);
-  g.fillStyle(0x3977cd).fillRect(8, 15, 32, 24);
-  g.fillStyle(0xffffff).fillRect(4, 7, 10, 9).fillRect(19, 3, 12, 10).fillRect(36, 9, 9, 10).fillRect(13, 21, 6, 6).fillRect(29, 21, 6, 6);
-  g.fillStyle(0xe45555).fillRect(7, 10, 5, 2).fillRect(22, 7, 6, 2).fillRect(38, 12, 5, 2);
-  g.fillStyle(0xdbeaff).fillRect(16, 33, 16, 2);
-  g.generateTexture('enemy-2', 48, 44); g.destroy();
-  ['hero-down', 'hero-up', 'hero-side', 'npc-intern', 'npc-alex', 'tree', 'grass', 'dev-back', 'inez-back', 'enemy-0', 'enemy-1', 'enemy-2']
-    .forEach(key => scene.textures.get(key).setFilter(Phaser.Textures.FilterMode.NEAREST));
+  g.generateTexture('grass', 12, 12); g.destroy();
+  ['tree', 'grass'].forEach(key => scene.textures.get(key).setFilter(Phaser.Textures.FilterMode.NEAREST));
 }
 
 class WorldScene extends Phaser.Scene {
@@ -351,13 +269,26 @@ class WorldScene extends Phaser.Scene {
 
   constructor() { super('WorldScene'); }
 
+  preload() {
+    const sprites = {
+      'hero-down': 'maya-front.svg',
+      'hero-up': 'maya-back.svg',
+      'hero-side': 'maya-side.svg',
+      'npc-intern': 'intern.svg',
+      'npc-alex': 'alex.svg'
+    };
+    Object.entries(sprites).forEach(([key, file]) => this.load.svg(key, assetUrl(`assets/overworld/${file}`)));
+  }
+
   create() {
     createTextures(this);
+    ['hero-down', 'hero-up', 'hero-side', 'npc-intern', 'npc-alex']
+      .forEach(key => this.textures.get(key).setFilter(Phaser.Textures.FilterMode.LINEAR));
     audio.setTheme('overworld');
     state.phase = 'overworld'; setStatus('Exploring Route 529. Use arrow keys or WASD to move east.');
     this.physics.world.setBounds(0, 0, 2400, H);
     this.drawMap();
-    this.player = this.physics.add.sprite(330, 410, 'hero-down').setScale(2.25).setCollideWorldBounds(true).setDepth(30).setSize(17, 15).setOffset(5, 18);
+    this.player = this.physics.add.sprite(330, 410, 'hero-down').setScale(.9).setCollideWorldBounds(true).setDepth(30).setSize(30, 20).setOffset(17, 62);
     this.player.setPosition(state.completed[2] ? 1990 : state.completed[1] ? 1460 : state.completed[0] ? 1010 : 330, 410);
     this.cameras.main.setBounds(0, 0, 2400, H).startFollow(this.player, true, 0.09, 0.09).setZoom(1);
     const keyboard = this.input.keyboard!;
@@ -474,8 +405,8 @@ class WorldScene extends Phaser.Scene {
 
   private npc(x: number, y: number, _color: number, id: string) {
     const c = this.add.container(x, y).setDepth(y);
-    const shadow = this.add.ellipse(0, 27, 38, 12, 0x1d3a35, .25);
-    const sprite = this.add.image(0, -2, `npc-${id}`).setScale(2.15);
+    const shadow = this.add.ellipse(0, 29, 38, 12, 0x1d3a35, .25);
+    const sprite = this.add.image(0, -2, `npc-${id}`).setScale(.78);
     c.add([shadow, sprite]).setData('id', id);
     this.tweens.add({ targets: c, y: y - 3, duration: 900, yoyo: true, repeat: -1, ease: 'Sine.inOut' });
   }
@@ -604,7 +535,7 @@ class BattleScene extends Phaser.Scene {
     this.enemyHp = this.foe.maxHp;
     state.phase = 'battle'; setStatus(this.encounter.intro.replace('\n', ' '));
     ['maya', 'inez', 'alex', 'null-pointer', 'memory-leak', 'quick-question', 'one-tiny-change']
-      .forEach(name => this.textures.get(`battle-${name}`).setFilter(Phaser.Textures.FilterMode.NEAREST));
+      .forEach(name => this.textures.get(`battle-${name}`).setFilter(Phaser.Textures.FilterMode.LINEAR));
     this.drawArena();
     this.drawCombatants();
     this.drawHud();
@@ -641,8 +572,10 @@ class BattleScene extends Phaser.Scene {
 
   private drawCombatants() {
     this.add.ellipse(270, 494, 225, 42, 0x315f4d, .24).setDepth(7);
-    this.playerSprite = this.add.image(270, 358, `battle-${partyMembers[state.activeMember].name.toLowerCase()}`)
-      .setDisplaySize(state.activeMember === 0 ? 234 : 184, 360).setDepth(10);
+    this.playerSprite = setImageHeight(
+      this.add.image(270, 358, `battle-${partyMembers[state.activeMember].name.toLowerCase()}`),
+      360
+    ).setDepth(10);
     this.tweens.add({ targets: this.playerSprite, y: 352, duration: 1050, yoyo: true, repeat: -1, ease: 'Sine.inOut' });
     if (this.encounter.trainer) this.showTrainer();
   }
@@ -663,7 +596,7 @@ class BattleScene extends Phaser.Scene {
     const trainer = this.encounter.trainer;
     if (!trainer) return;
     this.trainerArt?.destroy();
-    this.trainerArt = this.add.image(970, 265, `battle-${trainer.asset}`).setDisplaySize(170, 380).setDepth(9).setAlpha(0);
+    this.trainerArt = setImageHeight(this.add.image(970, 265, `battle-${trainer.asset}`), 380).setDepth(9).setAlpha(0);
     this.tweens.add({ targets: this.trainerArt, x: 950, alpha: 1, duration: 420, ease: 'Cubic.out' });
   }
 
@@ -729,7 +662,7 @@ class BattleScene extends Phaser.Scene {
     const hp = state.partyHp[state.activeMember];
     this.memberName.setText(member.name);
     this.memberRole.setText(member.role);
-    this.playerSprite.setTexture(`battle-${member.name.toLowerCase()}`).setDisplaySize(state.activeMember === 0 ? 234 : 184, 360);
+    setImageHeight(this.playerSprite.setTexture(`battle-${member.name.toLowerCase()}`), 360);
     this.playerBar.setDisplaySize(330 * (hp / 100), 16).setFillStyle(hp < 35 ? 0xf05b4f : hp < 60 ? 0xf0ae4c : 0x48c590);
     this.hpText.setText(`${hp}/100`);
     this.partyGroup.removeAll(true);
