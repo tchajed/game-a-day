@@ -2,12 +2,14 @@ import Phaser from 'phaser';
 import { GameAudio } from './audio';
 import './style.css';
 
+type FoeId = 'null-pointer' | 'memory-leak' | 'quick-question' | 'one-tiny-change';
+
 type EnemyProfile = {
   name: string;
   kind: string;
   level: number;
   maxHp: number;
-  asset: string;
+  asset: FoeId;
   displayHeight: number;
   attack: string;
 };
@@ -33,10 +35,19 @@ type GameState = {
   phase: 'overworld' | 'battle' | 'complete';
 };
 
+type Effectiveness = 'super' | 'normal' | 'not' | 'none';
+
+type MoveOutcome = {
+  damage: number;
+  effectiveness: Effectiveness;
+  result: string;
+};
+
 type Move = {
   title: string;
-  damage: [number, number, number];
-  line: string;
+  category: string;
+  color: number;
+  outcomes: Record<FoeId, MoveOutcome>;
   shields?: boolean;
 };
 
@@ -46,7 +57,7 @@ type PartyMember = {
   initial: string;
   color: number;
   texture: string;
-  moves: [number, number];
+  moves: [number, number, number, number];
 };
 
 const W = 1280;
@@ -63,26 +74,82 @@ const state: GameState = {
 const touch = { up: false, down: false, left: false, right: false };
 
 const partyMembers: PartyMember[] = [
-  { name: 'MAYA', role: 'STAFF ENGINEER · LV.12', initial: 'M', color: 0x42a5d9, texture: 'dev-back', moves: [0, 1] },
-  { name: 'INEZ', role: 'QA ENGINEER · LV.11', initial: 'I', color: 0xe56c99, texture: 'inez-back', moves: [2, 3] }
+  { name: 'MAYA', role: 'STAFF ENGINEER · LV.12', initial: 'M', color: 0x42a5d9, texture: 'dev-back', moves: [0, 1, 2, 3] },
+  { name: 'INEZ', role: 'QA ENGINEER · LV.11', initial: 'I', color: 0xe56c99, texture: 'inez-back', moves: [4, 5, 6, 7] }
 ];
 
 const moves: Move[] = [
   {
-    title: 'SET BREAKPOINT', damage: [24, 8, 0],
-    line: '“Ah. There you are.”'
+    title: 'SET BREAKPOINT', category: 'DEBUG', color: 0x2f95bf,
+    outcomes: {
+      'null-pointer': { damage: 22, effectiveness: 'super', result: 'NULL POINTER freezes at the exact bad dereference. 22 progress!' },
+      'memory-leak': { damage: 1, effectiveness: 'not', result: 'MEMORY LEAK keeps growing while the process is paused. Just 1 progress.' },
+      'quick-question': { damage: 0, effectiveness: 'none', result: 'There is no code path inside a QUICK QUESTION to pause. Nothing happens.' },
+      'one-tiny-change': { damage: 0, effectiveness: 'none', result: 'ONE TINY CHANGE has already escaped into three new requirements. Nothing happens.' }
+    }
   },
   {
-    title: 'SHIP HOTFIX', damage: [16, 14, 8],
-    line: 'Deploy now. Ask questions during the retro.'
+    title: 'SHIP HOTFIX', category: 'DEPLOY', color: 0xe49b37,
+    outcomes: {
+      'null-pointer': { damage: 8, effectiveness: 'normal', result: 'The guard clause gives NULL POINTER fewer places to hide. 8 progress.' },
+      'memory-leak': { damage: 0, effectiveness: 'none', result: 'The hotfix deploys, but MEMORY LEAK is still allocated. Nothing happens.' },
+      'quick-question': { damage: 1, effectiveness: 'not', result: 'QUICK QUESTION replies “nice!” and immediately asks another. Just 1 progress.' },
+      'one-tiny-change': { damage: 2, effectiveness: 'not', result: 'The hotfix covers one head of ONE TINY CHANGE. Two more appear. Just 2 progress.' }
+    }
   },
   {
-    title: 'WRITE A TEST', damage: [11, 13, 24],
-    line: 'The failure is now reproducible.', shields: true
+    title: 'READ STACK TRACE', category: 'DEBUG', color: 0x657fd4,
+    outcomes: {
+      'null-pointer': { damage: 16, effectiveness: 'super', result: 'The trace points straight back to NULL POINTER. 16 progress!' },
+      'memory-leak': { damage: 2, effectiveness: 'not', result: 'The trace shows where MEMORY LEAK crashed, not where it grew. Just 2 progress.' },
+      'quick-question': { damage: 0, effectiveness: 'none', result: 'QUICK QUESTION has no stack, only a calendar invite. Nothing happens.' },
+      'one-tiny-change': { damage: 0, effectiveness: 'none', result: 'ONE TINY CHANGE is a process problem, not an exception. Nothing happens.' }
+    }
   },
   {
-    title: 'CHECK METRICS', damage: [9, 25, 13],
-    line: 'The graph is extremely accusatory!'
+    title: 'RESTART SERVICE', category: 'OPS', color: 0x50a77f,
+    outcomes: {
+      'null-pointer': { damage: 1, effectiveness: 'not', result: 'NULL POINTER comes right back after startup. Just 1 progress.' },
+      'memory-leak': { damage: 10, effectiveness: 'normal', result: 'MEMORY LEAK loses its hoarded heap—for now. 10 progress.' },
+      'quick-question': { damage: 0, effectiveness: 'none', result: 'QUICK QUESTION was sent over chat, not by the service. Nothing happens.' },
+      'one-tiny-change': { damage: 0, effectiveness: 'none', result: 'The service restarts into the same expanded scope. Nothing happens.' }
+    }
+  },
+  {
+    title: 'WRITE A TEST', category: 'TEST', color: 0xdf668b, shields: true,
+    outcomes: {
+      'null-pointer': { damage: 3, effectiveness: 'not', result: 'The test catches NULL POINTER, but does not fix it. 3 progress.' },
+      'memory-leak': { damage: 1, effectiveness: 'not', result: 'The short test ends before MEMORY LEAK becomes obvious. Just 1 progress.' },
+      'quick-question': { damage: 2, effectiveness: 'not', result: 'QUICK QUESTION is technically reproducible: it arrives every morning. Just 2 progress.' },
+      'one-tiny-change': { damage: 20, effectiveness: 'super', result: 'The acceptance test exposes exactly how “tiny” the change is. 20 progress!' }
+    }
+  },
+  {
+    title: 'CHECK METRICS', category: 'OBSERVE', color: 0x8b64c8,
+    outcomes: {
+      'null-pointer': { damage: 0, effectiveness: 'none', result: 'The dashboard says NULL POINTER happened. Everyone already knew. Nothing happens.' },
+      'memory-leak': { damage: 22, effectiveness: 'super', result: 'The heap graph catches MEMORY LEAK climbing in plain sight. 22 progress!' },
+      'quick-question': { damage: 0, effectiveness: 'none', result: 'There is no dashboard for QUICK QUESTION urgency. Nothing happens.' },
+      'one-tiny-change': { damage: 1, effectiveness: 'not', result: 'Velocity dips, but ONE TINY CHANGE calls that “just noise.” Just 1 progress.' }
+    }
+  },
+  {
+    title: 'REPRODUCE LOCALLY', category: 'TEST', color: 0xd15884,
+    outcomes: {
+      'null-pointer': { damage: 10, effectiveness: 'normal', result: 'NULL POINTER crashes just as reliably on Inez’s machine. 10 progress.' },
+      'memory-leak': { damage: 3, effectiveness: 'not', result: 'MEMORY LEAK takes all afternoon to appear locally. 3 progress.' },
+      'quick-question': { damage: 0, effectiveness: 'none', result: 'QUICK QUESTION cannot be reproduced without Alex standing behind you. Nothing happens.' },
+      'one-tiny-change': { damage: 0, effectiveness: 'none', result: 'The expanded requirements work perfectly on localhost. Nothing happens.' }
+    }
+  },
+  {
+    title: 'FILE A TICKET', category: 'PROCESS', color: 0x3b9b87,
+    outcomes: {
+      'null-pointer': { damage: 0, effectiveness: 'none', result: 'NULL POINTER cannot read its new ticket. Nothing happens.' },
+      'memory-leak': { damage: 0, effectiveness: 'none', result: 'MEMORY LEAK is now documented and still leaking. Nothing happens.' },
+      'quick-question': { damage: 16, effectiveness: 'super', result: 'QUICK QUESTION must provide context and acceptance criteria. 16 progress!' },
+      'one-tiny-change': { damage: 8, effectiveness: 'normal', result: 'The ticket gives ONE TINY CHANGE a visible estimate. 8 progress.' }
+    }
   }
 ];
 
@@ -502,6 +569,8 @@ class BattleScene extends Phaser.Scene {
     this.input.keyboard!.on('keydown-ONE', () => this.takeAction(0));
     this.input.keyboard!.on('keydown-TWO', () => this.takeAction(1));
     this.input.keyboard!.on('keydown-THREE', () => this.takeAction(2));
+    this.input.keyboard!.on('keydown-FOUR', () => this.takeAction(3));
+    this.input.keyboard!.on('keydown-S', () => this.swapMember());
     this.time.delayedCall(500, () => this.beginEncounter());
     if (DEBUG) this.input.keyboard!.on('keydown-K', () => this.finishFoe());
   }
@@ -669,16 +738,13 @@ class BattleScene extends Phaser.Scene {
     const other = partyMembers[1 - state.activeMember];
 
     const prompt = this.add.graphics();
-    prompt.fillStyle(0x142e43, 1).fillRoundedRect(18, 552, 386, 150, 18);
+    prompt.fillStyle(0x142e43, 1).fillRoundedRect(18, 552, 282, 150, 18);
     prompt.fillStyle(member.color, 1).fillRoundedRect(18, 552, 12, 150, { tl: 18, bl: 18, tr: 0, br: 0 });
-    prompt.lineStyle(2, 0xffffff, .12).strokeRoundedRect(18, 552, 386, 150, 18);
-    const fightTag = this.add.text(52, 572, 'FIGHT', monoStyle(11, '#83dff1')).setLetterSpacing(2);
-    const question = this.add.text(52, 601, `What will\n${member.name} do?`, textStyle(25, '#ffffff', '800')).setLineSpacing(6);
-    const hint = this.add.text(52, 674, 'CHOOSE A MOVE  1–3', monoStyle(10, '#a9bfce'));
+    prompt.lineStyle(2, 0xffffff, .12).strokeRoundedRect(18, 552, 282, 150, 18);
+    const fightTag = this.add.text(48, 568, 'FIGHT', monoStyle(11, '#83dff1')).setLetterSpacing(2);
+    const question = this.add.text(48, 591, `What will ${member.name} do?`, textStyle(20, '#ffffff', '800'));
+    const hint = this.add.text(48, 620, 'ATTACK 1–4', monoStyle(9, '#a9bfce'));
     this.actionGroup.add([prompt, fightTag, question, hint]);
-
-    const colors = [0x2f95bf, 0xe49b37, 0xdf668b, 0x50a77f];
-    const categories = ['DEBUG', 'DEPLOY', 'TEST', 'OBSERVE'];
     const addChoice = (cx: number, cy: number, width: number, title: string, detail: string, color: number, key: string, choose: () => void) => {
       const choice = this.add.container(cx, cy).setSize(width, 62).setInteractive({ useHandCursor: true });
       const plate = this.add.graphics();
@@ -704,15 +770,18 @@ class BattleScene extends Phaser.Scene {
 
     member.moves.forEach((moveIndex, i) => {
       const move = moves[moveIndex];
-      addChoice(600 + i * 405, 583, 380, move.title, `${categories[moveIndex]}  ·  PP 10/10`, colors[moveIndex], String(i + 1), () => this.takeAction(i));
+      const effect = move.outcomes[this.foe.asset].effectiveness;
+      const effectCopy = effect === 'super' ? 'SUPER EFFECTIVE' : effect === 'not' ? 'NOT VERY EFFECTIVE' : effect === 'none' ? 'NO EFFECT' : 'NORMAL EFFECT';
+      const column = i % 2;
+      const row = Math.floor(i / 2);
+      addChoice(532 + column * 460, 582 + row * 70, 438, move.title, `${move.category}  ·  ${effectCopy}`, move.color, String(i + 1), () => this.takeAction(i));
     });
-    addChoice(802, 663, 785, `SWAP TO ${other.name}`, `${other.role}  ·  ${state.partyHp[1 - state.activeMember]}/100 FOCUS`, other.color, '3', () => this.takeAction(2));
-    setStatus(`Battle with ${this.foe.name}. ${member.name} is active. Choose attack 1 or 2, or press 3 to swap.`);
+    addChoice(159, 672, 244, `SWAP TO ${other.name}`, `${state.partyHp[1 - state.activeMember]}/100 FOCUS`, other.color, 'S', () => this.swapMember());
+    setStatus(`Battle with ${this.foe.name}. ${member.name} is active. Choose attack 1–4, or press S to swap.`);
   }
 
   takeAction(index: number) {
-    if (this.processing || index < 0 || index > 2) return;
-    if (index === 2) { this.swapMember(); return; }
+    if (this.processing || index < 0 || index > 3) return;
     this.processing = true;
     this.actionGroup?.destroy();
     this.actionGroup = undefined;
@@ -720,19 +789,19 @@ class BattleScene extends Phaser.Scene {
     const member = partyMembers[state.activeMember];
     const moveIndex = member.moves[index];
     const move = moves[moveIndex];
-    const damage = move.damage[state.encounter];
+    const outcome = move.outcomes[this.foe.asset];
     if (move.shields) this.shield = true;
-    audio.sfx(560 + moveIndex * 90, .18);
-    if (damage > 0 && this.enemyArt) this.tweens.add({ targets: this.enemyArt, x: this.enemyArt.x + 16, duration: 55, yoyo: true, repeat: 4 });
-    this.damageEnemy(damage);
-    const result = damage > 0 ? `${damage} progress!` : 'No progress this time.';
-    const shieldCopy = move.shields ? ' · Next interruption guarded.' : '';
-    this.showMessage(`${member.name} used ${move.title}!\n${move.line}\n${result}${shieldCopy}`, () => {
+    audio.sfx(560 + moveIndex * 55, .18);
+    if (outcome.damage > 0 && this.enemyArt) this.tweens.add({ targets: this.enemyArt, x: this.enemyArt.x + 16, duration: 55, yoyo: true, repeat: 4 });
+    this.damageEnemy(outcome.damage);
+    const shieldCopy = move.shields ? '\nThe next interruption is guarded.' : '';
+    this.showMessage(`${member.name} used ${move.title}!\n${outcome.result}${shieldCopy}`, () => {
       if (this.enemyHp <= 0) this.finishFoe(); else this.enemyTurn();
     }, true);
   }
 
-  private swapMember() {
+  swapMember() {
+    if (this.processing) return;
     this.processing = true;
     this.actionGroup?.destroy();
     this.actionGroup = undefined;
@@ -870,7 +939,11 @@ const game = new Phaser.Game({
   },
   chooseAction: (index = 0) => {
     const battle = game.scene.getScene('BattleScene') as BattleScene;
-    if (battle.scene.isActive()) battle.takeAction(Phaser.Math.Clamp(index, 0, 2));
+    if (battle.scene.isActive()) battle.takeAction(Phaser.Math.Clamp(index, 0, 3));
+  },
+  swapParty: () => {
+    const battle = game.scene.getScene('BattleScene') as BattleScene;
+    if (battle.scene.isActive()) battle.swapMember();
   },
   continueDialogue: () => {
     const battle = game.scene.getScene('BattleScene') as BattleScene;
