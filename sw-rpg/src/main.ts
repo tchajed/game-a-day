@@ -1,16 +1,27 @@
 import Phaser from 'phaser';
 import './style.css';
 
-type Encounter = {
+type EnemyProfile = {
   name: string;
   kind: string;
   level: number;
   maxHp: number;
-  color: number;
-  accent: number;
-  intro: string;
+  asset: string;
+  displayHeight: number;
   attack: string;
+};
+
+type Encounter = {
+  name: string;
+  intro: string;
   defeated: string;
+  enemies: EnemyProfile[];
+  trainer?: {
+    name: string;
+    role: string;
+    asset: string;
+    challenge: string;
+  };
 };
 
 type GameState = {
@@ -43,6 +54,7 @@ type PartyMember = {
 const W = 1280;
 const H = 720;
 const DEBUG = new URLSearchParams(location.search).get('debug') === 'true';
+const assetUrl = (path: string) => `${import.meta.env.BASE_URL}${path}`;
 const state: GameState = {
   encounter: 0,
   completed: [false, false, false],
@@ -78,19 +90,45 @@ const moves: Move[] = [
 
 const encounters: Encounter[] = [
   {
-    name: 'NULL POINTER', kind: 'Wild Bug', level: 3, maxHp: 42, color: 0xf05b4f, accent: 0xffd35c,
+    name: 'NULL POINTER',
     intro: 'A wild NULL POINTER appeared!\nIt is pointing at absolutely nothing.',
-    attack: 'NULL POINTER used PANIC IN PROD!', defeated: 'The pointer found purpose. Bug resolved!'
+    defeated: 'The pointer found purpose. Bug resolved!',
+    enemies: [{
+      name: 'NULL POINTER', kind: 'Wild Bug', level: 3, maxHp: 42,
+      asset: 'null-pointer', displayHeight: 315,
+      attack: 'NULL POINTER used PANIC IN PROD!'
+    }]
   },
   {
-    name: 'MEMORY LEAK', kind: 'Wild Incident', level: 5, maxHp: 55, color: 0x8d63d2, accent: 0x69e6c1,
+    name: 'MEMORY LEAK',
     intro: 'A wild MEMORY LEAK seeped from the tall code!\nYour laptop fan sounds concerned.',
-    attack: 'MEMORY LEAK used CONSUME RAM!', defeated: 'The heap is tidy again. Incident resolved!'
+    defeated: 'The heap is tidy again. Incident resolved!',
+    enemies: [{
+      name: 'MEMORY LEAK', kind: 'Wild Incident', level: 5, maxHp: 55,
+      asset: 'memory-leak', displayHeight: 300,
+      attack: 'MEMORY LEAK used CONSUME RAM!'
+    }]
   },
   {
-    name: 'ONE TINY CHANGE', kind: 'Feature Request', level: 8, maxHp: 68, color: 0x3b78d8, accent: 0xffb44b,
-    intro: 'PM ALEX wants to sync!\n“It is just one tiny change...”',
-    attack: 'ONE TINY CHANGE used SCOPE CREEP!', defeated: 'Requirements aligned! Alex scheduled a follow-up.'
+    name: 'PM ALEX',
+    intro: 'PM ALEX wants to sync!',
+    defeated: 'Requirements aligned! Alex scheduled a follow-up.',
+    trainer: {
+      name: 'ALEX', role: 'PRODUCT MANAGER', asset: 'alex',
+      challenge: '“Before we ship, just two tiny things...”'
+    },
+    enemies: [
+      {
+        name: 'QUICK QUESTION', kind: 'Priority Ping', level: 7, maxHp: 44,
+        asset: 'quick-question', displayHeight: 260,
+        attack: 'QUICK QUESTION used CIRCLE BACK!'
+      },
+      {
+        name: 'ONE TINY CHANGE', kind: 'Scope Hydra', level: 9, maxHp: 72,
+        asset: 'one-tiny-change', displayHeight: 330,
+        attack: 'ONE TINY CHANGE used SCOPE CREEP!'
+      }
+    ]
   }
 ];
 
@@ -234,6 +272,8 @@ function createTextures(scene: Phaser.Scene) {
   g.fillStyle(0xe45555).fillRect(7, 10, 5, 2).fillRect(22, 7, 6, 2).fillRect(38, 12, 5, 2);
   g.fillStyle(0xdbeaff).fillRect(16, 33, 16, 2);
   g.generateTexture('enemy-2', 48, 44); g.destroy();
+  ['hero', 'tree', 'grass', 'dev-back', 'inez-back', 'enemy-0', 'enemy-1', 'enemy-2']
+    .forEach(key => scene.textures.get(key).setFilter(Phaser.Textures.FilterMode.NEAREST));
 }
 
 class WorldScene extends Phaser.Scene {
@@ -426,6 +466,8 @@ class WorldScene extends Phaser.Scene {
 
 class BattleScene extends Phaser.Scene {
   encounter!: Encounter;
+  foe!: EnemyProfile;
+  foeIndex = 0;
   enemyHp = 0;
   shield = false;
   processing = true;
@@ -434,8 +476,10 @@ class BattleScene extends Phaser.Scene {
   message!: Phaser.GameObjects.Text;
   continuePrompt!: Phaser.GameObjects.Text;
   actionGroup?: Phaser.GameObjects.Container;
-  enemyArt!: Phaser.GameObjects.Container;
+  enemyArt?: Phaser.GameObjects.Image;
+  trainerArt?: Phaser.GameObjects.Image;
   enemyName!: Phaser.GameObjects.Text;
+  enemyMeta!: Phaser.GameObjects.Text;
   playerSprite!: Phaser.GameObjects.Image;
   memberName!: Phaser.GameObjects.Text;
   memberRole!: Phaser.GameObjects.Text;
@@ -447,8 +491,16 @@ class BattleScene extends Phaser.Scene {
 
   constructor() { super('BattleScene'); }
 
+  preload() {
+    const assets = ['maya', 'inez', 'alex', 'null-pointer', 'memory-leak', 'quick-question', 'one-tiny-change'];
+    assets.forEach(name => this.load.image(`battle-${name}`, assetUrl(`assets/battle/${name}.png`)));
+  }
+
   create() {
-    this.encounter = encounters[state.encounter]; this.enemyHp = this.encounter.maxHp;
+    this.encounter = encounters[state.encounter];
+    this.foeIndex = 0;
+    this.foe = this.encounter.enemies[0];
+    this.enemyHp = this.foe.maxHp;
     state.phase = 'battle'; setStatus(this.encounter.intro.replace('\n', ' '));
     this.drawArena();
     this.drawCombatants();
@@ -460,8 +512,8 @@ class BattleScene extends Phaser.Scene {
     this.input.keyboard!.on('keydown-ONE', () => this.takeAction(0));
     this.input.keyboard!.on('keydown-TWO', () => this.takeAction(1));
     this.input.keyboard!.on('keydown-THREE', () => this.takeAction(2));
-    this.time.delayedCall(500, () => this.showMessage(this.encounter.intro, () => this.showActions()));
-    if (DEBUG) this.input.keyboard!.on('keydown-K', () => this.win());
+    this.time.delayedCall(500, () => this.beginEncounter());
+    if (DEBUG) this.input.keyboard!.on('keydown-K', () => this.finishFoe());
   }
 
   private drawArena() {
@@ -483,29 +535,63 @@ class BattleScene extends Phaser.Scene {
   }
 
   private drawCombatants() {
-    this.enemyArt = this.makeEnemy(940, 258, state.encounter).setScale(.2).setAlpha(0);
-    this.tweens.add({ targets: this.enemyArt, scale: 1, alpha: 1, duration: 480, ease: 'Back.out' });
-    const dev = this.add.container(270, 438).setDepth(10);
-    const shadow = this.add.rectangle(0, 105, 190, 32, 0x315f4d, .28);
-    this.playerSprite = this.add.image(0, 0, partyMembers[state.activeMember].texture).setScale(5);
-    dev.add([shadow, this.playerSprite]);
-    this.tweens.add({ targets: dev, y: 430, duration: 800, yoyo: true, repeat: -1, ease: 'Stepped' });
+    this.add.ellipse(270, 494, 225, 42, 0x315f4d, .24).setDepth(7);
+    this.playerSprite = this.add.image(270, 358, `battle-${partyMembers[state.activeMember].name.toLowerCase()}`)
+      .setDisplaySize(state.activeMember === 0 ? 234 : 184, 360).setDepth(10);
+    this.tweens.add({ targets: this.playerSprite, y: 352, duration: 1050, yoyo: true, repeat: -1, ease: 'Sine.inOut' });
+    if (this.encounter.trainer) this.showTrainer();
   }
 
-  private makeEnemy(x: number, y: number, kind: number) {
-    const c = this.add.container(x, y).setDepth(8);
-    const shadow = this.add.rectangle(0, 110, 220, 34, 0x315f4d, .3);
-    const sprite = this.add.image(0, 0, `enemy-${kind}`).setScale(5);
-    c.add([shadow, sprite]);
-    this.tweens.add({ targets: c, y: y - 8, duration: 720, yoyo: true, repeat: -1, ease: 'Stepped' });
-    return c;
+  private beginEncounter() {
+    if (!this.encounter.trainer) {
+      this.spawnEnemy();
+      this.showMessage(this.encounter.intro, () => this.showActions());
+      return;
+    }
+    const trainer = this.encounter.trainer;
+    this.showMessage(`PM ${trainer.name} challenges you to a sync!\n${trainer.challenge}`, () => {
+      this.sendOutFoe(`${trainer.name} sent out ${this.foe.name}!`);
+    }, true);
+  }
+
+  private showTrainer() {
+    const trainer = this.encounter.trainer;
+    if (!trainer) return;
+    this.trainerArt?.destroy();
+    this.trainerArt = this.add.image(970, 265, `battle-${trainer.asset}`).setDisplaySize(170, 380).setDepth(9).setAlpha(0);
+    this.tweens.add({ targets: this.trainerArt, x: 950, alpha: 1, duration: 420, ease: 'Cubic.out' });
+  }
+
+  private spawnEnemy() {
+    this.enemyArt?.destroy();
+    const texture = `battle-${this.foe.asset}`;
+    const source = this.textures.get(texture).getSourceImage() as HTMLImageElement;
+    const finalScale = this.foe.displayHeight / source.height;
+    this.enemyArt = this.add.image(945, 265, texture).setScale(finalScale * .25).setDepth(8).setAlpha(0);
+    this.tweens.add({ targets: this.enemyArt, scale: finalScale, alpha: 1, duration: 520, ease: 'Back.out' });
+    this.tweens.add({ targets: this.enemyArt, y: 257, duration: 900, delay: 520, yoyo: true, repeat: -1, ease: 'Sine.inOut' });
+  }
+
+  private sendOutFoe(copy: string) {
+    const launch = () => {
+      this.refreshEnemyHud();
+      this.spawnEnemy();
+      audio.sfx(720, .24, 'triangle');
+      this.showMessage(copy, () => this.showActions());
+    };
+    if (!this.trainerArt) { launch(); return; }
+    this.tweens.add({ targets: this.trainerArt, x: 1090, alpha: 0, duration: 280, onComplete: () => {
+      this.trainerArt?.destroy();
+      this.trainerArt = undefined;
+      launch();
+    }});
   }
 
   private drawHud() {
     // Enemy status card.
     this.add.rectangle(50, 70, 475, 128, 0xfffdf4, .98).setOrigin(0).setStrokeStyle(4, 0x233a50).setDepth(20);
-    this.enemyName = this.add.text(76, 90, this.encounter.name, textStyle(26, '#182c40', '800')).setDepth(21);
-    this.add.text(76, 126, `${this.encounter.kind.toUpperCase()}  ·  LV.${this.encounter.level}`, monoStyle(12, '#637689')).setDepth(21);
+    this.enemyName = this.add.text(76, 90, this.encounter.trainer ? `PM ${this.encounter.trainer.name}` : this.foe.name, textStyle(26, '#182c40', '800')).setDepth(21);
+    this.enemyMeta = this.add.text(76, 126, this.encounter.trainer ? `${this.encounter.trainer.role}  ·  2 REQUESTS` : `${this.foe.kind.toUpperCase()}  ·  LV.${this.foe.level}`, monoStyle(12, '#637689')).setDepth(21);
     this.add.text(284, 158, 'BLOCKER', monoStyle(11, '#637689')).setOrigin(1, .5).setDepth(21);
     this.add.rectangle(300, 158, 196, 14, 0xd7dedb).setOrigin(0, .5).setDepth(21);
     this.enemyBar = this.add.rectangle(300, 158, 196, 14, 0x48c590).setOrigin(0, .5).setDepth(22);
@@ -517,12 +603,20 @@ class BattleScene extends Phaser.Scene {
     this.add.rectangle(825, 471, 330, 16, 0xd7dedb).setOrigin(0, .5).setDepth(21);
     this.playerBar = this.add.rectangle(825, 471, 330, 16, 0x48c590).setOrigin(0, .5).setDepth(22);
     this.hpText = this.add.text(1178, 471, '', monoStyle(11, '#35495c')).setOrigin(.5).setDepth(23);
-    // Dialogue / actions base.
-    this.add.rectangle(0, 535, W, 185, 0x132b3f).setOrigin(0).setStrokeStyle(5, 0x315267).setDepth(30);
-    this.message = this.add.text(55, 570, '', textStyle(25, '#f8fbff')).setWordWrapWidth(790).setLineSpacing(8).setDepth(32);
-    this.continuePrompt = this.add.text(980, 689, 'CLICK / SPACE / ENTER  ▾', monoStyle(11, '#7ee0c3')).setOrigin(1).setDepth(34).setVisible(false);
+    // Light dialogue tray, ready for the Pokémon-like move cards.
+    this.add.rectangle(0, 535, W, 185, 0xf8f6ed).setOrigin(0).setStrokeStyle(5, 0x21374b).setDepth(30);
+    this.add.rectangle(0, 535, W, 8, 0x59b8d2).setOrigin(0).setDepth(31);
+    this.message = this.add.text(55, 570, '', textStyle(25, '#172b3e')).setWordWrapWidth(880).setLineSpacing(8).setDepth(32);
+    this.continuePrompt = this.add.text(980, 689, 'CLICK / SPACE / ENTER  ▾', monoStyle(11, '#287b95')).setOrigin(1).setDepth(34).setVisible(false);
     this.partyGroup = this.add.container(1120, 576).setDepth(33);
     this.refreshPlayerHud();
+  }
+
+  private refreshEnemyHud() {
+    this.enemyName.setText(this.foe.name);
+    this.enemyMeta.setText(`${this.foe.kind.toUpperCase()}  ·  LV.${this.foe.level}${this.encounter.enemies.length > 1 ? `  ·  ${this.foeIndex + 1}/${this.encounter.enemies.length}` : ''}`);
+    this.enemyHp = this.foe.maxHp;
+    this.enemyBar.setDisplaySize(196, 14).setFillStyle(0x48c590);
   }
 
   private refreshPlayerHud() {
@@ -530,17 +624,17 @@ class BattleScene extends Phaser.Scene {
     const hp = state.partyHp[state.activeMember];
     this.memberName.setText(member.name);
     this.memberRole.setText(member.role);
-    this.playerSprite.setTexture(member.texture);
+    this.playerSprite.setTexture(`battle-${member.name.toLowerCase()}`).setDisplaySize(state.activeMember === 0 ? 234 : 184, 360);
     this.playerBar.setDisplaySize(330 * (hp / 100), 16).setFillStyle(hp < 35 ? 0xf05b4f : hp < 60 ? 0xf0ae4c : 0x48c590);
     this.hpText.setText(`${hp}/100`);
     this.partyGroup.removeAll(true);
-    this.partyGroup.add(this.add.text(0, -20, 'ON CALL · 2', monoStyle(11, '#7ee0c3')).setOrigin(.5));
+    this.partyGroup.add(this.add.text(0, -20, 'ON CALL · 2', monoStyle(11, '#287b95')).setOrigin(.5));
     partyMembers.forEach((partyMember, i) => {
       const x = -45 + i * 90;
       const active = i === state.activeMember;
-      this.partyGroup.add(this.add.circle(x, 24, 24, partyMember.color).setStrokeStyle(active ? 4 : 2, active ? 0xffd35c : 0xffffff, active ? 1 : .45));
+      this.partyGroup.add(this.add.circle(x, 24, 24, partyMember.color).setStrokeStyle(active ? 4 : 2, active ? 0xe2a52e : 0x546879, active ? 1 : .45));
       this.partyGroup.add(this.add.text(x, 24, partyMember.initial, textStyle(15, '#ffffff', '800')).setOrigin(.5));
-      this.partyGroup.add(this.add.text(x, 57, `${partyMember.name} ${state.partyHp[i]}`, monoStyle(9, active ? '#ffd35c' : '#a7bbca')).setOrigin(.5));
+      this.partyGroup.add(this.add.text(x, 57, `${partyMember.name} ${state.partyHp[i]}`, monoStyle(9, active ? '#a46500' : '#607486')).setOrigin(.5));
     });
   }
 
@@ -548,6 +642,7 @@ class BattleScene extends Phaser.Scene {
     this.processing = true;
     this.actionGroup?.destroy();
     this.actionGroup = undefined;
+    this.partyGroup?.setVisible(true);
     this.advanceArmed = false;
     this.advanceCallback = undefined;
     this.continuePrompt.setVisible(false);
@@ -577,25 +672,54 @@ class BattleScene extends Phaser.Scene {
 
   private showActions() {
     this.processing = false;
-    this.message.setText(`What will ${partyMembers[state.activeMember].name} do?`);
-    this.actionGroup = this.add.container(430, 550).setDepth(40);
+    this.message.setText('');
+    this.partyGroup.setVisible(false);
+    this.actionGroup = this.add.container(0, 0).setDepth(40);
     const member = partyMembers[state.activeMember];
-    const actionMoves = member.moves.map(moveIndex => moves[moveIndex]);
-    actionMoves.forEach((move, i) => {
-      const x = i * 295;
-      const bg = this.add.rectangle(x, 0, 274, 62, member.color).setOrigin(0).setStrokeStyle(2, 0xffffff, .35).setInteractive({ useHandCursor: true });
-      const num = this.add.text(x + 18, 21, String(i + 1), monoStyle(13, '#ffffff'));
-      const title = this.add.text(x + 48, 19, move.title, textStyle(16, '#ffffff', '800'));
-      bg.on('pointerover', () => bg.setScale(1.025)).on('pointerout', () => bg.setScale(1)).on('pointerdown', () => this.takeAction(i));
-      this.actionGroup!.add([bg, num, title]);
-    });
     const other = partyMembers[1 - state.activeMember];
-    const swap = this.add.rectangle(0, 76, 569, 62, 0x5b647c).setOrigin(0).setStrokeStyle(2, 0xffffff, .35).setInteractive({ useHandCursor: true });
-    const swapNum = this.add.text(18, 97, '3', monoStyle(13, '#ffffff'));
-    const swapTitle = this.add.text(48, 95, `SWAP → ${other.name}`, textStyle(16, '#ffffff', '800'));
-    swap.on('pointerover', () => swap.setScale(1.012)).on('pointerout', () => swap.setScale(1)).on('pointerdown', () => this.takeAction(2));
-    this.actionGroup.add([swap, swapNum, swapTitle]);
-    setStatus(`Battle with ${this.encounter.name}. ${member.name} is active. Choose attack 1 or 2, or press 3 to swap.`);
+
+    const prompt = this.add.graphics();
+    prompt.fillStyle(0x142e43, 1).fillRoundedRect(18, 552, 386, 150, 18);
+    prompt.fillStyle(member.color, 1).fillRoundedRect(18, 552, 12, 150, { tl: 18, bl: 18, tr: 0, br: 0 });
+    prompt.lineStyle(2, 0xffffff, .12).strokeRoundedRect(18, 552, 386, 150, 18);
+    const fightTag = this.add.text(52, 572, 'FIGHT', monoStyle(11, '#83dff1')).setLetterSpacing(2);
+    const question = this.add.text(52, 601, `What will\n${member.name} do?`, textStyle(25, '#ffffff', '800')).setLineSpacing(6);
+    const hint = this.add.text(52, 674, 'CHOOSE A MOVE  1–3', monoStyle(10, '#a9bfce'));
+    this.actionGroup.add([prompt, fightTag, question, hint]);
+
+    const colors = [0x2f95bf, 0xe49b37, 0xdf668b, 0x50a77f];
+    const categories = ['DEBUG', 'DEPLOY', 'TEST', 'OBSERVE'];
+    const addChoice = (cx: number, cy: number, width: number, title: string, detail: string, color: number, key: string, choose: () => void) => {
+      const choice = this.add.container(cx, cy).setSize(width, 62).setInteractive({ useHandCursor: true });
+      const plate = this.add.graphics();
+      const draw = (hovered: boolean) => {
+        plate.clear();
+        plate.fillStyle(0x13283a, .18).fillRoundedRect(-width/2 + 4, -26, width, 58, 15);
+        plate.fillStyle(hovered ? 0xffffff : 0xfdfcf7, 1).fillRoundedRect(-width/2, -31, width, 58, 15);
+        plate.lineStyle(hovered ? 4 : 2, hovered ? color : 0xc9d0d2, 1).strokeRoundedRect(-width/2, -31, width, 58, 15);
+        plate.fillStyle(color, 1).fillRoundedRect(-width/2 + 8, -23, 9, 42, 5);
+        plate.fillStyle(color, 1).fillCircle(-width/2 + 39, -2, 17);
+        if (hovered) plate.fillTriangle(-width/2 - 13, -9, -width/2 - 13, 7, -width/2 - 3, -1);
+      };
+      draw(false);
+      const keyText = this.add.text(-width/2 + 39, -2, key, monoStyle(12, '#ffffff')).setOrigin(.5);
+      const titleText = this.add.text(-width/2 + 69, -20, title, textStyle(16, '#172b3e', '800'));
+      const detailText = this.add.text(-width/2 + 69, 4, detail, monoStyle(9, '#627587'));
+      choice.add([plate, keyText, titleText, detailText]);
+      choice.on('pointerover', () => { draw(true); audio.sfx(320, .045); });
+      choice.on('pointerout', () => draw(false));
+      choice.on('pointerdown', choose);
+      this.actionGroup!.add(choice);
+    };
+
+    member.moves.forEach((moveIndex, i) => {
+      const move = moves[moveIndex];
+      const effect = move.effectiveness[state.encounter];
+      const effectCopy = effect === 'super' ? 'SUPER EFFECTIVE' : effect === 'not' ? 'NOT VERY EFFECTIVE' : effect === 'none' ? 'NO EFFECT' : 'NORMAL EFFECT';
+      addChoice(600 + i * 405, 583, 380, move.title, `${categories[moveIndex]}  ·  ${effectCopy}  ·  PP 10/10`, colors[moveIndex], String(i + 1), () => this.takeAction(i));
+    });
+    addChoice(802, 663, 785, `SWAP TO ${other.name}`, `${other.role}  ·  ${state.partyHp[1 - state.activeMember]}/100 FOCUS`, other.color, '3', () => this.takeAction(2));
+    setStatus(`Battle with ${this.foe.name}. ${member.name} is active. Choose attack 1 or 2, or press 3 to swap.`);
   }
 
   takeAction(index: number) {
@@ -612,7 +736,7 @@ class BattleScene extends Phaser.Scene {
     const effectiveness = move.effectiveness[state.encounter];
     if (move.shields) this.shield = true;
     audio.sfx(560 + moveIndex * 90, .18);
-    if (damage > 0) this.tweens.add({ targets: this.enemyArt, x: this.enemyArt.x + 16, duration: 55, yoyo: true, repeat: 4 });
+    if (damage > 0 && this.enemyArt) this.tweens.add({ targets: this.enemyArt, x: this.enemyArt.x + 16, duration: 55, yoyo: true, repeat: 4 });
     this.damageEnemy(damage);
     const result = effectiveness === 'super' ? `It's super effective!\n${damage} progress!`
       : effectiveness === 'not' ? `It's not very effective...\n${damage} progress.`
@@ -620,7 +744,7 @@ class BattleScene extends Phaser.Scene {
       : `${damage} progress!`;
     const shieldCopy = move.shields ? ' · Next interruption guarded.' : '';
     this.showMessage(`${member.name} used ${move.title}!\n${move.line}\n${result}${shieldCopy}`, () => {
-      if (this.enemyHp <= 0) this.win(); else this.enemyTurn();
+      if (this.enemyHp <= 0) this.finishFoe(); else this.enemyTurn();
     }, true);
   }
 
@@ -642,8 +766,8 @@ class BattleScene extends Phaser.Scene {
 
   private damageEnemy(amount: number) {
     this.enemyHp = Math.max(0, this.enemyHp - amount);
-    this.tweens.add({ targets: this.enemyBar, displayWidth: 196 * (this.enemyHp / this.encounter.maxHp), duration: 350 });
-    if (this.enemyHp / this.encounter.maxHp < .35) this.enemyBar.setFillStyle(0xf19c4c);
+    this.tweens.add({ targets: this.enemyBar, displayWidth: 196 * (this.enemyHp / this.foe.maxHp), duration: 350 });
+    if (this.enemyHp / this.foe.maxHp < .35) this.enemyBar.setFillStyle(0xf19c4c);
   }
 
   private enemyTurn() {
@@ -657,7 +781,7 @@ class BattleScene extends Phaser.Scene {
     this.cameras.main.shake(180, .009);
     this.refreshPlayerHud();
     const tail = blocked ? '\nThe test caught most of it.' : `\n${member.name} lost ${amount} focus.`;
-    this.showMessage(`${this.encounter.attack}${tail}`, () => {
+    this.showMessage(`${this.foe.attack}${tail}`, () => {
       if (state.partyHp[active] <= 0) this.recover(); else this.showActions();
     }, true);
   }
@@ -677,10 +801,32 @@ class BattleScene extends Phaser.Scene {
     this.showMessage('The emergency rubber duck has been deployed.\nThe team recovered 60 focus!', () => this.showActions(), true);
   }
 
+  private finishFoe() {
+    if (this.enemyHp > 0) this.damageEnemy(this.enemyHp);
+    this.processing = true;
+    audio.sfx(880, .3, 'triangle');
+    if (this.foeIndex >= this.encounter.enemies.length - 1) { this.win(); return; }
+    if (this.enemyArt) this.tweens.add({ targets: this.enemyArt, alpha: 0, y: this.enemyArt.y + 70, duration: 420, ease: 'Back.in' });
+
+    const defeated = this.foe.name;
+    this.showMessage(`${defeated} was resolved!\nALEX checks one item off the list.`, () => {
+      this.enemyArt?.destroy();
+      this.enemyArt = undefined;
+      this.foeIndex++;
+      this.foe = this.encounter.enemies[this.foeIndex];
+      this.showTrainer();
+      this.enemyName.setText('PM ALEX');
+      this.enemyMeta.setText(`${this.encounter.trainer?.role}  ·  1 REQUEST LEFT`);
+      this.showMessage('ALEX: “Amazing. While I have you—one tiny follow-up...”', () => {
+        this.sendOutFoe(`ALEX sent out ${this.foe.name}!`);
+      }, true);
+    }, true);
+  }
+
   win() {
     if (this.enemyHp > 0) this.damageEnemy(this.enemyHp);
     this.processing = true; audio.sfx(880, .4, 'triangle');
-    this.tweens.add({ targets: this.enemyArt, alpha: 0, scale: .3, y: this.enemyArt.y + 80, duration: 520, ease: 'Back.in' });
+    if (this.enemyArt) this.tweens.add({ targets: this.enemyArt, alpha: 0, y: this.enemyArt.y + 80, duration: 520, ease: 'Back.in' });
     state.completed[state.encounter] = true;
     state.partyHp = state.partyHp.map(hp => Math.min(100, hp + 24)) as [number, number];
     setStatus(this.encounter.defeated);
@@ -722,12 +868,12 @@ const game = new Phaser.Game({
   width: W,
   height: H,
   backgroundColor: '#10273a',
-  pixelArt: true,
-  antialias: false,
+  pixelArt: false,
+  antialias: true,
   physics: { default: 'arcade', arcade: { debug: false } },
   scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
   scene: [WorldScene, BattleScene, EndScene],
-  render: { pixelArt: true, antialias: false, antialiasGL: false, roundPixels: true }
+  render: { pixelArt: false, antialias: true, antialiasGL: true, roundPixels: true }
 });
 
 // Small, stable hooks for automated playtesting.

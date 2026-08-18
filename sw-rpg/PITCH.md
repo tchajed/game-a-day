@@ -4,4 +4,4 @@ The deploy is due in Ship City, but Route 404 is crawling with wild bugs, runawa
 
 ![Exploring Route 404](screenshots/route-404-overworld.png)
 
-![Battling one tiny change](screenshots/route-404-battle.png)
+![Choosing how to answer a quick question](screenshots/route-404-battle.png)
