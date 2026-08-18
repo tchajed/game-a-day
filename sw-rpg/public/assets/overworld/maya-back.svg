@@ -3,11 +3,13 @@
     <path fill="#71312d" d="M17 15Q18 4 32 4q15 0 16 12l-2 18H18z"/>
     <path fill="#8f3d35" d="M19 11q5-7 13-7 10 0 14 9l-2 16H20z"/>
     <path fill="#ee9e69" d="M28 33h8v7h-8z"/>
-    <path fill="#087f9d" d="M18 39q5-3 11-3h7q6 0 10 3l4 20-11 2H25l-11-2z"/>
-    <path fill="#16a1bd" d="M18 40q-5 2-7 7l-1 13 9 1 3-16m24-5q5 2 7 7l1 13-9 1-3-16"/>
-    <path fill="#ee9e69" d="m10 59 9 1-1 6q-2 4-6 1-3-2-2-8Zm44 0-9 1 1 6q2 4 6 1 3-2 2-8Z"/>
-    <path fill="#075f7b" d="M23 42h18v10q-4 4-9 4-5 0-9-4z"/>
-    <path fill="#f7f0df" d="M23 53h18l-2 7H25z"/>
+    <path fill="#16a1bd" d="M20 41q-6 2-9 8l2 8 8-2 5-10"/>
+    <path fill="#ee9e69" d="M13 55l8-2 3 5-5 6q-4 2-7-1-2-3 1-8Z"/>
+    <path fill="#087f9d" d="M18 39q5-3 11-3h7q6 0 10 3l2 18-9 4H25l-8-4z"/>
+    <path fill="#075f7b" d="M22 42h20v11q-4 4-10 4t-10-4z"/>
+    <path fill="#16a1bd" d="M44 41q6 2 8 8l-2 8-8-2-3-10"/>
+    <path fill="#ee9e69" d="M50 55l-8-2-7 3 2 6 8-2q5 3 7-1 1-2-2-4Z"/>
+    <path fill="#f7f0df" d="M23 54h19l-3 7H25z"/>
     <path fill="#23385f" d="M24 59h16l3 17H33l-1-10-1 10H21z"/>
     <path fill="#f7f0df" d="M20 74h12v6q-1 2-4 2H18q-2-5 2-8Zm12 0h12q4 3 2 8H36q-3 0-4-2z"/>
   </g>

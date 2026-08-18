@@ -18,11 +18,3 @@ Move with **WASD** or the **arrow keys**. In battle, each party member has four 
 The Tone.js score switches between **Eastbound Adventure**, a bright 16-bar overworld theme, and **Interrupt Storm**, a faster 16-bar battle theme. Both are authored as multitrack MIDI in `scripts/generate-soundtracks.ts`; run `bun run music:generate` to rebuild the `.mid` files.
 
 Use `?music=off` to disable music. Use `?debug=true` to show the encounter-skip control; press **N** to skip the next fight. Automated playtests can use the small `window.__SW_RPG__` API (`getState`, `startBattle`, `chooseAction`, `swapParty`, `continueDialogue`, `winBattle`, and `reset`).
-
-### Overworld sprite study
-
-Maya now uses the `ready` pose by default. The arm study also includes `original`, `compact`, and `offset`; the Ready-based face/hair study adds `swept`, `tousled`, and `longbob`. Preview one directly with `?sprite=swept` (or another name). In debug mode, press **V** or click the blue variant control to cycle every set while playing.
-
-![Overworld sprite arm variations](screenshots/overworld-sprite-variants.png)
-
-![Overworld face and hair variations](screenshots/overworld-face-variants.png)
