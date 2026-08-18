@@ -62,7 +62,15 @@ type PartyMember = {
 
 const W = 1280;
 const H = 720;
-const DEBUG = new URLSearchParams(location.search).get('debug') === 'true';
+const query = new URLSearchParams(location.search);
+const DEBUG = query.get('debug') === 'true';
+const OVERWORLD_VARIANTS = ['ready', 'swept', 'tousled', 'longbob', 'original', 'compact', 'offset'] as const;
+type OverworldVariant = typeof OVERWORLD_VARIANTS[number];
+type HeroDirection = 'down' | 'up' | 'side';
+const requestedVariant = query.get('sprite');
+const initialOverworldVariant: OverworldVariant = OVERWORLD_VARIANTS.includes(requestedVariant as OverworldVariant)
+  ? requestedVariant as OverworldVariant
+  : 'ready';
 const assetUrl = (path: string) => `${import.meta.env.BASE_URL}${path}`;
 const state: GameState = {
   encounter: 0,
@@ -266,29 +274,36 @@ class WorldScene extends Phaser.Scene {
   location!: Phaser.GameObjects.Text;
   private inTransition = false;
   private welcome?: Phaser.GameObjects.Container;
+  private heroVariant: OverworldVariant = initialOverworldVariant;
+  private heroDirection: HeroDirection = 'down';
+  private variantLabel?: Phaser.GameObjects.Text;
 
   constructor() { super('WorldScene'); }
 
   preload() {
-    const sprites = {
-      'hero-down': 'maya-front.svg',
-      'hero-up': 'maya-back.svg',
-      'hero-side': 'maya-side.svg',
-      'npc-intern': 'intern.svg',
-      'npc-alex': 'alex.svg'
-    };
-    Object.entries(sprites).forEach(([key, file]) => this.load.svg(key, assetUrl(`assets/overworld/${file}`)));
+    const directions: Record<HeroDirection, string> = { down: 'front', up: 'back', side: 'side' };
+    for (const variant of OVERWORLD_VARIANTS) {
+      for (const [direction, fileDirection] of Object.entries(directions)) {
+        const file = variant === 'original'
+          ? `maya-${fileDirection}.svg`
+          : `variants/maya-${variant}-${fileDirection}.svg`;
+        this.load.svg(`hero-${variant}-${direction}`, assetUrl(`assets/overworld/${file}`));
+      }
+    }
+    this.load.svg('npc-intern', assetUrl('assets/overworld/intern.svg'));
+    this.load.svg('npc-alex', assetUrl('assets/overworld/alex.svg'));
   }
 
   create() {
     createTextures(this);
-    ['hero-down', 'hero-up', 'hero-side', 'npc-intern', 'npc-alex']
-      .forEach(key => this.textures.get(key).setFilter(Phaser.Textures.FilterMode.LINEAR));
+    [...OVERWORLD_VARIANTS.flatMap(variant => [
+      `hero-${variant}-down`, `hero-${variant}-up`, `hero-${variant}-side`
+    ]), 'npc-intern', 'npc-alex'].forEach(key => this.textures.get(key).setFilter(Phaser.Textures.FilterMode.LINEAR));
     audio.setTheme('overworld');
     state.phase = 'overworld'; setStatus('Exploring Route 529. Use arrow keys or WASD to move east.');
     this.physics.world.setBounds(0, 0, 2400, H);
     this.drawMap();
-    this.player = this.physics.add.sprite(330, 410, 'hero-down').setScale(.9).setCollideWorldBounds(true).setDepth(30).setSize(30, 20).setOffset(17, 62);
+    this.player = this.physics.add.sprite(330, 410, this.heroTexture('down')).setScale(.9).setCollideWorldBounds(true).setDepth(30).setSize(30, 20).setOffset(17, 62);
     this.player.setPosition(state.completed[2] ? 1990 : state.completed[1] ? 1460 : state.completed[0] ? 1010 : 330, 410);
     this.cameras.main.setBounds(0, 0, 2400, H).startFollow(this.player, true, 0.09, 0.09).setZoom(1);
     const keyboard = this.input.keyboard!;
@@ -430,7 +445,35 @@ class WorldScene extends Phaser.Scene {
     const bg = this.add.rectangle(W - 260, H - 58, 230, 38, 0x672448, .92).setScrollFactor(0).setDepth(1020).setInteractive({ useHandCursor: true });
     const label = this.add.text(W - 260, H - 58, '[DEBUG] N · skip fight', monoStyle(12, '#ffffff')).setOrigin(.5).setScrollFactor(0).setDepth(1021);
     bg.on('pointerdown', () => this.debugSkip()); label.setInteractive({ useHandCursor: true }).on('pointerdown', () => this.debugSkip());
+
+    const variantBg = this.add.rectangle(W - 260, H - 105, 230, 38, 0x245f7a, .94).setScrollFactor(0).setDepth(1020).setInteractive({ useHandCursor: true });
+    this.variantLabel = this.add.text(W - 260, H - 105, '', monoStyle(12, '#ffffff')).setOrigin(.5).setScrollFactor(0).setDepth(1021).setInteractive({ useHandCursor: true });
+    const cycle = () => this.cycleHeroVariant();
+    variantBg.on('pointerdown', cycle); this.variantLabel.on('pointerdown', cycle);
+    this.updateVariantLabel();
     this.input.keyboard!.on('keydown-N', () => this.debugSkip());
+    this.input.keyboard!.on('keydown-V', cycle);
+  }
+
+  private heroTexture(direction: HeroDirection) {
+    return `hero-${this.heroVariant}-${direction}`;
+  }
+
+  private setHeroDirection(direction: HeroDirection, flipX = false) {
+    this.heroDirection = direction;
+    this.player.setTexture(this.heroTexture(direction)).setFlipX(flipX);
+  }
+
+  private cycleHeroVariant() {
+    const index = OVERWORLD_VARIANTS.indexOf(this.heroVariant);
+    this.heroVariant = OVERWORLD_VARIANTS[(index + 1) % OVERWORLD_VARIANTS.length];
+    this.setHeroDirection(this.heroDirection, this.player.flipX);
+    this.updateVariantLabel();
+    setStatus(`Overworld sprite variant: ${this.heroVariant}. Press V to compare another.`);
+  }
+
+  private updateVariantLabel() {
+    this.variantLabel?.setText(`[DEBUG] V · ${this.heroVariant.toUpperCase()}`);
   }
 
   private debugSkip() {
@@ -462,11 +505,11 @@ class WorldScene extends Phaser.Scene {
     const velocity = new Phaser.Math.Vector2(x, y).normalize().scale(245);
     this.player.setVelocity(velocity.x, velocity.y);
     if (x) {
-      this.player.setTexture('hero-side').setFlipX(x < 0);
+      this.setHeroDirection('side', x < 0);
     } else if (y < 0) {
-      this.player.setTexture('hero-up').setFlipX(false);
+      this.setHeroDirection('up');
     } else if (y > 0) {
-      this.player.setTexture('hero-down').setFlipX(false);
+      this.setHeroDirection('down');
     }
     if (x || y) this.player.rotation = Math.sin(this.time.now / 90) * .035;
     else this.player.rotation = 0;
