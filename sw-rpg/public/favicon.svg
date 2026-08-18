@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <title>Route 529</title>
+  <rect width="64" height="64" rx="14" fill="#152538"/>
+  <path d="M8 43c9-14 18-7 25-20 5-9 12-10 23-4" fill="none" stroke="#82d9c1" stroke-width="7" stroke-linecap="round"/>
+  <circle cx="11" cy="42" r="5" fill="#f4bd55" stroke="#152538" stroke-width="3"/>
+  <path d="m51 12 7 7-10 3z" fill="#f4bd55"/>
+  <rect x="16" y="34" width="39" height="20" rx="6" fill="#f8fbff" stroke="#152538" stroke-width="3"/>
+  <text x="35.5" y="48.5" fill="#1d3347" font-family="ui-monospace, monospace" font-size="14" font-weight="800" text-anchor="middle">529</text>
+</svg>
