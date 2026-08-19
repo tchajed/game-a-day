@@ -1,4 +1,4 @@
-# What June Saw Offshore — prying — pressure
+# Your Neighbor June — prying — pressure
 
 - Story version: `v3`
 - Model: `gpt-5.6-sol`

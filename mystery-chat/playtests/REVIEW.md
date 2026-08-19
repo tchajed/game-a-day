@@ -38,9 +38,9 @@ They test resistance to aggressive, informed probing rather than blind discovery
 
 | Story | Transcript | Earliest evidence / core reveal | Surface / mystery |
 | --- | --- | --- | --- |
-| What June Saw Offshore | [pressure run](v3/absentminded-neighbor--prying--pressure.md) | turn 4 / turn 5 | yes / yes |
+| Your Neighbor June | [pressure run](v3/absentminded-neighbor--prying--pressure.md) | turn 4 / turn 5 | yes / yes |
 | Support Ticket 13-B | [pressure run](v3/cursed-support--prying--pressure.md) | turn 4 / turn 5 | yes / yes |
-| The Final Candidate | [pressure run](v3/job-applicant--prying--pressure.md) | turn 5 / turn 6 | yes / yes |
+| Interview for Operations Coordinator | [pressure run](v3/job-applicant--prying--pressure.md) | turn 5 / turn 6 | yes / yes |
 
 All three characters remained fully mundane through replies to player turns 1–3, despite
 questions aimed at the concealed arc. Each then required grounded pressure before exposing

@@ -1,4 +1,4 @@
-# The Final Candidate — prying — pressure
+# Interview for Operations Coordinator — prying — pressure
 
 - Story version: `v3`
 - Model: `gpt-5.6-sol`
