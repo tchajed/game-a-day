@@ -430,19 +430,39 @@ class GameScene extends Phaser.Scene {
 
     ui.querySelectorAll<HTMLButtonElement>('[data-action]').forEach((button) => {
       const action = button.dataset.action as Action;
-      const release = (event: PointerEvent) => {
+      const release = (event: Event) => {
         event.preventDefault();
         event.stopPropagation();
         this.releaseAction(action);
       };
-      button.addEventListener('pointerdown', (event) => {
-        event.preventDefault();
-        event.stopPropagation();
-        button.setPointerCapture(event.pointerId);
-        this.press(action);
-      });
-      button.addEventListener('pointerup', release);
-      button.addEventListener('pointercancel', release);
+
+      if ('PointerEvent' in window) {
+        button.addEventListener('pointerdown', (event) => {
+          event.preventDefault();
+          event.stopPropagation();
+
+          // Some mobile Safari versions expose pointer capture but throw when it is
+          // requested. Trigger the action first so a capture failure cannot swallow it.
+          this.press(action);
+          try {
+            button.setPointerCapture(event.pointerId);
+          } catch {
+            // The normal pointerup/pointercancel path still releases the action.
+          }
+        });
+        button.addEventListener('pointerup', release);
+        button.addEventListener('pointercancel', release);
+        button.addEventListener('lostpointercapture', release);
+      } else {
+        // Older iOS Safari has touch events but no PointerEvent implementation.
+        button.addEventListener('touchstart', (event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          this.press(action);
+        }, { passive: false });
+        button.addEventListener('touchend', release);
+        button.addEventListener('touchcancel', release);
+      }
     });
   }
 
