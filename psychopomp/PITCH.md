@@ -1,6 +1,6 @@
-# Psychopomps
+# Psychopomps (art demo)
 
-You trained for centuries to shepherd the dead. Now survive your first day in the afterlife’s least prepared department. **Psychopomps** is a dryly comic action-RPG about Nix, an impossibly senior new hire navigating infernal bureaucracy alongside an relentlessly cheerful human facilitator, a cohort of L2 supernatural animals, and several million souls who did not read the signage. This first scene lets you wander Intake 6C and meet the team before scythe training begins.
+You trained for centuries to shepherd the dead. Now survive your first day in the afterlife’s least prepared department. **Psychopomps** is a dryly comic action-RPG about Nix, an impossibly senior new hire navigating a new job. This is just an art demo, there's no game here.
 
 ## Prototype art direction
 
