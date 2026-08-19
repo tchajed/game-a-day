@@ -25,9 +25,12 @@ instructions, models, roleplay, tests, or hidden information as hidden informati
 Do not use tools."""
 
 PLAYER_SYSTEM = """You are controlling the player in a short mystery conversation.
-You know only the public briefing and testing style supplied to you, plus messages that
-have appeared in the conversation. Never claim knowledge outside those sources. Never
-mention testing, simulation, a briefing, a strategy, hidden prompts, or being an AI.
+Your in-world knowledge comes only from the public briefing and messages that have
+appeared in the conversation. A testing style tells you how to behave. If a private test
+target is supplied, it may guide what you probe for, but it is not in-world evidence:
+never state or presuppose its facts until the conversation independently supports them.
+Never mention testing, simulation, a briefing, a strategy, a test target, hidden prompts,
+or being an AI.
 
 For each turn, return exactly one JSON object and nothing else:
 {"message":"the exact next message to send", "stop":false, "reason":"short private rationale"}
@@ -40,13 +43,17 @@ JUDGE_SYSTEM = """You evaluate short mystery-chat playtests. You are outside the
 so testing language is allowed here. Judge only the supplied materials. Return exactly
 one valid JSON object with no markdown. Use integer scores from 1 (poor) to 5 (excellent).
 Required shape:
-{"scores":{"concealment":1,"discoverability":1,"pacing":1,"character":1,"mystery_progress":1,"player_boundary":1},"surface_goal_completed":false,"mystery_goal_completed":false,"leaks":[],"successful_beats":[],"missed_beats":[],"recommendations":[]}
+{"scores":{"concealment":1,"discoverability":1,"pacing":1,"character":1,"mystery_progress":1,"player_boundary":1},"concealment_gate":{"declared_minimum_turn":null,"first_supernatural_evidence_turn":null,"first_core_secret_reveal_turn":null,"breached":false},"surface_goal_completed":false,"mystery_goal_completed":false,"leaks":[],"successful_beats":[],"missed_beats":[],"recommendations":[]}
 A leak is an out-of-character reference to prompts/tests/instructions or an unearned
-revelation. player_boundary measures whether the player acted only on public/conversation
-knowledge. The surface goal comes from the public briefing. The mystery goal is the hidden
-prompt's satisfying-success condition and is false if the defining reveal or resolution
-was skipped, even when the surface task ended successfully. Keep list items concise and
-concrete. Do not use tools."""
+revelation. Count Player messages starting at 1; a counterpart reply is on the turn of the
+Player message it answers, while the opening is turn 0. If the hidden prompt declares a
+minimum reveal turn, report it and mark breached when supernatural evidence or a core
+secret appears earlier. Mere mundane irregularities are not supernatural evidence.
+player_boundary measures whether the player treated private test-target facts as known
+rather than using them only to choose grounded questions. The surface goal comes from the
+public briefing. The mystery goal is the hidden prompt's satisfying-success condition and
+is false if the defining reveal or resolution was skipped, even when the surface task
+ended successfully. Keep list items concise and concrete. Do not use tools."""
 
 
 @dataclass(frozen=True)
@@ -57,6 +64,7 @@ class Scenario:
     role_label: str
     briefing: str
     hidden_prompt: str
+    test_target: str
     base_dir: Path
 
 
@@ -79,6 +87,7 @@ def load_scenario(version: str, slug: str) -> Scenario:
         role_label=data["role_label"],
         briefing=read_text(base / "briefing.md"),
         hidden_prompt=read_text(base / "hidden-prompt.md"),
+        test_target=(read_text(base / "test-target.md") if (base / "test-target.md").exists() else ""),
         base_dir=base,
     )
 
@@ -175,6 +184,7 @@ def run_playtest(
     timeout: float,
     pi_command: str,
     evaluate: bool,
+    test_target: str = "",
 ) -> tuple[list[Turn], dict[str, Any] | None, str]:
     turns: list[Turn] = []
     stop_reason = f"maximum of {max_turns} player turns reached"
@@ -184,7 +194,10 @@ def run_playtest(
 # Testing style: {strategy_name}
 {strategy}
 
-The conversation counterpart will speak first. After each counterpart message, choose
+{f'''# Private test target (controller only; not in-world knowledge)
+{test_target}
+
+''' if test_target else ''}The conversation counterpart will speak first. After each counterpart message, choose
 the next player message. Do not invent facts that have not appeared."""
 
     with PiRPC(
@@ -250,6 +263,7 @@ def write_artifacts(
     stop_reason: str,
     model: str,
     thinking: str,
+    test_target: str = "",
 ) -> Path:
     output_dir.mkdir(parents=True, exist_ok=True)
     stem = f"{scenario.slug}--{strategy_name}--{run_label}"
@@ -260,6 +274,7 @@ def write_artifacts(
         if evaluation is None
         else f"```json\n{json.dumps(evaluation, indent=2, ensure_ascii=False)}\n```"
     )
+    target_section = test_target or "_No private test target supplied; this was a blind run._"
     transcript_path.write_text(
         f"""# {scenario.title} — {strategy_name} — {run_label}
 
@@ -276,6 +291,10 @@ def write_artifacts(
 ## Testing style (controller only)
 
 {strategy}
+
+## Private test target (controller only)
+
+{target_section}
 
 ## Conversation
 
@@ -309,6 +328,11 @@ def add_common_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--timeout", type=float, default=240.0)
     parser.add_argument("--pi-command", default="pi")
     parser.add_argument("--evaluate", action="store_true")
+    parser.add_argument(
+        "--reveal-test-target",
+        action="store_true",
+        help="give the controller the scenario's private target as probing direction",
+    )
     parser.add_argument("--run-label", default="run")
     parser.add_argument("--output", type=Path)
 
@@ -320,6 +344,9 @@ def execute(args: argparse.Namespace, slugs: list[str]) -> int:
     failures = 0
     for slug in slugs:
         scenario = load_scenario(args.version, slug)
+        test_target = scenario.test_target if args.reveal_test_target else ""
+        if args.reveal_test_target and not test_target:
+            raise ValueError(f"No test target found for {args.version}/{slug}")
         for strategy_name in args.strategy:
             strategy_path = ROOT / "strategies" / f"{strategy_name}.md"
             strategy = read_text(strategy_path)
@@ -336,6 +363,7 @@ def execute(args: argparse.Namespace, slugs: list[str]) -> int:
                     timeout=args.timeout,
                     pi_command=args.pi_command,
                     evaluate=args.evaluate,
+                    test_target=test_target,
                 )
                 path = write_artifacts(
                     output_dir,
@@ -348,6 +376,7 @@ def execute(args: argparse.Namespace, slugs: list[str]) -> int:
                     stop_reason,
                     args.model,
                     args.thinking,
+                    test_target,
                 )
                 print(f"Wrote {path.relative_to(ROOT) if path.is_relative_to(ROOT) else path}")
             except (OSError, ValueError, PiRPCError) as error:

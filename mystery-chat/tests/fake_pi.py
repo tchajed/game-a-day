@@ -48,7 +48,11 @@ for raw_line in sys.stdin.buffer:
     incoming = command.get("message", "")
     if kind == "story":
         if turn == 1:
-            leaked = "Testing style" in incoming or "controller" in incoming
+            leaked = (
+                "Testing style" in incoming
+                or "controller" in incoming
+                or "PRIVATE TARGET TOKEN" in incoming
+            )
             text = f"Story opening; controller metadata leaked={str(leaked).lower()}."
         else:
             text = f"Story received exactly: {incoming}"

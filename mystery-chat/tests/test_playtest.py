@@ -53,6 +53,7 @@ class IsolationTests(unittest.TestCase):
             role_label="Neighbor",
             briefing="Ask the neighbor about the beach.",
             hidden_prompt="Act as a neighbor and greet the player.",
+            test_target="PRIVATE TARGET TOKEN",
             base_dir=ROOT,
         )
         turns, evaluation, stop_reason = run_playtest(
@@ -65,6 +66,7 @@ class IsolationTests(unittest.TestCase):
             timeout=5,
             pi_command=str(ROOT / "tests" / "fake_pi.py"),
             evaluate=False,
+            test_target=scenario.test_target,
         )
         self.assertIsNone(evaluation)
         self.assertIn("leaked=false", turns[0].text)
