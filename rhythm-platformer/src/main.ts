@@ -90,7 +90,6 @@ class GameScene extends Phaser.Scene {
   private elapsedMs = 0;
   private nextEvent = 0;
   private combo = 0;
-  private accepted = new Set<number>();
   private cleared = new Set<number>();
   private autoPressed = new Set<number>();
   private moveAxis: -1 | 0 | 1 = 0;
@@ -207,7 +206,7 @@ class GameScene extends Phaser.Scene {
 
     for (let i = 0; i < 16; i += 1) {
       const x = 390 + i * 250;
-      if (i % 3 === 0) this.drawBeatBlock(ground, x, 425 - (i % 2) * 45);
+      if (i % 3 === 0) this.drawMusicNote(ground, x, 425 - (i % 2) * 45);
       else this.drawBush(ground, x, 585, 0.8 + (i % 2) * 0.25);
     }
 
@@ -249,13 +248,11 @@ class GameScene extends Phaser.Scene {
     g.fillStyle(COLORS.cream, 0.22).fillCircle(x - 10 * scale, y - 35 * scale, 6 * scale);
   }
 
-  private drawBeatBlock(g: Phaser.GameObjects.Graphics, x: number, y: number): void {
-    g.fillStyle(COLORS.ink, 0.18).fillRoundedRect(x - 24, y - 19, 54, 54, 7);
-    g.fillStyle(COLORS.yellow, 1).fillRoundedRect(x - 27, y - 25, 54, 54, 7);
-    g.lineStyle(3, COLORS.orange, 0.8).strokeRoundedRect(x - 27, y - 25, 54, 54, 7);
-    g.fillStyle(COLORS.cream, 0.9).fillCircle(x - 17, y - 15, 3).fillCircle(x + 17, y - 15, 3)
-      .fillCircle(x - 17, y + 19, 3).fillCircle(x + 17, y + 19, 3);
-    g.fillStyle(COLORS.orange, 1).fillCircle(x, y - 5, 8).fillRect(x - 3, y + 2, 6, 12);
+  private drawMusicNote(g: Phaser.GameObjects.Graphics, x: number, y: number): void {
+    g.fillStyle(COLORS.cream, 0.16).fillCircle(x, y, 39);
+    g.fillStyle(COLORS.ink, 0.16).fillEllipse(x - 10, y + 17, 22, 15);
+    g.fillStyle(COLORS.ink, 0.16).fillRect(x - 3, y - 22, 7, 40);
+    g.fillStyle(COLORS.ink, 0.16).fillTriangle(x + 4, y - 22, x + 25, y - 13, x + 4, y - 5);
   }
 
   private drawRunSign(g: Phaser.GameObjects.Graphics, event: BeatEvent): void {
@@ -337,12 +334,12 @@ class GameScene extends Phaser.Scene {
     const titles = [
       'RUN RIGHT.<br>JUMP BIG.',
       'JUMP OR<br>DUCK.',
-      'FOLLOW THE<br>ARROWS.',
+      'FINAL<br>DASH.',
     ];
     const controls = [
       'HOLD D OR → &nbsp; · &nbsp; HOLD SPACE FOR A BIGGER JUMP',
       'SPACE = JUMP &nbsp; · &nbsp; HOLD S OR ↓ TO STAY LOW',
-      'A / D = RUN &nbsp; · &nbsp; HOLD ACTIONS &nbsp; · &nbsp; HIT THE BEAT',
+      'KEEP RIGHT &nbsp; · &nbsp; THE BEAT HELPS, BUT THE ROAD DECIDES',
     ];
     return `
       <small>LEVEL ${this.currentLevelIndex + 1} · ${this.definition.name} · ${BPM} BPM</small>
@@ -565,7 +562,6 @@ class GameScene extends Phaser.Scene {
     this.elapsedMs = 0;
     this.nextEvent = 0;
     this.combo = 0;
-    this.accepted.clear();
     this.cleared.clear();
     this.autoPressed.clear();
     this.jumpStartedAt = -Infinity;
@@ -601,27 +597,17 @@ class GameScene extends Phaser.Scene {
     const delta = timingDeltaMs(this.elapsedMs, event);
 
     if (Math.abs(delta) > ACTION_WINDOW_MS) {
-      if (delta < -ACTION_WINDOW_MS) this.feedback('OFF BEAT · TRY AGAIN ON THE CUE', COLORS.orange);
+      if (delta < -ACTION_WINDOW_MS) this.feedback('OFF BEAT · WATCH THE ROAD', COLORS.orange);
       return;
     }
-    if (action !== event.action) {
-      this.fail(`NEEDED ${event.action.toUpperCase()}`);
-      return;
-    }
-    if (Math.abs(this.character.x - event.to.x) > POSITION_TOLERANCE) {
-      const behind = event.direction === 1 ? this.character.x < event.to.x : this.character.x > event.to.x;
-      this.fail(behind ? `KEEP HOLDING ${event.direction === 1 ? '→' : '←'}` : 'TOO FAR AHEAD');
-      return;
-    }
+    if (action !== event.action || Math.abs(this.character.x - event.to.x) > POSITION_TOLERANCE) return;
 
-    this.accepted.add(event.index);
     this.nextEvent += 1;
     this.combo += 1;
     const perfect = Math.abs(delta) <= 80;
     this.feedback(perfect ? `PERFECT ${action.toUpperCase()}!` : 'NICE!', perfect ? COLORS.mint : COLORS.yellow);
     this.audio.hit(action, perfect ? 'perfect' : 'good');
     this.comboElement.textContent = `${this.combo} STREAK`;
-    this.progressElement.textContent = `${this.nextEvent} / ${this.level.length}`;
   }
 
   private beginAction(action: Action): boolean {
@@ -675,7 +661,7 @@ class GameScene extends Phaser.Scene {
     const hasNextLevel = this.currentLevelIndex < this.levels.length - 1;
     const next = this.levels[this.currentLevelIndex + 1];
     this.startButton.querySelector('.start-card')!.innerHTML = `
-      <small>LEVEL ${this.currentLevelIndex + 1} CLEAR · ${this.level.length} / ${this.level.length} CUES</small>
+      <small>LEVEL ${this.currentLevelIndex + 1} CLEAR · ${this.level.length} / ${this.level.length} OBSTACLES</small>
       <strong>${hasNextLevel ? 'NICE RUN!' : 'BEATBOUND!'}</strong>
       <em>${hasNextLevel ? `NEXT: ${next.name} · ${next.subtitle}` : 'YOU CLEARED ALL THREE RHYTHM ROADS'}</em>
       <span class="start-cta">${hasNextLevel ? 'NEXT LEVEL' : 'RUN IT AGAIN'}</span>`;
@@ -709,8 +695,9 @@ class GameScene extends Phaser.Scene {
       }
     }
     if (event && timingDeltaMs(this.elapsedMs, event) > ACTION_WINDOW_MS) {
-      this.fail(`MISSED THE ${event.action.toUpperCase()}`);
-      return;
+      this.nextEvent += 1;
+      this.combo = 0;
+      this.comboElement.textContent = '0 STREAK';
     }
 
     this.updateCharacter(gameDeltaMs);
@@ -730,7 +717,7 @@ class GameScene extends Phaser.Scene {
     const finalEvent = this.level[this.level.length - 1];
     const finishX = finalEvent.hazardX + finalEvent.direction * 230;
     const reachedFinish = finalEvent.direction === 1 ? this.character.x >= finishX : this.character.x <= finishX;
-    if (this.nextEvent === this.level.length && reachedFinish) this.win();
+    if (this.cleared.size === this.level.length && reachedFinish) this.win();
   }
 
   private updateCharacter(gameDeltaMs: number): void {
@@ -767,10 +754,11 @@ class GameScene extends Phaser.Scene {
       const passed = event.direction === 1
         ? this.character.x > event.hazardX + 48
         : this.character.x < event.hazardX - 48;
-      if (this.accepted.has(event.index) && passed && !this.cleared.has(event.index)) {
+      if (passed && !this.cleared.has(event.index)) {
         this.cleared.add(event.index);
         enemy.setAlpha(0.35);
         if (event.action === 'jump') enemy.setScale(1, 0.3).setY(584);
+        this.progressElement.textContent = `${this.cleared.size} / ${this.level.length}`;
       }
     });
   }
@@ -778,7 +766,6 @@ class GameScene extends Phaser.Scene {
   private checkHazardCollisions(): void {
     for (const event of this.level) {
       if (this.cleared.has(event.index)) continue;
-      if (event.index !== this.nextEvent && !this.accepted.has(event.index)) continue;
       if (Math.abs(this.character.x - event.hazardX) > 42) continue;
       if (event.action === 'jump') {
         const playerBottom = this.character.y + 26 * this.character.scaleY;
@@ -824,7 +811,9 @@ class GameScene extends Phaser.Scene {
     const next = this.level[this.nextEvent];
     if (!next) {
       const direction = this.level[this.level.length - 1].direction === 1 ? '→' : '←';
-      this.promptText.setText(`KEEP RUNNING ${direction} TO THE FLAG`);
+      this.promptText.setText(this.cleared.size === this.level.length
+        ? `KEEP RUNNING ${direction} TO THE FLAG`
+        : `CUES OVER · WATCH THE ROAD ${direction}`);
       return;
     }
     const beatsAway = Math.max(0, Math.ceil((beatToMs(next.beat) - elapsedMs) / BEAT_MS));

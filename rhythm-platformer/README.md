@@ -2,11 +2,11 @@
 
 Beatbound is a three-level rhythm platformer built with Phaser and Tone.js. Hold a direction for several beats, then jump or duck when the next cue reaches the timing marker. The procedural soundtrack layers a heavy downbeat, an eight-bar lead melody, a changing chord progression, and a one-beat audio warning for every action.
 
-The bright side-scrolling roads use small enemies, rolling hills, clouds, beat blocks, and a procedural dash-and-dot background texture. The difficulty now builds across three short stages:
+The bright side-scrolling roads use small enemies, rolling hills, clouds, background music notes, and a procedural dash-and-dot texture. The difficulty now builds across three short stages:
 
 1. **Beginner Road** — seven forgiving jumps with long four-to-five-beat runs.
 2. **Bop & Duck** — adds low flyers, duck cues, and three-beat patterns.
-3. **Switchback Sprint** — opens with a jump on the strong downbeat, mixes both actions and directions, and finishes with two-beat cues.
+3. **Final Dash** — opens with a jump on the strong downbeat, keeps every obstacle on one readable road, and finishes with two-beat cues.
 
 ```bash
 bun install
@@ -16,7 +16,8 @@ bun run dev
 - **Move:** hold **A / D** or **← / →**.
 - **Jump:** press **Space / W / ↑**; hold briefly for a slightly higher jump.
 - **Duck:** hold **S / ↓**; release to stand early. Ducks end automatically after 1.25 beats.
-- Actions always respond off-beat, but only cue-timed actions build the streak and clear the rhythm prompt.
+- Actions always work off-beat; cue-timed actions build the streak, while off-beat play relies on reading the road yourself.
+- Every visible bouncer and flyer has a normal platformer collision. Only hitting an obstacle fails the run—missing a rhythm cue does not.
 - A failed or completed run restarts immediately with one press. Held movement remains active through a Space restart.
 - `bun run test` validates all three routes, beat quantization, run distance, progression, and timing precision.
 - `?music=off` starts muted.

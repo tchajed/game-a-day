@@ -22,7 +22,7 @@ describe('three-level beat road', () => {
     expect(levels.map((level) => level.events.length)).toEqual([7, 9, 10]);
     expect(new Set(levels[0].events.map((event) => event.action))).toEqual(new Set(['jump']));
     expect(new Set(levels[1].events.map((event) => event.action))).toEqual(new Set(['jump', 'duck']));
-    expect(new Set(levels[2].events.map((event) => event.direction))).toEqual(new Set([-1, 1]));
+    expect(levels[2].events.every((event) => event.direction === 1)).toBe(true);
   });
 
   it('gives every level one continuous, traversable route', () => {
@@ -39,7 +39,7 @@ describe('three-level beat road', () => {
     }
   });
 
-  it('starts the switchback with a jump on a strong downbeat', () => {
+  it('starts the final dash with a jump on a strong downbeat', () => {
     const opening = levels[2].events[0];
     expect(opening.action).toBe('jump');
     expect(isDownbeat(opening.beat)).toBe(true);

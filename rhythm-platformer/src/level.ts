@@ -66,14 +66,14 @@ const DUCK_AND_RUN: EventSpec[] = [
   { beats: 4, action: 'duck', direction: 1 },
 ];
 
-const SWITCHBACK: EventSpec[] = [
+const FINAL_DASH: EventSpec[] = [
   // Give the final road a clear count-in: its opening jump lands on beat one of bar two.
   { beats: BEATS_PER_BAR, action: 'jump', direction: 1 },
   { beats: 3, action: 'duck', direction: 1 },
   { beats: 3, action: 'jump', direction: 1 },
-  { beats: 4, action: 'jump', direction: -1 },
-  { beats: 3, action: 'duck', direction: -1 },
-  { beats: 3, action: 'jump', direction: -1 },
+  { beats: 4, action: 'jump', direction: 1 },
+  { beats: 3, action: 'duck', direction: 1 },
+  { beats: 3, action: 'jump', direction: 1 },
   { beats: 3, action: 'duck', direction: 1 },
   { beats: 2, action: 'jump', direction: 1 },
   { beats: 2, action: 'duck', direction: 1 },
@@ -109,7 +109,7 @@ export function createLevels(): LevelDefinition[] {
   const definitions = [
     { id: 'beginner-road', name: 'BEGINNER ROAD', subtitle: 'RUN RIGHT · JUMP BIG', startX: START_X, specs: TUTORIAL },
     { id: 'bop-and-duck', name: 'BOP & DUCK', subtitle: 'TWO MOVES · QUICKER CUES', startX: START_X, specs: DUCK_AND_RUN },
-    { id: 'switchback', name: 'SWITCHBACK SPRINT', subtitle: 'WATCH THE ARROWS', startX: 1_350, specs: SWITCHBACK },
+    { id: 'final-dash', name: 'FINAL DASH', subtitle: 'FAST CUES · ONE-WAY ROAD', startX: START_X, specs: FINAL_DASH },
   ] as const;
 
   return definitions.map(({ specs, ...definition }) => ({
