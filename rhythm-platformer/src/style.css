@@ -10,6 +10,7 @@
 * { box-sizing: border-box; }
 html, body, #app { width: 100%; height: 100%; margin: 0; overflow: hidden; }
 body {
+  touch-action: none;
   background:
     radial-gradient(circle at 30% 15%, #d6f4ff 0, transparent 28%),
     #79c9ff;
@@ -155,36 +156,45 @@ button { font: inherit; }
 }
 #debug-tools button:hover { background: #ffd84a; }
 
-#mobile-controls {
+#mobile-controls { display: none; }
+.touch-mode #mobile-controls {
   position: absolute;
   z-index: 2;
+  right: 0;
   bottom: max(18px, env(safe-area-inset-bottom));
-  left: 50%;
-  translate: -50% 0;
+  left: 0;
   display: flex;
-  gap: 10px;
-  pointer-events: auto;
+  justify-content: space-between;
+  padding: 0 max(14px, env(safe-area-inset-right)) 0 max(14px, env(safe-area-inset-left));
+  pointer-events: none;
+  transition: opacity .16s ease;
+}
+.touch-mode #start:not(.hidden) ~ #mobile-controls {
+  opacity: 0;
+}
+.touch-mode #start:not(.hidden) ~ #mobile-controls .action-button {
+  pointer-events: none;
 }
 .action-button {
-  width: 104px;
-  height: 58px;
+  pointer-events: auto;
+  width: clamp(150px, 28vw, 190px);
+  height: 68px;
   border: 3px solid #17334a;
-  border-radius: 18px;
+  border-radius: 20px;
   color: #17334a;
+  font-size: 14px;
   font-weight: 900;
-  letter-spacing: .04em;
-  background: #fff7d6e8;
-  box-shadow: 0 5px 0 #17334a55;
-  touch-action: manipulation;
+  letter-spacing: .06em;
+  background: #fff7d6f2;
+  box-shadow: 0 6px 0 #17334a66;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
 }
-.jump-button { color: #8f472e; background: #ffd84ae8; }
-.duck-button { color: #17334a; background: #55d6a7e8; }
-.move-button { width: 58px; color: #fff; background: #e94c45df; font-size: 22px; }
-.action-button:active { translate: 0 4px; box-shadow: 0 1px 0 #17334a55; }
+.jump-button { color: #8f472e; background: #ffd84af2; }
+.duck-button { color: #17334a; background: #55d6a7f2; }
+.action-button:active { translate: 0 5px; box-shadow: 0 1px 0 #17334a55; }
 
-@media (min-width: 800px) {
-  #mobile-controls { display: none; }
-}
 @media (max-width: 620px) {
   .topbar { padding-inline: 10px; }
   .brand { display: none; }
@@ -193,7 +203,7 @@ button { font: inherit; }
   #debug-tools strong { display: none; }
   .start-card { padding: 24px 20px 20px; }
   .start-card em { font-size: 11px; }
-  #mobile-controls { gap: 7px; }
-  .action-button { width: 74px; font-size: 11px; }
-  .move-button { width: 48px; }
+  .touch-mode .pill { min-height: 42px; }
+  .touch-mode #mobile-controls { gap: 14px; }
+  .touch-mode .action-button { width: calc((100vw - 42px) / 2); max-width: 176px; }
 }

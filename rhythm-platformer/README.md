@@ -16,6 +16,7 @@ bun run dev
 - **Move:** hold **A / D** or **← / →**.
 - **Jump:** press **Space / W / ↑**; hold briefly for a slightly higher jump.
 - **Duck:** hold **S / ↓**; release to stand early. Ducks end automatically after 1.25 beats.
+- **Touch:** the character auto-runs; use the two large **Jump** and **Duck** buttons. Landscape orientation gives the clearest view.
 - Actions always work off-beat; cue-timed actions build the streak, while off-beat play relies on reading the road yourself.
 - Every visible bouncer and flyer has a normal platformer collision. Only hitting an obstacle fails the run—missing a rhythm cue does not.
 - A failed or completed run restarts immediately with one press. Held movement remains active through a Space restart.

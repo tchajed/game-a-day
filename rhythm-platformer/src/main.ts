@@ -51,6 +51,9 @@ declare global {
 const params = new URLSearchParams(location.search);
 const DEBUG = params.get('debug') === 'true';
 const START_MUTED = params.get('music') === 'off';
+const TOUCH_MODE = window.matchMedia('(pointer: coarse)').matches
+  || navigator.maxTouchPoints > 0
+  || /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 const requestedSlow = Number(params.get('slow'));
 const INITIAL_SPEED = DEBUG && params.has('slow')
   ? Phaser.Math.Clamp(Number.isFinite(requestedSlow) && requestedSlow > 0 ? requestedSlow : 0.5, 0.25, 1)
@@ -92,7 +95,7 @@ class GameScene extends Phaser.Scene {
   private combo = 0;
   private cleared = new Set<number>();
   private autoPressed = new Set<number>();
-  private moveAxis: -1 | 0 | 1 = 0;
+  private moveAxis: -1 | 0 | 1 = TOUCH_MODE ? 1 : 0;
   private leftHeld = false;
   private rightHeld = false;
   private jumpStartedAt = -Infinity;
@@ -124,6 +127,7 @@ class GameScene extends Phaser.Scene {
     const validation = validateLevel(this.level);
     if (validation.errors.length > 0) throw new Error(validation.errors.join('\n'));
 
+    document.body.classList.toggle('touch-mode', TOUCH_MODE);
     this.cameras.main.setBounds(0, 0, this.worldWidth, 720);
     this.worldLayer = this.add.container(0, 0);
     this.drawWorld();
@@ -320,7 +324,7 @@ class GameScene extends Phaser.Scene {
       color: '#17334a', fontFamily: 'Nunito, sans-serif', fontSize: '9px', fontStyle: '900',
     }).setOrigin(0.5).setScrollFactor(0).setDepth(52);
 
-    this.promptText = this.add.text(480, 100, 'HOLD → · JUMP ON THE BEAT', {
+    this.promptText = this.add.text(480, 100, TOUCH_MODE ? 'AUTO-RUN → · JUMP ON THE BEAT' : 'HOLD → · JUMP ON THE BEAT', {
       color: '#17334a', fontFamily: 'Nunito, sans-serif', fontSize: '22px', fontStyle: '900',
       backgroundColor: '#fff7d6e8', padding: { x: 18, y: 9 },
     }).setOrigin(0.5).setScrollFactor(0).setDepth(54);
@@ -336,11 +340,17 @@ class GameScene extends Phaser.Scene {
       'JUMP OR<br>DUCK.',
       'FINAL<br>DASH.',
     ];
-    const controls = [
+    const keyboardControls = [
       'HOLD D OR → &nbsp; · &nbsp; HOLD SPACE FOR A BIGGER JUMP',
       'SPACE = JUMP &nbsp; · &nbsp; HOLD S OR ↓ TO STAY LOW',
       'KEEP RIGHT &nbsp; · &nbsp; THE BEAT HELPS, BUT THE ROAD DECIDES',
     ];
+    const touchControls = [
+      'AUTO-RUN IS ON &nbsp; · &nbsp; HOLD JUMP FOR A BIGGER LEAP',
+      'TAP JUMP &nbsp; · &nbsp; HOLD DUCK TO STAY LOW',
+      'TWO BIG BUTTONS &nbsp; · &nbsp; THE BEAT HELPS, BUT THE ROAD DECIDES',
+    ];
+    const controls = TOUCH_MODE ? touchControls : keyboardControls;
     return `
       <small>LEVEL ${this.currentLevelIndex + 1} · ${this.definition.name} · ${BPM} BPM</small>
       <strong>${titles[this.currentLevelIndex]}</strong>
@@ -374,11 +384,9 @@ class GameScene extends Phaser.Scene {
           ${this.introMarkup('START THE MUSIC')}
         </span>
       </button>
-      <div id="mobile-controls">
-        <button class="action-button move-button" data-move="-1">←</button>
-        <button class="action-button jump-button" data-action="jump">↑ JUMP</button>
-        <button class="action-button duck-button" data-action="duck">↓ DUCK</button>
-        <button class="action-button move-button" data-move="1">→</button>
+      <div id="mobile-controls" role="group" aria-label="Touch controls; character runs automatically">
+        <button class="action-button jump-button" data-action="jump" aria-label="Jump">↑ JUMP</button>
+        <button class="action-button duck-button" data-action="duck" aria-label="Duck">↓ DUCK</button>
       </div>`;
     document.body.append(ui);
 
@@ -435,18 +443,6 @@ class GameScene extends Phaser.Scene {
       });
       button.addEventListener('pointerup', release);
       button.addEventListener('pointercancel', release);
-    });
-    ui.querySelectorAll<HTMLButtonElement>('[data-move]').forEach((button) => {
-      const direction = Number(button.dataset.move) as -1 | 1;
-      const release = () => { if (this.moveAxis === direction) this.moveAxis = 0; };
-      button.addEventListener('pointerdown', (event) => {
-        event.preventDefault();
-        event.stopPropagation();
-        this.moveAxis = direction;
-      });
-      button.addEventListener('pointerup', release);
-      button.addEventListener('pointercancel', release);
-      button.addEventListener('pointerleave', release);
     });
   }
 
@@ -529,7 +525,7 @@ class GameScene extends Phaser.Scene {
     this.phase = 'playing';
     this.startAt = performance.now() + 80;
     this.lastClock = this.startAt;
-    if (this.autoPlay) this.moveAxis = this.level[0].direction;
+    if (this.autoPlay || TOUCH_MODE) this.moveAxis = this.level[0].direction;
     this.feedback(this.speedScale < 1 ? 'PRACTICE RUN' : 'GO!', COLORS.white);
   }
 
@@ -569,7 +565,7 @@ class GameScene extends Phaser.Scene {
     this.jumpHeld = false;
     this.duckStartedAt = -Infinity;
     this.duckHeld = false;
-    if (this.autoPlay) this.moveAxis = this.level[0].direction;
+    if (this.autoPlay || TOUCH_MODE) this.moveAxis = this.level[0].direction;
     else this.syncMoveAxis();
     this.character.setPosition(this.definition.startX, GROUND_Y).setScale(1).setRotation(0).setAlpha(1);
     this.drawCharacterBody(false);
@@ -819,7 +815,8 @@ class GameScene extends Phaser.Scene {
     const beatsAway = Math.max(0, Math.ceil((beatToMs(next.beat) - elapsedMs) / BEAT_MS));
     const direction = next.direction === 1 ? '→' : '←';
     const action = next.action.toUpperCase();
-    this.promptText.setText(beatsAway > 0 ? `HOLD ${direction} · ${action} IN ${beatsAway}` : `${action}!`);
+    const movement = TOUCH_MODE ? `AUTO ${direction}` : `HOLD ${direction}`;
+    this.promptText.setText(beatsAway > 0 ? `${movement} · ${action} IN ${beatsAway}` : `${action}!`);
   }
 }
 
