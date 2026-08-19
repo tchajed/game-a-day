@@ -28,8 +28,8 @@ The testing should use GPT 5.6 Sol with medium thinking.
 
 ## Play locally
 
-The deployable player page hosts all three current stories and copies each hidden prompt
-without revealing it.
+The deployable site has a minimal entry page and one page for each conversation. Each
+conversation page includes its own setup instructions and copies the prompt without displaying it.
 
 ```bash
 bun install

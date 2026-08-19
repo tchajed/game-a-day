@@ -12,6 +12,7 @@ export interface Story {
   title: string
   roleLabel: string
   hook: string
+  image: string
   briefing: string
   prompt: string
   instructions: string[]
@@ -46,7 +47,8 @@ const storyDetails: Record<StorySlug, Omit<Story, 'slug' | 'title' | 'roleLabel'
   'absentminded-neighbor': {
     number: '01',
     label: 'A missing boat',
-    hook: 'Your neighbor was awake during the storm. She may have seen where your skiff went—if you can keep her on the subject.',
+    hook: 'Ask your neighbor whether she saw where your skiff went during last night’s storm.',
+    image: 'june-barlow.webp',
     accent: 'sea',
     instructions: [
       'Ask June for concrete details: direction, time, location, and what she saw.',
@@ -57,7 +59,8 @@ const storyDetails: Record<StorySlug, Omit<Story, 'slug' | 'title' | 'roleLabel'
   'job-applicant': {
     number: '02',
     label: 'A first-round interview',
-    hook: 'Mara Voss has a tidy résumé and an unusually exact way of speaking. Decide whether she should advance.',
+    hook: 'Conduct a first-round interview for an Operations Coordinator at Wayline Logistics.',
+    image: 'mara-voss.webp',
     accent: 'ember',
     instructions: [
       'Stay in role as the interviewer and ask normal, specific interview questions.',
@@ -68,7 +71,8 @@ const storyDetails: Record<StorySlug, Omit<Story, 'slug' | 'title' | 'roleLabel'
   'cursed-support': {
     number: '03',
     label: 'An evening support ticket',
-    hook: 'A researcher’s laptop freezes at the same point each hour. Diagnose it before his morning client call.',
+    hook: 'Help a researcher diagnose a freezing laptop before his morning client call.',
+    image: 'eli-ward.webp',
     accent: 'signal',
     instructions: [
       'Troubleshoot methodically: timing, processes, recent files, devices, and sync.',

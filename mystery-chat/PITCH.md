@@ -4,4 +4,4 @@ Three ordinary chats are hiding something impossible. Pick up a neighbor’s sca
 
 ![Mystery Chat story selection and briefing](screenshots/home-desktop.png)
 
-![Mystery Chat on mobile](screenshots/home-mobile.png)
+![Mystery Chat conversation page](screenshots/story-desktop.png)

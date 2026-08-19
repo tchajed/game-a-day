@@ -1,40 +1,62 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { marked } from 'marked'
-import { stories, type Story, type StorySlug } from './data'
+import { stories, type StorySlug } from './data'
 
 type CopyState = 'idle' | 'copied' | 'error'
 
-const initialSlug = window.location.hash.slice(1) as StorySlug
-const selectedSlug = ref<StorySlug>(
-  stories.some((story) => story.slug === initialSlug) ? initialSlug : stories[0].slug,
-)
+function storySlugFromPath(): StorySlug | null {
+  const finalSegment = window.location.pathname.split('/').filter(Boolean).at(-1)
+  return stories.some((story) => story.slug === finalSegment)
+    ? (finalSegment as StorySlug)
+    : null
+}
+
+function rootPath(): string {
+  const slug = storySlugFromPath()
+  if (slug) return window.location.pathname.slice(0, -slug.length)
+  return window.location.pathname.endsWith('/')
+    ? window.location.pathname
+    : `${window.location.pathname}/`
+}
+
+const activeSlug = ref<StorySlug | null>(storySlugFromPath())
 const copyState = ref<CopyState>('idle')
 const debug = new URLSearchParams(window.location.search).get('debug') === 'true'
 let resetTimer: number | undefined
 
-const selectedStory = computed(() => stories.find((story) => story.slug === selectedSlug.value)!)
-const briefingHtml = computed(() => marked.parse(selectedStory.value.briefing, { async: false }) as string)
+const activeStory = computed(() => stories.find((story) => story.slug === activeSlug.value) ?? null)
+const briefingHtml = computed(() =>
+  activeStory.value ? (marked.parse(activeStory.value.briefing, { async: false }) as string) : '',
+)
 
-function chooseStory(story: Story, shouldScroll = true) {
-  selectedSlug.value = story.slug
+function storyHref(slug: StorySlug): string {
+  return `${rootPath()}${slug}${window.location.search}`
+}
+
+function homeHref(): string {
+  return `${rootPath()}${window.location.search}`
+}
+
+function navigate(event: MouseEvent, slug: StorySlug | null) {
+  if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return
+  event.preventDefault()
+  const url = slug ? storyHref(slug) : homeHref()
+  window.history.pushState(null, '', url)
+  activeSlug.value = slug
   copyState.value = 'idle'
-  history.replaceState(null, '', `${window.location.pathname}${window.location.search}#${story.slug}`)
-  if (shouldScroll) {
-    requestAnimationFrame(() => {
-      document.querySelector('#story')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-    })
-  }
+  window.scrollTo({ top: 0, behavior: 'instant' })
 }
 
 async function copyPrompt() {
-  const prompt = selectedStory.value.prompt
+  if (!activeStory.value) return
+
   try {
     if (navigator.clipboard?.writeText) {
-      await navigator.clipboard.writeText(prompt)
+      await navigator.clipboard.writeText(activeStory.value.prompt)
     } else {
       const textarea = document.createElement('textarea')
-      textarea.value = prompt
+      textarea.value = activeStory.value.prompt
       textarea.setAttribute('readonly', '')
       textarea.style.cssText = 'position:fixed;opacity:0;pointer-events:none'
       document.body.appendChild(textarea)
@@ -52,181 +74,109 @@ async function copyPrompt() {
   resetTimer = window.setTimeout(() => (copyState.value = 'idle'), 3500)
 }
 
-function handleHashChange() {
-  const slug = window.location.hash.slice(1) as StorySlug
-  const story = stories.find((item) => item.slug === slug)
-  if (story) chooseStory(story, false)
+function syncRoute() {
+  activeSlug.value = storySlugFromPath()
+  copyState.value = 'idle'
 }
 
-onMounted(() => {
-  window.addEventListener('hashchange', handleHashChange)
-  if (!window.location.hash) chooseStory(stories[0], false)
-})
+watch(activeStory, (story) => {
+  document.title = story ? `${story.title} — Mystery Chat` : 'Mystery Chat'
+}, { immediate: true })
 
+onMounted(() => window.addEventListener('popstate', syncRoute))
 onBeforeUnmount(() => {
   window.clearTimeout(resetTimer)
-  window.removeEventListener('hashchange', handleHashChange)
+  window.removeEventListener('popstate', syncRoute)
 })
 </script>
 
 <template>
-  <div class="page-shell">
-    <header class="topbar">
-      <a class="wordmark" href="#top" aria-label="Mystery Chat home">
-        <span class="wordmark-mark" aria-hidden="true"><i /><i /><i /></span>
-        <span>Mystery Chat</span>
-      </a>
-      <a class="header-link" href="#choose">Choose a story <span>↓</span></a>
+  <div class="site-shell">
+    <header class="site-header">
+      <a class="brand" :href="homeHref()" @click="navigate($event, null)">Mystery Chat</a>
+      <a
+        v-if="activeStory"
+        class="quiet-link"
+        :href="homeHref()"
+        @click="navigate($event, null)"
+      >All conversations</a>
     </header>
 
-    <main id="top">
-      <section class="hero">
-        <div class="hero-copy">
-          <p class="eyebrow">Three conversations · three hidden truths</p>
-          <h1>Something is being<br /><em>left unsaid.</em></h1>
-          <p class="hero-intro">
-            Choose a situation. Copy its unseen prompt into a fresh AI chat. Then ask the
-            right questions to discover what is really going on.
-          </p>
-          <a class="start-link" href="#choose">Choose your conversation <span>↓</span></a>
-        </div>
-        <div class="hero-art" aria-hidden="true">
-          <div class="orbit orbit-one" />
-          <div class="orbit orbit-two" />
-          <div class="message-card message-one"><span>Everything seems normal.</span><b>For now.</b></div>
-          <div class="message-card message-two"><span>What would you</span><b>ask next?</b></div>
-          <div class="message-card message-three"><i /><i /><i /></div>
-          <div class="signal-star">✦</div>
-        </div>
+    <main v-if="!activeStory" class="entry-page">
+      <section class="entry-intro">
+        <p class="kicker">A conversation game</p>
+        <h1>Mystery<br />Chat</h1>
+        <p>Choose a conversation.</p>
       </section>
 
-      <section class="how-to" aria-labelledby="how-title">
-        <div class="section-label">
-          <span>How to play</span>
-          <b>About 5 minutes</b>
+      <nav class="conversation-list" aria-label="Conversations">
+        <a
+          v-for="story in stories"
+          :key="story.slug"
+          class="conversation-link"
+          :href="storyHref(story.slug)"
+          @click="navigate($event, story.slug)"
+        >
+          <span class="conversation-number">{{ story.number }}</span>
+          <span class="conversation-text">
+            <small>{{ story.label }}</small>
+            <strong>{{ story.title }}</strong>
+            <span>{{ story.hook }}</span>
+          </span>
+          <span class="arrow" aria-hidden="true">→</span>
+        </a>
+      </nav>
+    </main>
+
+    <main v-else class="story-page">
+      <section class="story-lead">
+        <div class="story-heading">
+          <p class="kicker">Conversation {{ activeStory.number }}</p>
+          <h1>{{ activeStory.title }}</h1>
+          <p class="role">You are talking with {{ activeStory.roleLabel }}.</p>
         </div>
-        <div class="steps">
-          <div class="step">
-            <span>1</span>
-            <div><strong>Choose a story</strong><p>Read the short, spoiler-free briefing.</p></div>
-          </div>
-          <div class="step">
-            <span>2</span>
-            <div><strong>Copy the hidden prompt</strong><p>Paste it into a brand-new AI chat without reading it.</p></div>
-          </div>
-          <div class="step">
-            <span>3</span>
-            <div><strong>Stay curious</strong><p>Play your role, follow odd details, and uncover the whole story.</p></div>
-          </div>
-        </div>
-        <div class="setup-note">
-          <div class="model-icon" aria-hidden="true">✦</div>
-          <div>
-            <span>Recommended setup</span>
-            <p>Use <strong>GPT 5.6 Sol</strong>, <strong>Claude Sonnet 5</strong>, or <strong>Gemini 3.7 Flash</strong>.</p>
-          </div>
-          <div class="thinking-chip"><small>Thinking level</small><strong>Medium</strong></div>
-        </div>
+        <img
+          class="portrait"
+          :src="`${rootPath()}portraits/${activeStory.image}`"
+          :alt="`Portrait of ${activeStory.roleLabel}`"
+          width="900"
+          height="900"
+        />
       </section>
 
-      <section id="choose" class="chooser" aria-labelledby="choose-title">
-        <div class="chooser-heading">
-          <div>
-            <p class="eyebrow">Begin a conversation</p>
-            <h2 id="choose-title">Which thread will you pull?</h2>
-          </div>
-          <p>Each story begins in an ordinary place. None of them stays there.</p>
-        </div>
-
-        <div class="story-cards">
-          <button
-            v-for="story in stories"
-            :key="story.slug"
-            type="button"
-            class="story-card"
-            :class="[story.accent, { selected: selectedSlug === story.slug }]"
-            :aria-pressed="selectedSlug === story.slug"
-            @click="chooseStory(story)"
-          >
-            <span class="card-top"><b>{{ story.number }}</b><i>Play story ↗</i></span>
-            <span class="card-symbol" aria-hidden="true">
-              <svg v-if="story.slug === 'absentminded-neighbor'" viewBox="0 0 160 90">
-                <path d="M5 68 Q34 55 61 68 T116 68 T169 68" />
-                <path d="M24 64l9-27h42l13 27M37 37l17-18 18 18M54 19v45M103 52h43M114 52l12-15 11 15" />
-                <circle cx="125" cy="23" r="10" />
-              </svg>
-              <svg v-else-if="story.slug === 'job-applicant'" viewBox="0 0 160 90">
-                <rect x="29" y="10" width="102" height="68" rx="3" />
-                <circle cx="80" cy="34" r="10" />
-                <path d="M61 64c2-13 10-19 19-19s17 6 19 19M42 19h12M106 19h12M42 69h12M106 69h12" />
-              </svg>
-              <svg v-else viewBox="0 0 160 90">
-                <rect x="24" y="12" width="112" height="66" rx="4" />
-                <path d="M24 27h112M34 20h1M42 20h1M50 20h1M36 47h25l8-10 12 25 9-15h34" />
-                <circle cx="123" cy="47" r="4" />
-              </svg>
-            </span>
-            <span class="card-label">{{ story.label }}</span>
-            <strong class="card-title">{{ story.title }}</strong>
-            <span class="card-hook">{{ story.hook }}</span>
-          </button>
-        </div>
+      <section class="briefing" aria-labelledby="briefing-title">
+        <h2 id="briefing-title">Before you begin</h2>
+        <div class="briefing-copy" v-html="briefingHtml" />
       </section>
 
-      <section id="story" class="story-detail" :class="selectedStory.accent" aria-live="polite">
-        <div class="detail-heading">
-          <div>
-            <p class="eyebrow">Story {{ selectedStory.number }} · Your briefing</p>
-            <h2>{{ selectedStory.title }}</h2>
-          </div>
-          <span class="role-chip">You’ll chat with <strong>{{ selectedStory.roleLabel }}</strong></span>
+      <section class="start-panel" aria-labelledby="start-title">
+        <div>
+          <p class="kicker">Start the conversation</p>
+          <h2 id="start-title">Open a new chat.</h2>
+          <ol class="chat-steps">
+            <li>Copy the conversation prompt.</li>
+            <li>Paste it into a new ChatGPT, Claude, or Gemini chat and send it.</li>
+            <li>Reply naturally and keep the conversation going.</li>
+          </ol>
         </div>
-
-        <div class="detail-grid">
-          <div class="briefing-panel">
-            <span class="paper-label">What you know</span>
-            <div class="briefing-copy" v-html="briefingHtml" />
-          </div>
-
-          <aside class="play-panel">
-            <div class="play-heading">
-              <span>Before you begin</span>
-              <strong>Play this story well</strong>
-            </div>
-            <ol class="story-tips">
-              <li v-for="instruction in selectedStory.instructions" :key="instruction">
-                <span>→</span><p>{{ instruction }}</p>
-              </li>
-            </ol>
-            <div class="mini-setup">
-              <span>AI setup</span>
-              <p>Fresh chat · Recommended model · Medium thinking</p>
-            </div>
-            <button type="button" class="copy-button" :class="copyState" @click="copyPrompt">
-              <span aria-hidden="true">{{ copyState === 'copied' ? '✓' : '⧉' }}</span>
-              {{ copyState === 'copied' ? 'Prompt copied — go paste it' : copyState === 'error' ? 'Could not copy — try again' : 'Copy hidden prompt' }}
-            </button>
-            <p class="copy-note">The prompt stays hidden so you can play without spoilers.</p>
-          </aside>
-        </div>
-
-        <div v-if="debug" class="debug-panel">
-          <strong>Debug</strong>
-          <span>{{ selectedStory.slug }}</span>
-          <span>{{ selectedStory.prompt.length.toLocaleString() }} prompt characters</span>
-        </div>
+        <button type="button" class="copy-button" :class="copyState" @click="copyPrompt">
+          {{ copyState === 'copied'
+            ? 'Copied — go paste it'
+            : copyState === 'error'
+              ? 'Could not copy — try again'
+              : 'Copy conversation prompt' }}
+        </button>
       </section>
 
-      <section class="final-callout">
-        <span class="final-mark" aria-hidden="true">?</span>
-        <div><p class="eyebrow">One last rule</p><h2>Don’t rush the strange parts.</h2></div>
-        <p>The most useful question is rarely “What is the secret?” Ask for specifics. Test the answer. Then ask what changed.</p>
-      </section>
+      <div v-if="debug" class="debug-panel">
+        <strong>Debug</strong>
+        <span>{{ activeStory.slug }}</span>
+        <span>{{ activeStory.prompt.length.toLocaleString() }} characters</span>
+      </div>
     </main>
 
     <footer>
-      <a class="wordmark" href="#top"><span class="wordmark-mark" aria-hidden="true"><i /><i /><i /></span><span>Mystery Chat</span></a>
-      <span>Three tiny mysteries for your favorite chatbot.</span>
+      <span>Mystery Chat</span>
     </footer>
   </div>
 </template>
