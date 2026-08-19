@@ -30,3 +30,23 @@ public task with the hidden mechanic. The harness now reports `surface_goal_comp
 
 The two v2 review styles deliberately test different pressures: `natural` may accept a
 satisfying surface resolution, while `investigative` should seek the complete hidden arc.
+
+## Harder concealment: v3
+
+Human play with the first two stories confirmed a weakness the blind runs underweighted:
+a single peculiar phrase or impossible observation appeared so early that it effectively
+announced the supernatural premise. The v3 prompts therefore separate **ordinary
+specificity** from **supernatural evidence** with a hard rule:
+
+- replies to player turns 1–3 must remain fully mundane, even after a lucky leading guess;
+- turn 4 is only the earliest eligible reveal, not an automatic reveal;
+- each story requires grounded follow-ups in at least two clue categories before one
+  impossible observation appears;
+- identity, capabilities, and resolution are separate layers that require further probes.
+
+This is paired with an informed pressure-test mode rather than relying only on blind
+controllers. Each v3 scenario has a spoiler-full `test-target.md`; the `prying` controller
+may use it to choose productive questions but may not assert target facts as player
+knowledge. The story process never receives it. The judge now reports the first
+supernatural-evidence and core-secret turns against the declared minimum, making an early
+leak a concrete failure instead of something a general quality score can overlook.
