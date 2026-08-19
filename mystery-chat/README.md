@@ -26,8 +26,22 @@ The player will get (a) a backstory on the website, and (b) a hidden prompt they
 
 The testing should use GPT 5.6 Sol with medium thinking.
 
+## Play locally
+
+The deployable player page hosts all three current stories and copies each hidden prompt
+without revealing it.
+
+```bash
+bun install
+bun run dev
+```
+
+For the intended experience, paste a prompt into a fresh chat using GPT 5.6 Sol, Claude
+Sonnet 5, or Gemini 3.7 Flash with thinking set to medium.
+
 ## Prototype artifacts
 
+- Deployable player website: [`src/`](src/)
 - Spoiler-aware review website: [`review/`](review/)
 - Story briefings and hidden prompts: [`stories/`](stories/)
 - Reusable isolated playtest harness: [`PLAYTESTING.md`](PLAYTESTING.md)

@@ -1,0 +1,23 @@
+{
+  "name": "mystery-chat",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview",
+    "test": "playwright test"
+  },
+  "dependencies": {
+    "marked": "latest",
+    "vue": "latest"
+  },
+  "devDependencies": {
+    "@playwright/test": "latest",
+    "@vitejs/plugin-vue": "latest",
+    "@vue/tsconfig": "latest",
+    "typescript": "latest",
+    "vite": "latest"
+  }
+}
