@@ -25,3 +25,10 @@ You should test this by doing runs of the game. I will want to review these run 
 The player will get (a) a backstory on the website, and (b) a hidden prompt they start a chat conversation with. Testing should mimic this real setup, with maybe one additional prompt to guide the testing (such as to ask pointed questions or to just be naive). However, it's very important that the context engineering is correct on this: the game itself is also run by an LLM, and the fact that a test is being conducted should not leak into that chat. Use python around pi to orchestrate this.
 
 The testing should use GPT 5.6 Sol with medium thinking.
+
+## Prototype artifacts
+
+- Story briefings and hidden prompts: [`stories/`](stories/)
+- Reusable isolated playtest harness: [`PLAYTESTING.md`](PLAYTESTING.md)
+- Initial findings and revision rationale: [`ITERATION.md`](ITERATION.md)
+- Generated review transcripts: [`playtests/`](playtests/)
