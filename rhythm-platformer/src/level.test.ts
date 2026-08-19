@@ -2,10 +2,15 @@ import { describe, expect, it } from 'vitest';
 import {
   ACTION_WINDOW_MS,
   BEAT_MS,
+  JUMP_HOLD_BEATS,
+  MAX_JUMP_HEIGHT,
+  MIN_JUMP_HEIGHT,
   RUN_SPEED,
   beatToMs,
   createLevels,
+  isDownbeat,
   isOnBeat,
+  jumpHeightForHoldMs,
   validateLevel,
 } from './level';
 
@@ -32,6 +37,20 @@ describe('three-level beat road', () => {
         position = event.to;
       }
     }
+  });
+
+  it('starts the switchback with a jump on a strong downbeat', () => {
+    const opening = levels[2].events[0];
+    expect(opening.action).toBe('jump');
+    expect(isDownbeat(opening.beat)).toBe(true);
+  });
+
+  it('scales jump height with a short, capped hold', () => {
+    expect(jumpHeightForHoldMs(0)).toBe(MIN_JUMP_HEIGHT);
+    expect(jumpHeightForHoldMs(beatToMs(JUMP_HOLD_BEATS) / 2)).toBeCloseTo(
+      (MIN_JUMP_HEIGHT + MAX_JUMP_HEIGHT) / 2,
+    );
+    expect(jumpHeightForHoldMs(beatToMs(JUMP_HOLD_BEATS) * 2)).toBe(MAX_JUMP_HEIGHT);
   });
 
   it('keeps the tutorial spacious, then tightens the rhythm', () => {

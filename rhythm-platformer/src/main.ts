@@ -11,6 +11,8 @@ import {
   RUN_SPEED,
   beatToMs,
   createLevels,
+  isDownbeat,
+  jumpHeightForHoldMs,
   timingDeltaMs,
   type Action,
   type BeatEvent,
@@ -25,6 +27,9 @@ interface DebugState {
   nextEvent: number;
   combo: number;
   playerX: number;
+  playerY: number;
+  jumping: boolean;
+  ducking: boolean;
   speed: number;
   autoplay: boolean;
   level: number;
@@ -35,6 +40,7 @@ declare global {
     __BEATBOUND__?: {
       getState: () => DebugState;
       press: (action: Action) => void;
+      release: (action: Action) => void;
       setDirection: (direction: -1 | 0 | 1) => void;
       restart: () => void;
       level: BeatEvent[];
@@ -91,7 +97,10 @@ class GameScene extends Phaser.Scene {
   private leftHeld = false;
   private rightHeld = false;
   private jumpStartedAt = -Infinity;
+  private jumpReleasedAt = -Infinity;
+  private jumpHeld = false;
   private duckStartedAt = -Infinity;
+  private duckHeld = false;
   private character!: Phaser.GameObjects.Container;
   private characterBody!: Phaser.GameObjects.Graphics;
   private enemies = new Map<number, Phaser.GameObjects.Container>();
@@ -131,11 +140,15 @@ class GameScene extends Phaser.Scene {
         nextEvent: this.nextEvent,
         combo: this.combo,
         playerX: Math.round(this.character.x),
+        playerY: Math.round(this.character.y),
+        jumping: this.elapsedMs - this.jumpStartedAt < beatToMs(JUMP_BEATS),
+        ducking: this.duckHeld && this.elapsedMs - this.duckStartedAt < beatToMs(DUCK_BEATS),
         speed: this.speedScale,
         autoplay: this.autoPlay,
         level: this.currentLevelIndex + 1,
       }),
       press: (action) => this.press(action),
+      release: (action) => this.releaseAction(action),
       setDirection: (direction) => { this.moveAxis = direction; },
       restart: () => this.resetRun(false),
       level: this.level,
@@ -327,9 +340,9 @@ class GameScene extends Phaser.Scene {
       'FOLLOW THE<br>ARROWS.',
     ];
     const controls = [
-      'HOLD D OR → &nbsp; · &nbsp; TAP SPACE ON THE BIG BEAT',
-      'SPACE = JUMP &nbsp; · &nbsp; S OR ↓ = DUCK',
-      'A / D = RUN &nbsp; · &nbsp; SPACE = JUMP &nbsp; · &nbsp; S = DUCK',
+      'HOLD D OR → &nbsp; · &nbsp; HOLD SPACE FOR A BIGGER JUMP',
+      'SPACE = JUMP &nbsp; · &nbsp; HOLD S OR ↓ TO STAY LOW',
+      'A / D = RUN &nbsp; · &nbsp; HOLD ACTIONS &nbsp; · &nbsp; HIT THE BEAT',
     ];
     return `
       <small>LEVEL ${this.currentLevelIndex + 1} · ${this.definition.name} · ${BPM} BPM</small>
@@ -412,11 +425,19 @@ class GameScene extends Phaser.Scene {
 
     ui.querySelectorAll<HTMLButtonElement>('[data-action]').forEach((button) => {
       const action = button.dataset.action as Action;
+      const release = (event: PointerEvent) => {
+        event.preventDefault();
+        event.stopPropagation();
+        this.releaseAction(action);
+      };
       button.addEventListener('pointerdown', (event) => {
         event.preventDefault();
         event.stopPropagation();
+        button.setPointerCapture(event.pointerId);
         this.press(action);
       });
+      button.addEventListener('pointerup', release);
+      button.addEventListener('pointercancel', release);
     });
     ui.querySelectorAll<HTMLButtonElement>('[data-move]').forEach((button) => {
       const direction = Number(button.dataset.move) as -1 | 1;
@@ -470,6 +491,8 @@ class GameScene extends Phaser.Scene {
     this.input.keyboard?.on('keyup', (event: KeyboardEvent) => {
       if (event.code === 'KeyA' || event.code === 'ArrowLeft') this.leftHeld = false;
       if (event.code === 'KeyD' || event.code === 'ArrowRight') this.rightHeld = false;
+      if (event.code === 'Space' || event.code === 'ArrowUp' || event.code === 'KeyW') this.releaseAction('jump');
+      if (event.code === 'ArrowDown' || event.code === 'KeyS') this.releaseAction('duck');
       this.syncMoveAxis();
     });
   }
@@ -546,7 +569,10 @@ class GameScene extends Phaser.Scene {
     this.cleared.clear();
     this.autoPressed.clear();
     this.jumpStartedAt = -Infinity;
+    this.jumpReleasedAt = -Infinity;
+    this.jumpHeld = false;
     this.duckStartedAt = -Infinity;
+    this.duckHeld = false;
     if (this.autoPlay) this.moveAxis = this.level[0].direction;
     else this.syncMoveAxis();
     this.character.setPosition(this.definition.startX, GROUND_Y).setScale(1).setRotation(0).setAlpha(1);
@@ -569,13 +595,13 @@ class GameScene extends Phaser.Scene {
   }
 
   private press(action: Action): void {
-    if (this.phase !== 'playing') return;
+    if (this.phase !== 'playing' || !this.beginAction(action)) return;
     const event = this.level[this.nextEvent];
     if (!event) return;
     const delta = timingDeltaMs(this.elapsedMs, event);
 
     if (Math.abs(delta) > ACTION_WINDOW_MS) {
-      if (delta < -ACTION_WINDOW_MS) this.feedback('WAIT FOR THE BEAT', COLORS.orange);
+      if (delta < -ACTION_WINDOW_MS) this.feedback('OFF BEAT · TRY AGAIN ON THE CUE', COLORS.orange);
       return;
     }
     if (action !== event.action) {
@@ -591,13 +617,38 @@ class GameScene extends Phaser.Scene {
     this.accepted.add(event.index);
     this.nextEvent += 1;
     this.combo += 1;
-    if (action === 'jump') this.jumpStartedAt = this.elapsedMs;
-    else this.duckStartedAt = this.elapsedMs;
     const perfect = Math.abs(delta) <= 80;
     this.feedback(perfect ? `PERFECT ${action.toUpperCase()}!` : 'NICE!', perfect ? COLORS.mint : COLORS.yellow);
     this.audio.hit(action, perfect ? 'perfect' : 'good');
     this.comboElement.textContent = `${this.combo} STREAK`;
     this.progressElement.textContent = `${this.nextEvent} / ${this.level.length}`;
+  }
+
+  private beginAction(action: Action): boolean {
+    const jumpActive = this.elapsedMs - this.jumpStartedAt < beatToMs(JUMP_BEATS);
+    if (action === 'jump') {
+      if (jumpActive) return false;
+      this.jumpStartedAt = this.elapsedMs;
+      this.jumpReleasedAt = Infinity;
+      this.jumpHeld = true;
+      this.duckHeld = false;
+      return true;
+    }
+
+    const duckActive = this.duckHeld && this.elapsedMs - this.duckStartedAt < beatToMs(DUCK_BEATS);
+    if (jumpActive || duckActive) return false;
+    this.duckStartedAt = this.elapsedMs;
+    this.duckHeld = true;
+    return true;
+  }
+
+  private releaseAction(action: Action): void {
+    if (action === 'jump' && this.jumpHeld) {
+      this.jumpHeld = false;
+      this.jumpReleasedAt = this.elapsedMs;
+    } else if (action === 'duck') {
+      this.duckHeld = false;
+    }
   }
 
   private fail(reason: string): void {
@@ -668,7 +719,9 @@ class GameScene extends Phaser.Scene {
     this.drawIndicator(this.elapsedMs);
 
     const beat = this.elapsedMs / BEAT_MS;
-    const pulse = 1 + Math.max(0, 1 - (beat % 1) * 5) * 0.34;
+    const beatIndex = Math.floor(beat);
+    const beatStrength = isDownbeat(beatIndex) ? 0.48 : 0.3;
+    const pulse = 1 + Math.max(0, 1 - (beat % 1) * 5) * beatStrength;
     this.beatPulse.setScale(pulse).setAlpha(0.2 + (pulse - 1) * 0.65);
 
     const targetScroll = Phaser.Math.Clamp(this.character.x - 280, 0, this.worldWidth - 960);
@@ -690,10 +743,12 @@ class GameScene extends Phaser.Scene {
     const jumpProgress = (this.elapsedMs - this.jumpStartedAt) / beatToMs(JUMP_BEATS);
     const duckProgress = (this.elapsedMs - this.duckStartedAt) / beatToMs(DUCK_BEATS);
     if (jumpProgress >= 0 && jumpProgress < 1) {
-      this.character.y = GROUND_Y - Math.sin(jumpProgress * Math.PI) * 100;
+      const heldUntil = this.jumpHeld ? this.elapsedMs : this.jumpReleasedAt;
+      const jumpHeight = jumpHeightForHoldMs(heldUntil - this.jumpStartedAt);
+      this.character.y = GROUND_Y - Math.sin(jumpProgress * Math.PI) * jumpHeight;
       this.character.rotation = Math.sin(jumpProgress * Math.PI * 2) * 0.08;
       this.character.setScale(1 + Math.sin(jumpProgress * Math.PI) * 0.06, 1 - Math.sin(jumpProgress * Math.PI) * 0.04);
-    } else if (duckProgress >= 0 && duckProgress < 1) {
+    } else if (this.duckHeld && duckProgress >= 0 && duckProgress < 1) {
       this.character.y = GROUND_Y + 15;
       this.character.rotation = 0;
       this.character.setScale(1.18, 0.42);

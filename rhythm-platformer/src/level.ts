@@ -1,9 +1,13 @@
 export const BPM = 108;
 export const BEAT_MS = 60_000 / BPM;
+export const BEATS_PER_BAR = 4;
 export const ACTION_WINDOW_MS = 210;
 export const RUN_SPEED = 190;
 export const POSITION_TOLERANCE = 105;
 export const JUMP_BEATS = 1.5;
+export const JUMP_HOLD_BEATS = 0.55;
+export const MIN_JUMP_HEIGHT = 86;
+export const MAX_JUMP_HEIGHT = 112;
 export const DUCK_BEATS = 1.25;
 export const START_X = 180;
 export const GROUND_Y = 557;
@@ -63,7 +67,8 @@ const DUCK_AND_RUN: EventSpec[] = [
 ];
 
 const SWITCHBACK: EventSpec[] = [
-  { beats: 4, action: 'jump', direction: 1 },
+  // Give the final road a clear count-in: its opening jump lands on beat one of bar two.
+  { beats: BEATS_PER_BAR, action: 'jump', direction: 1 },
   { beats: 3, action: 'duck', direction: 1 },
   { beats: 3, action: 'jump', direction: 1 },
   { beats: 4, action: 'jump', direction: -1 },
@@ -119,6 +124,15 @@ export function createLevel(index = 0): BeatEvent[] {
 
 export function beatToMs(beat: number): number {
   return beat * BEAT_MS;
+}
+
+export function isDownbeat(beat: number): boolean {
+  return beat % BEATS_PER_BAR === 0;
+}
+
+export function jumpHeightForHoldMs(holdMs: number): number {
+  const holdProgress = Math.min(1, Math.max(0, holdMs / beatToMs(JUMP_HOLD_BEATS)));
+  return MIN_JUMP_HEIGHT + (MAX_JUMP_HEIGHT - MIN_JUMP_HEIGHT) * holdProgress;
 }
 
 export function timingDeltaMs(elapsedMs: number, event: BeatEvent): number {

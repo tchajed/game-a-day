@@ -6,7 +6,7 @@ The bright side-scrolling roads use small enemies, rolling hills, clouds, beat b
 
 1. **Beginner Road** — seven forgiving jumps with long four-to-five-beat runs.
 2. **Bop & Duck** — adds low flyers, duck cues, and three-beat patterns.
-3. **Switchback Sprint** — mixes both actions, reverses direction, and finishes with two-beat cues.
+3. **Switchback Sprint** — opens with a jump on the strong downbeat, mixes both actions and directions, and finishes with two-beat cues.
 
 ```bash
 bun install
@@ -14,8 +14,9 @@ bun run dev
 ```
 
 - **Move:** hold **A / D** or **← / →**.
-- **Jump:** tap **Space / W / ↑** on the beat.
-- **Duck:** tap **S / ↓** on the beat.
+- **Jump:** press **Space / W / ↑**; hold briefly for a slightly higher jump.
+- **Duck:** hold **S / ↓**; release to stand early. Ducks end automatically after 1.25 beats.
+- Actions always respond off-beat, but only cue-timed actions build the streak and clear the rhythm prompt.
 - A failed or completed run restarts immediately with one press. Held movement remains active through a Space restart.
 - `bun run test` validates all three routes, beat quantization, run distance, progression, and timing precision.
 - `?music=off` starts muted.
@@ -23,4 +24,4 @@ bun run dev
 - In debug mode, press **T** for 50% speed, **P** for autoplay, or **N** to assist the next action near its beat.
 - `?debug=true&autoplay=true` runs perfect-input playtests through each level.
 - `?debug=true&slow=0.5` starts at practice speed.
-- `window.__BEATBOUND__` provides `getState()`, `press()`, `setDirection()`, and `restart()` for browser automation.
+- `window.__BEATBOUND__` provides `getState()`, `press()`, `release()`, `setDirection()`, and `restart()` for browser automation.

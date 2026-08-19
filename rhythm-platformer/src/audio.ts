@@ -1,5 +1,5 @@
 import * as Tone from 'tone';
-import { BPM, type BeatEvent } from './level';
+import { BPM, isDownbeat, type BeatEvent } from './level';
 
 const MASTER_LEVEL = 0.62;
 const BASS_NOTES = ['C2', 'C2', 'Eb2', 'G1', 'Ab1', 'Ab1', 'Bb1', 'G1'];
@@ -93,7 +93,8 @@ export class BeatAudio {
     this.eventIds.push(this.transport.scheduleRepeat((time) => {
       const beat = Math.floor(eighth / 2);
       if (eighth % 2 === 0) {
-        this.kick?.triggerAttackRelease(beat % 4 === 0 ? 'C1' : 'G1', beat % 4 === 0 ? '8n' : '16n', time, beat % 4 === 0 ? 1 : 0.5);
+        const downbeat = isDownbeat(beat);
+        this.kick?.triggerAttackRelease(downbeat ? 'C1' : 'G1', downbeat ? '8n' : '16n', time, downbeat ? 1 : 0.5);
         if (beat % 2 === 0) {
           const note = BASS_NOTES[Math.floor(beat / 2) % BASS_NOTES.length];
           this.bass?.triggerAttackRelease(note, '8n', time, 0.85);
