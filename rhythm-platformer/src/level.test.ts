@@ -2,73 +2,70 @@ import { describe, expect, it } from 'vitest';
 import {
   ACTION_WINDOW_MS,
   BEAT_MS,
-  LANDING_TOLERANCE,
   RUN_SPEED,
-  TRAVEL_BEATS,
+  START_X,
   beatToMs,
   createLevel,
   isOnBeat,
   validateLevel,
 } from './level';
 
-describe('procedural beat route', () => {
+describe('beginner beat road', () => {
   const level = createLevel();
 
-  it('has one continuous, traversable path to the finish', () => {
+  it('has one continuous, traversable path across a wide level', () => {
     const report = validateLevel(level);
     expect(report.errors).toEqual([]);
     expect(report.reachable).toBe(true);
 
-    let position = level[0].from;
+    let x = START_X;
     for (const event of level) {
-      expect(event.from).toEqual(position);
-      position = event.to;
+      expect(event.from.x).toBeCloseTo(x);
+      x = event.to.x;
     }
-    expect(position.y).toBeLessThan(level[0].from.y - 900);
+    expect(x).toBeGreaterThan(3_500);
   });
 
-  it('requires both obstacle actions along the route', () => {
-    expect(level.filter((event) => event.action === 'jump').length).toBeGreaterThan(8);
-    expect(level.filter((event) => event.action === 'duck').length).toBeGreaterThan(3);
+  it('starts with only one action and generous runs between cues', () => {
+    expect(level).toHaveLength(7);
+    expect(new Set(level.map((event) => event.action))).toEqual(new Set(['jump']));
+    expect(level.every((event) => event.travelBeats >= 4)).toBe(true);
   });
 
-  it('places every required action exactly on the two-beat grid', () => {
+  it('places every jump on a whole beat after a reachable run', () => {
     expect(validateLevel(level).quantized).toBe(true);
-    for (let index = 0; index < level.length; index += 1) {
-      expect(level[index].beat % TRAVEL_BEATS).toBe(0);
-      if (index > 0) expect(level[index].beat - level[index - 1].beat).toBe(TRAVEL_BEATS);
+    for (const event of level) {
+      expect(Number.isInteger(event.beat)).toBe(true);
+      const expectedDistance = RUN_SPEED * (beatToMs(event.travelBeats) / 1000);
+      expect(event.to.x - event.from.x).toBeCloseTo(expectedDistance);
     }
   });
 
-  it('accepts the authored beat but rejects sloppy timing', () => {
-    const event = level[5];
+  it('uses a forgiving but still rhythmic timing window', () => {
+    const event = level[3];
     const exact = beatToMs(event.beat);
     expect(isOnBeat(exact, event)).toBe(true);
     expect(isOnBeat(exact + ACTION_WINDOW_MS, event)).toBe(true);
     expect(isOnBeat(exact - ACTION_WINDOW_MS, event)).toBe(true);
     expect(isOnBeat(exact + ACTION_WINDOW_MS + 1, event)).toBe(false);
-    expect(isOnBeat(exact - ACTION_WINDOW_MS - 1, event)).toBe(false);
-    expect((ACTION_WINDOW_MS * 2) / BEAT_MS).toBeLessThan(0.6);
+    expect((ACTION_WINDOW_MS * 2) / BEAT_MS).toBeLessThan(0.8);
     expect(validateLevel(level).precise).toBe(true);
   });
 
-  it('completes under a perfect-input simulation with manual left/right movement', () => {
-    let cleared = 0;
-    const runDistance = RUN_SPEED * (beatToMs(TRAVEL_BEATS) / 1000);
+  it('completes under a perfect-input simulation while holding right', () => {
+    let simulatedX = START_X;
+    let previousBeat = 0;
     for (const event of level) {
-      const direction = event.to.x > event.from.x ? 1 : -1;
-      const simulatedX = event.from.x + direction * runDistance;
-      if (isOnBeat(beatToMs(event.beat), event) && Math.abs(simulatedX - event.to.x) <= LANDING_TOLERANCE) cleared += 1;
+      simulatedX += RUN_SPEED * (beatToMs(event.beat - previousBeat) / 1000);
+      expect(isOnBeat(beatToMs(event.beat), event)).toBe(true);
+      expect(simulatedX).toBeCloseTo(event.to.x);
+      previousBeat = event.beat;
     }
-    expect(cleared).toBe(level.length);
   });
 
-  it('cannot clear a crossing by standing still or running the wrong way', () => {
+  it('cannot reach later cues by standing still', () => {
     for (const event of level) {
-      const direction = event.to.x > event.from.x ? 1 : -1;
-      const wrongWayX = event.from.x - direction * RUN_SPEED * (beatToMs(TRAVEL_BEATS) / 1000);
-      expect(Math.abs(event.from.x - event.to.x)).toBeGreaterThan(LANDING_TOLERANCE);
-      expect(Math.abs(wrongWayX - event.to.x)).toBeGreaterThan(LANDING_TOLERANCE);
+      expect(Math.abs(START_X - event.to.x)).toBeGreaterThan(105);
     }
   });
 });

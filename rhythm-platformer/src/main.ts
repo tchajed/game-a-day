@@ -4,8 +4,11 @@ import {
   ACTION_WINDOW_MS,
   BEAT_MS,
   BPM,
-  LANDING_TOLERANCE,
+  GROUND_Y,
+  JUMP_BEATS,
+  POSITION_TOLERANCE,
   RUN_SPEED,
+  START_X,
   beatToMs,
   createLevel,
   timingDeltaMs,
@@ -20,6 +23,9 @@ interface DebugState {
   elapsedMs: number;
   nextEvent: number;
   combo: number;
+  playerX: number;
+  speed: number;
+  autoplay: boolean;
 }
 
 declare global {
@@ -28,7 +34,6 @@ declare global {
       getState: () => DebugState;
       press: (action: Action) => void;
       setDirection: (direction: -1 | 0 | 1) => void;
-      setDuck: (held: boolean) => void;
       restart: () => void;
       level: BeatEvent[];
     };
@@ -37,26 +42,36 @@ declare global {
 
 const params = new URLSearchParams(location.search);
 const DEBUG = params.get('debug') === 'true';
-const AUTOPLAY = params.get('autoplay') === 'true';
 const START_MUTED = params.get('music') === 'off';
 const requestedSlow = Number(params.get('slow'));
 const INITIAL_SPEED = DEBUG && params.has('slow')
-  ? Phaser.Math.Clamp(Number.isFinite(requestedSlow) && requestedSlow > 0 ? requestedSlow : 0.35, 0.2, 1)
+  ? Phaser.Math.Clamp(Number.isFinite(requestedSlow) && requestedSlow > 0 ? requestedSlow : 0.5, 0.25, 1)
   : 1;
+
 const COLORS = {
-  ink: 0x090b18,
-  panel: 0x11152c,
-  white: 0xf8f5ff,
-  muted: 0x777d9e,
-  mint: 0x61f4cb,
-  yellow: 0xffdd57,
-  pink: 0xff4f8b,
-  purple: 0x8067ff,
+  sky: 0x79c9ff,
+  skyLight: 0xc8efff,
+  hillBack: 0x77cf78,
+  hillFront: 0x35a957,
+  grass: 0x63c84b,
+  grassDark: 0x24823c,
+  soil: 0xc8793d,
+  soilDark: 0x8f472e,
+  cream: 0xfff7d6,
+  ink: 0x17334a,
+  white: 0xffffff,
+  yellow: 0xffd84a,
+  orange: 0xf28a35,
+  red: 0xe94c45,
+  brown: 0x8a4d2c,
+  mint: 0x55d6a7,
 };
 
 class GameScene extends Phaser.Scene {
   private level = createLevel();
+  private worldWidth = this.level[this.level.length - 1].hazardX + 640;
   private speedScale = INITIAL_SPEED;
+  private autoPlay = params.get('autoplay') === 'true';
   private audio = new BeatAudio(this.level, START_MUTED, this.speedScale);
   private phase: DebugState['phase'] = 'ready';
   private startAt = 0;
@@ -65,38 +80,40 @@ class GameScene extends Phaser.Scene {
   private nextEvent = 0;
   private combo = 0;
   private accepted = new Set<number>();
-  private validated = new Set<number>();
+  private cleared = new Set<number>();
+  private autoPressed = new Set<number>();
   private moveAxis: -1 | 0 | 1 = 0;
   private leftHeld = false;
   private rightHeld = false;
-  private duckHeld = false;
+  private jumpStartedAt = -Infinity;
   private character!: Phaser.GameObjects.Container;
   private characterBody!: Phaser.GameObjects.Graphics;
+  private enemies = new Map<number, Phaser.GameObjects.Container>();
   private indicator!: Phaser.GameObjects.Graphics;
   private beatPulse!: Phaser.GameObjects.Arc;
   private promptText!: Phaser.GameObjects.Text;
   private feedbackText!: Phaser.GameObjects.Text;
-  private progressText!: Phaser.GameObjects.Text;
-  private debugText?: Phaser.GameObjects.Text;
   private startButton!: HTMLButtonElement;
   private soundButton!: HTMLButtonElement;
   private comboElement!: HTMLElement;
   private progressElement!: HTMLElement;
-  private autoPressed = new Set<number>();
+  private speedButton?: HTMLButtonElement;
+  private autoButton?: HTMLButtonElement;
 
   constructor() {
     super('game');
   }
 
   create(): void {
+    const validation = validateLevel(this.level);
+    if (validation.errors.length > 0) throw new Error(validation.errors.join('\n'));
+
+    this.cameras.main.setBounds(0, 0, this.worldWidth, 720);
     this.drawWorld();
-    this.character = this.createCharacter(this.level[0].from.x, this.level[0].from.y);
+    this.character = this.createCharacter(START_X, GROUND_Y);
     this.createCanvasHud();
     this.createDomUi();
     this.bindInputs();
-
-    const validation = validateLevel(this.level);
-    if (validation.errors.length > 0) throw new Error(validation.errors.join('\n'));
 
     window.__BEATBOUND__ = {
       getState: () => ({
@@ -104,115 +121,169 @@ class GameScene extends Phaser.Scene {
         elapsedMs: Math.round(this.elapsedMs),
         nextEvent: this.nextEvent,
         combo: this.combo,
+        playerX: Math.round(this.character.x),
+        speed: this.speedScale,
+        autoplay: this.autoPlay,
       }),
       press: (action) => this.press(action),
       setDirection: (direction) => { this.moveAxis = direction; },
-      setDuck: (held) => { this.duckHeld = held; },
-      restart: () => this.restart(),
+      restart: () => this.resetRun(false),
       level: this.level,
     };
   }
 
   private drawWorld(): void {
-    const background = this.add.graphics();
-    background.fillStyle(COLORS.ink, 1).fillRect(0, -1200, 960, 2000);
+    const sky = this.add.graphics();
+    sky.fillStyle(COLORS.sky, 1).fillRect(0, 0, this.worldWidth, 720);
 
-    background.lineStyle(1, 0xffffff, 0.045);
-    for (let y = -1100; y < 720; y += 48) background.lineBetween(0, y, 960, y);
-    for (let x = 30; x < 930; x += 72) background.lineBetween(x, -1200, x, 720);
-
-    for (let i = 0; i < 24; i += 1) {
-      const x = 35 + ((i * 173) % 820);
-      const y = 650 - i * 76;
-      background.fillStyle(i % 3 === 0 ? COLORS.purple : COLORS.mint, 0.07);
-      background.fillCircle(x, y, 16 + (i % 4) * 8);
-    }
-
-    const route = this.add.graphics();
-    route.lineStyle(3, COLORS.purple, 0.18);
-    route.beginPath();
-    route.moveTo(this.level[0].from.x, this.level[0].from.y);
-    for (const event of this.level) route.lineTo(event.to.x, event.to.y);
-    route.strokePath();
-
-    this.drawPlatform(route, this.level[0].from.x, this.level[0].from.y);
-    for (const event of this.level) {
-      if (event.action === 'duck') {
-        const left = Math.min(event.from.x, event.to.x) - 92;
-        const width = Math.abs(event.to.x - event.from.x) + 184;
-        route.fillStyle(COLORS.panel, 1).fillRoundedRect(left, event.from.y + 28, width, 24, 9);
-        route.fillStyle(COLORS.mint, 0.55).fillRect(left + 12, event.from.y + 28, width - 24, 3);
-        this.drawFlyer(route, (event.from.x + event.to.x) / 2, event.from.y - 11, event.index);
-      } else {
-        this.drawSpikes(route, event.from.x + (event.to.x > event.from.x ? 110 : -110), event.from.y + 28, event.to.x > event.from.x ? 1 : -1);
+    // A tiny repeating dash-and-dot print gives the sky a handmade game-box texture.
+    for (let x = 22; x < this.worldWidth; x += 64) {
+      for (let y = 28; y < 560; y += 64) {
+        const offset = ((x / 64 + y / 64) % 2) * 13;
+        sky.fillStyle(COLORS.white, 0.12).fillCircle(x + offset, y, 2);
+        sky.lineStyle(2, COLORS.ink, 0.055).lineBetween(x + 22 - offset / 2, y + 22, x + 30 - offset / 2, y + 18);
       }
-      this.drawPlatform(route, event.to.x, event.to.y);
     }
 
-    const finish = this.level[this.level.length - 1].to;
-    route.fillStyle(COLORS.yellow, 1).fillCircle(finish.x, finish.y - 70, 13);
-    route.lineStyle(4, COLORS.yellow, 0.55).strokeCircle(finish.x, finish.y - 70, 23);
-  }
-
-  private drawPlatform(graphics: Phaser.GameObjects.Graphics, x: number, y: number): void {
-    graphics.fillStyle(COLORS.panel, 1).fillRoundedRect(x - 96, y + 28, 192, 24, 9);
-    graphics.fillStyle(COLORS.purple, 0.7).fillRect(x - 82, y + 28, 164, 3);
-    graphics.fillStyle(0x000000, 0.2).fillRoundedRect(x - 80, y + 40, 160, 7, 3);
-  }
-
-  private drawSpikes(graphics: Phaser.GameObjects.Graphics, x: number, y: number, direction: number): void {
-    graphics.fillStyle(COLORS.pink, 1);
-    for (let i = 0; i < 3; i += 1) {
-      const sx = x + direction * i * 13;
-      graphics.fillTriangle(sx - 8, y, sx, y - 20 - i * 3, sx + 8, y);
+    for (let i = 0; i < 18; i += 1) {
+      const x = 100 + i * 270 + (i % 3) * 44;
+      const y = 90 + (i % 4) * 57;
+      this.drawCloud(sky, x, y, 0.72 + (i % 3) * 0.14);
     }
+
+    for (let i = 0; i < 12; i += 1) {
+      const x = 40 + i * 390;
+      this.drawHill(sky, x, 600, 340 + (i % 3) * 80, 220 + (i % 2) * 55, COLORS.hillBack, 0.58);
+    }
+    for (let i = 0; i < 10; i += 1) {
+      const x = -80 + i * 490;
+      this.drawHill(sky, x, 603, 430, 160 + (i % 3) * 25, COLORS.hillFront, 0.72);
+    }
+
+    const ground = this.add.graphics();
+    ground.fillStyle(COLORS.grassDark, 1).fillRect(0, 588, this.worldWidth, 132);
+    ground.fillStyle(COLORS.soil, 1).fillRect(0, 606, this.worldWidth, 114);
+    ground.fillStyle(COLORS.grass, 1).fillRect(0, 588, this.worldWidth, 18);
+    ground.fillStyle(COLORS.cream, 0.7).fillRect(0, 588, this.worldWidth, 4);
+    for (let x = 0; x < this.worldWidth; x += 48) {
+      for (let y = 608; y < 720; y += 32) {
+        const alternate = (Math.floor(x / 48) + Math.floor(y / 32)) % 2 === 0;
+        ground.fillStyle(alternate ? COLORS.soilDark : COLORS.orange, alternate ? 0.32 : 0.2)
+          .fillRoundedRect(x + 4, y + 4, 39, 24, 6);
+        ground.fillStyle(COLORS.cream, 0.2).fillCircle(x + (alternate ? 14 : 32), y + 13, 3);
+      }
+    }
+
+    for (let i = 0; i < 16; i += 1) {
+      const x = 390 + i * 250;
+      if (i % 3 === 0) this.drawBeatBlock(ground, x, 425 - (i % 2) * 45);
+      else this.drawBush(ground, x, 585, 0.8 + (i % 2) * 0.25);
+    }
+
+    this.level.forEach((event) => {
+      this.drawRunSign(ground, event);
+      const enemy = this.createEnemy(event.hazardX, 573, event.index);
+      this.enemies.set(event.index, enemy);
+    });
+
+    const finishX = this.level[this.level.length - 1].hazardX + 260;
+    ground.fillStyle(COLORS.cream, 1).fillRoundedRect(finishX, 350, 10, 238, 4);
+    ground.fillStyle(COLORS.red, 1).fillTriangle(finishX + 10, 360, finishX + 92, 390, finishX + 10, 420);
+    ground.fillStyle(COLORS.cream, 0.75).fillCircle(finishX + 35, 389, 7);
   }
 
-  private drawFlyer(graphics: Phaser.GameObjects.Graphics, x: number, y: number, index: number): void {
-    graphics.fillStyle(COLORS.pink, 0.15).fillCircle(x, y, 41);
-    graphics.fillStyle(COLORS.pink, 1).fillRoundedRect(x - 34, y - 14, 68, 28, 13);
-    graphics.fillStyle(COLORS.ink, 1).fillCircle(x - 12, y - 2, 4).fillCircle(x + 12, y - 2, 4);
-    graphics.lineStyle(3, COLORS.pink, 0.65).lineBetween(x - 44, y - 21, x - 22, y - 10);
-    graphics.lineBetween(x + 44, y - 21, x + 22, y - 10);
-    if (index % 2 === 0) graphics.fillStyle(COLORS.yellow, 1).fillCircle(x, y + 7, 3);
+  private drawCloud(g: Phaser.GameObjects.Graphics, x: number, y: number, scale: number): void {
+    g.fillStyle(COLORS.ink, 0.08).fillEllipse(x, y + 10 * scale, 128 * scale, 30 * scale);
+    g.fillStyle(COLORS.white, 0.9)
+      .fillCircle(x - 38 * scale, y, 25 * scale)
+      .fillCircle(x - 6 * scale, y - 15 * scale, 35 * scale)
+      .fillCircle(x + 32 * scale, y - 2 * scale, 28 * scale)
+      .fillRoundedRect(x - 60 * scale, y - 2 * scale, 120 * scale, 30 * scale, 15 * scale);
+  }
+
+  private drawHill(g: Phaser.GameObjects.Graphics, x: number, bottom: number, width: number, height: number, color: number, alpha: number): void {
+    g.fillStyle(color, alpha).fillEllipse(x + width / 2, bottom, width, height * 2);
+    g.fillStyle(COLORS.cream, 0.12).fillEllipse(x + width * 0.37, bottom - height * 0.38, width * 0.08, height * 0.18);
+    g.fillStyle(COLORS.ink, 0.08).fillEllipse(x + width * 0.62, bottom - height * 0.2, width * 0.055, height * 0.12);
+  }
+
+  private drawBush(g: Phaser.GameObjects.Graphics, x: number, y: number, scale: number): void {
+    g.fillStyle(COLORS.ink, 0.13).fillEllipse(x, y + 4, 110 * scale, 24 * scale);
+    g.fillStyle(COLORS.hillFront, 1)
+      .fillCircle(x - 34 * scale, y - 8 * scale, 25 * scale)
+      .fillCircle(x, y - 23 * scale, 35 * scale)
+      .fillCircle(x + 34 * scale, y - 7 * scale, 26 * scale)
+      .fillRoundedRect(x - 56 * scale, y - 12 * scale, 112 * scale, 24 * scale, 12 * scale);
+    g.fillStyle(COLORS.cream, 0.22).fillCircle(x - 10 * scale, y - 35 * scale, 6 * scale);
+  }
+
+  private drawBeatBlock(g: Phaser.GameObjects.Graphics, x: number, y: number): void {
+    g.fillStyle(COLORS.ink, 0.18).fillRoundedRect(x - 24, y - 19, 54, 54, 7);
+    g.fillStyle(COLORS.yellow, 1).fillRoundedRect(x - 27, y - 25, 54, 54, 7);
+    g.lineStyle(3, COLORS.orange, 0.8).strokeRoundedRect(x - 27, y - 25, 54, 54, 7);
+    g.fillStyle(COLORS.cream, 0.9).fillCircle(x - 17, y - 15, 3).fillCircle(x + 17, y - 15, 3)
+      .fillCircle(x - 17, y + 19, 3).fillCircle(x + 17, y + 19, 3);
+    g.fillStyle(COLORS.orange, 1).fillCircle(x, y - 5, 8).fillRect(x - 3, y + 2, 6, 12);
+  }
+
+  private drawRunSign(g: Phaser.GameObjects.Graphics, event: BeatEvent): void {
+    const x = event.from.x + 90;
+    g.fillStyle(COLORS.brown, 1).fillRoundedRect(x - 3, 517, 6, 71, 3);
+    g.fillStyle(COLORS.cream, 1).fillRoundedRect(x - 48, 482, 96, 43, 8);
+    g.lineStyle(3, COLORS.brown, 0.9).strokeRoundedRect(x - 48, 482, 96, 43, 8);
+    g.fillStyle(COLORS.red, 1).fillTriangle(x + 31, 503, x + 13, 493, x + 13, 513);
+    g.fillStyle(COLORS.red, 1).fillRect(x - 28, 499, 43, 8);
+  }
+
+  private createEnemy(x: number, y: number, index: number): Phaser.GameObjects.Container {
+    const g = this.add.graphics();
+    g.fillStyle(COLORS.ink, 0.18).fillEllipse(0, 16, 42, 9);
+    g.fillStyle(COLORS.brown, 1).fillRoundedRect(-19, -17, 38, 29, 13);
+    g.fillStyle(index % 2 === 0 ? COLORS.red : COLORS.orange, 1).fillRoundedRect(-18, -18, 36, 11, 8);
+    g.fillStyle(COLORS.cream, 1).fillCircle(-7, -4, 5).fillCircle(7, -4, 5);
+    g.fillStyle(COLORS.ink, 1).fillCircle(-6, -3, 2).fillCircle(8, -3, 2);
+    g.fillStyle(COLORS.ink, 1).fillRoundedRect(-19, 9, 15, 7, 3).fillRoundedRect(4, 9, 15, 7, 3);
+    return this.add.container(x, y, [g]).setDepth(12);
   }
 
   private createCharacter(x: number, y: number): Phaser.GameObjects.Container {
-    const shadow = this.add.ellipse(0, 33, 58, 12, 0x000000, 0.3);
+    const shadow = this.add.ellipse(0, 28, 42, 9, COLORS.ink, 0.2);
     this.characterBody = this.add.graphics();
-    this.characterBody.fillStyle(COLORS.yellow, 1).fillRoundedRect(-28, -31, 56, 61, 19);
-    this.characterBody.lineStyle(4, COLORS.ink, 0.8).strokeRoundedRect(-28, -31, 56, 61, 19);
-    this.characterBody.fillStyle(COLORS.white, 1).fillCircle(-11, -9, 8).fillCircle(11, -9, 8);
-    this.characterBody.fillStyle(COLORS.ink, 1).fillCircle(-9, -8, 3).fillCircle(13, -8, 3);
-    this.characterBody.lineStyle(3, COLORS.ink, 0.8).lineBetween(-8, 11, 8, 11);
-    const container = this.add.container(x, y, [shadow, this.characterBody]);
-    container.setDepth(20);
-    return container;
+    this.drawCharacterBody(false);
+    return this.add.container(x, y, [shadow, this.characterBody]).setDepth(20);
+  }
+
+  private drawCharacterBody(failed: boolean): void {
+    this.characterBody.clear();
+    if (failed) {
+      this.characterBody.fillStyle(COLORS.red, 1).fillRoundedRect(-22, -12, 44, 28, 12);
+      this.characterBody.fillStyle(COLORS.ink, 1).fillCircle(-8, -3, 3).fillCircle(8, -3, 3);
+      return;
+    }
+    this.characterBody.fillStyle(COLORS.yellow, 1).fillRoundedRect(-20, -25, 40, 51, 15);
+    this.characterBody.lineStyle(3, COLORS.ink, 0.75).strokeRoundedRect(-20, -25, 40, 51, 15);
+    this.characterBody.fillStyle(COLORS.white, 1).fillCircle(-8, -8, 6).fillCircle(8, -8, 6);
+    this.characterBody.fillStyle(COLORS.ink, 1).fillCircle(-7, -7, 2).fillCircle(9, -7, 2);
+    this.characterBody.fillStyle(COLORS.orange, 1).fillRoundedRect(-11, 8, 22, 5, 3);
+    this.characterBody.fillStyle(COLORS.cream, 1).fillRoundedRect(-21, 20, 17, 8, 4).fillRoundedRect(4, 20, 17, 8, 4);
   }
 
   private createCanvasHud(): void {
     this.indicator = this.add.graphics().setScrollFactor(0).setDepth(50);
-    this.beatPulse = this.add.circle(82, 635, 30, COLORS.purple, 0.25).setScrollFactor(0).setDepth(50);
-    this.add.circle(82, 635, 20, COLORS.purple, 0.9).setScrollFactor(0).setDepth(51);
-    this.add.text(82, 635, 'BEAT', {
-      color: '#f8f5ff', fontFamily: 'Space Mono, monospace', fontSize: '10px', fontStyle: '700',
+    this.beatPulse = this.add.circle(94, 661, 28, COLORS.yellow, 0.28).setScrollFactor(0).setDepth(50);
+    this.add.circle(94, 661, 18, COLORS.yellow, 1).setScrollFactor(0).setDepth(51);
+    this.add.text(94, 661, 'BEAT', {
+      color: '#17334a', fontFamily: 'Nunito, sans-serif', fontSize: '9px', fontStyle: '900',
     }).setOrigin(0.5).setScrollFactor(0).setDepth(52);
 
-    this.promptText = this.add.text(824, 625, 'GET READY', {
-      color: '#f8f5ff', fontFamily: 'Chivo, sans-serif', fontSize: '19px', fontStyle: '900', align: 'center',
+    this.promptText = this.add.text(480, 100, 'HOLD → · JUMP ON THE BEAT', {
+      color: '#17334a', fontFamily: 'Nunito, sans-serif', fontSize: '22px', fontStyle: '900',
+      backgroundColor: '#fff7d6e8', padding: { x: 18, y: 9 },
     }).setOrigin(0.5).setScrollFactor(0).setDepth(54);
-    this.feedbackText = this.add.text(480, 115, '', {
-      color: '#61f4cb', fontFamily: 'Chivo, sans-serif', fontSize: '32px', fontStyle: '900', stroke: '#090b18', strokeThickness: 7,
+    this.feedbackText = this.add.text(480, 165, '', {
+      color: '#ffffff', fontFamily: 'Nunito, sans-serif', fontSize: '34px', fontStyle: '900',
+      stroke: '#17334a', strokeThickness: 7,
     }).setOrigin(0.5).setScrollFactor(0).setDepth(55);
-    this.progressText = this.add.text(24, 76, 'CLIMB 01', {
-      color: '#777d9e', fontFamily: 'Space Mono, monospace', fontSize: '12px', fontStyle: '700',
-    }).setScrollFactor(0).setDepth(54);
-
-    if (DEBUG) {
-      this.debugText = this.add.text(18, 108, '', {
-        color: '#61f4cb', backgroundColor: '#090b18cc', fontFamily: 'monospace', fontSize: '11px', padding: { x: 6, y: 4 },
-      }).setScrollFactor(0).setDepth(80);
-    }
   }
 
   private createDomUi(): void {
@@ -221,24 +292,30 @@ class GameScene extends Phaser.Scene {
     ui.id = 'ui';
     ui.innerHTML = `
       <div class="topbar">
-        <div class="brand">BEAT<b>BOUND</b></div>
+        <div class="brand">BEAT<span>BOUND</span></div>
         <div class="stats">
           <span class="pill" id="progress-pill">0 / ${this.level.length}</span>
-          <span class="pill" id="combo-pill">0 COMBO</span>
+          <span class="pill" id="combo-pill">0 STREAK</span>
           <button class="pill" id="sound" aria-label="Toggle music">${START_MUTED ? '♪ OFF' : '♪ ON'}</button>
         </div>
       </div>
+      ${DEBUG ? `<div id="debug-tools">
+        <strong>DEBUG READY</strong>
+        <button data-debug="speed">SPEED 100%</button>
+        <button data-debug="auto">AUTO ${this.autoPlay ? 'ON' : 'OFF'}</button>
+        <button data-debug="reset">RESET</button>
+      </div>` : ''}
       <button id="start" aria-label="Start Beatbound">
         <span class="start-card">
-          <small>${BPM} BPM · MOVE IT YOURSELF</small>
-          <strong>PRESS TO<br>DROP THE BEAT</strong>
-          <em>A / D = RUN &nbsp; · &nbsp; SPACE = JUMP &nbsp; · &nbsp; S = DUCK</em>
+          <small>BEGINNER ROAD · ${BPM} BPM</small>
+          <strong>RUN RIGHT.<br>JUMP BIG.</strong>
+          <em>HOLD D OR → &nbsp; · &nbsp; TAP SPACE ON THE BIG BEAT</em>
+          <span class="start-cta">START THE MUSIC</span>
         </span>
       </button>
       <div id="mobile-controls">
         <button class="action-button move-button" data-move="-1">←</button>
-        <button class="action-button" data-action="jump">↑ JUMP</button>
-        <button class="action-button" data-action="duck">↓ DUCK</button>
+        <button class="action-button jump-button" data-action="jump">↑ JUMP</button>
         <button class="action-button move-button" data-move="1">→</button>
       </div>`;
     document.body.append(ui);
@@ -247,11 +324,13 @@ class GameScene extends Phaser.Scene {
     this.soundButton = ui.querySelector<HTMLButtonElement>('#sound')!;
     this.comboElement = ui.querySelector<HTMLElement>('#combo-pill')!;
     this.progressElement = ui.querySelector<HTMLElement>('#progress-pill')!;
+    this.speedButton = ui.querySelector<HTMLButtonElement>('[data-debug="speed"]') ?? undefined;
+    this.autoButton = ui.querySelector<HTMLButtonElement>('[data-debug="auto"]') ?? undefined;
 
     this.startButton.addEventListener('pointerdown', (event) => {
       event.preventDefault();
       if (this.phase === 'ready') void this.startGame();
-      else if (this.phase !== 'playing') this.restart();
+      else if (this.phase !== 'playing') this.resetRun(true);
     });
     this.soundButton.addEventListener('pointerdown', (event) => {
       event.stopPropagation();
@@ -259,21 +338,26 @@ class GameScene extends Phaser.Scene {
       this.audio.setMuted(muted);
       this.soundButton.textContent = muted ? '♪ OFF' : '♪ ON';
     });
+
+    ui.querySelector<HTMLButtonElement>('[data-debug="speed"]')?.addEventListener('pointerdown', (event) => {
+      event.stopPropagation();
+      this.toggleSlowMotion();
+    });
+    ui.querySelector<HTMLButtonElement>('[data-debug="auto"]')?.addEventListener('pointerdown', (event) => {
+      event.stopPropagation();
+      this.toggleAutoplay();
+    });
+    ui.querySelector<HTMLButtonElement>('[data-debug="reset"]')?.addEventListener('pointerdown', (event) => {
+      event.stopPropagation();
+      this.resetRun(false);
+    });
+
     ui.querySelectorAll<HTMLButtonElement>('[data-action]').forEach((button) => {
-      const action = button.dataset.action as Action;
       button.addEventListener('pointerdown', (event) => {
         event.preventDefault();
         event.stopPropagation();
-        if (action === 'duck') this.duckHeld = true;
-        if (this.phase === 'ready') void this.startGame();
-        else this.press(action);
+        this.press('jump');
       });
-      if (action === 'duck') {
-        const release = () => { this.duckHeld = false; };
-        button.addEventListener('pointerup', release);
-        button.addEventListener('pointercancel', release);
-        button.addEventListener('pointerleave', release);
-      }
     });
     ui.querySelectorAll<HTMLButtonElement>('[data-move]').forEach((button) => {
       const direction = Number(button.dataset.move) as -1 | 1;
@@ -291,29 +375,38 @@ class GameScene extends Phaser.Scene {
 
   private bindInputs(): void {
     this.input.keyboard?.on('keydown', (event: KeyboardEvent) => {
-      if (['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(event.code)) event.preventDefault();
+      if (['Space', 'ArrowUp', 'ArrowLeft', 'ArrowRight'].includes(event.code)) event.preventDefault();
       if (event.code === 'KeyA' || event.code === 'ArrowLeft') this.leftHeld = true;
       if (event.code === 'KeyD' || event.code === 'ArrowRight') this.rightHeld = true;
       this.syncMoveAxis();
-      if (event.code === 'KeyS' || event.code === 'ArrowDown') this.duckHeld = true;
       if (event.repeat) return;
+
+      if (DEBUG && event.code === 'KeyT') {
+        this.toggleSlowMotion();
+        return;
+      }
+      if (DEBUG && event.code === 'KeyP') {
+        this.toggleAutoplay();
+        return;
+      }
+      if (DEBUG && event.code === 'KeyN' && this.phase === 'playing') {
+        this.assistNext();
+        return;
+      }
+
       if (this.phase === 'ready') {
         if (event.code === 'Space' || event.code === 'Enter') void this.startGame();
         return;
       }
       if (this.phase !== 'playing') {
-        if (event.code === 'Space' || event.code === 'KeyR') this.restart();
+        if (event.code === 'Space' || event.code === 'KeyR' || event.code === 'Enter') this.resetRun(true);
         return;
       }
       if (event.code === 'Space' || event.code === 'ArrowUp' || event.code === 'KeyW') this.press('jump');
-      if (event.code === 'ArrowDown' || event.code === 'KeyS') this.press('duck');
-      if (DEBUG && event.code === 'KeyN') this.debugHitNext();
-      if (DEBUG && event.code === 'KeyT') this.toggleSlowMotion();
     });
     this.input.keyboard?.on('keyup', (event: KeyboardEvent) => {
       if (event.code === 'KeyA' || event.code === 'ArrowLeft') this.leftHeld = false;
       if (event.code === 'KeyD' || event.code === 'ArrowRight') this.rightHeld = false;
-      if (event.code === 'KeyS' || event.code === 'ArrowDown') this.duckHeld = false;
       this.syncMoveAxis();
     });
   }
@@ -322,32 +415,76 @@ class GameScene extends Phaser.Scene {
     this.moveAxis = this.leftHeld === this.rightHeld ? 0 : this.leftHeld ? -1 : 1;
   }
 
-  private debugHitNext(): void {
-    const event = this.level[this.nextEvent];
-    if (!event) return;
-    this.moveAxis = event.to.x > event.from.x ? 1 : -1;
-    this.duckHeld = event.action === 'duck';
-    this.press(event.action);
+  private toggleSlowMotion(): void {
+    this.speedScale = this.speedScale < 1 ? 1 : 0.5;
+    this.audio.setSpeed(this.speedScale);
+    if (this.speedButton) this.speedButton.textContent = `SPEED ${Math.round(this.speedScale * 100)}%`;
+    this.feedback(this.speedScale < 1 ? '50% PRACTICE SPEED' : 'FULL SPEED', COLORS.mint);
   }
 
-  private toggleSlowMotion(): void {
-    this.speedScale = this.speedScale < 1 ? 1 : 0.35;
-    this.audio.setSpeed(this.speedScale);
-    this.feedback(this.speedScale < 1 ? 'SLOW 35%' : 'FULL SPEED', COLORS.mint);
+  private toggleAutoplay(): void {
+    this.autoPlay = !this.autoPlay;
+    if (this.autoButton) this.autoButton.textContent = `AUTO ${this.autoPlay ? 'ON' : 'OFF'}`;
+    this.feedback(this.autoPlay ? 'AUTOPLAY ON' : 'AUTOPLAY OFF', COLORS.mint);
+  }
+
+  private assistNext(): void {
+    const event = this.level[this.nextEvent];
+    if (!event) return;
+    if (Math.abs(timingDeltaMs(this.elapsedMs, event)) <= ACTION_WINDOW_MS) {
+      this.character.x = event.to.x;
+      this.press('jump');
+    } else {
+      this.feedback('N WORKS NEAR THE BEAT', COLORS.orange);
+    }
   }
 
   private async startGame(): Promise<void> {
+    if (this.phase !== 'ready') return;
     this.startButton.classList.add('hidden');
     await this.audio.start();
     this.phase = 'playing';
     this.startAt = performance.now() + 80;
     this.lastClock = this.startAt;
-    this.feedback(this.speedScale < 1 ? `SLOW ${Math.round(this.speedScale * 100)}%` : 'LISTEN…', COLORS.white);
+    if (this.autoPlay) this.moveAxis = 1;
+    this.feedback(this.speedScale < 1 ? 'PRACTICE RUN' : 'GO!', COLORS.white);
   }
 
-  private restart(): void {
+  private resetRun(startImmediately: boolean): void {
+    const muted = this.audio.isMuted();
     this.audio.stop();
-    this.scene.restart();
+    this.audio = new BeatAudio(this.level, muted, this.speedScale);
+    this.phase = 'ready';
+    this.startAt = 0;
+    this.lastClock = 0;
+    this.elapsedMs = 0;
+    this.nextEvent = 0;
+    this.combo = 0;
+    this.accepted.clear();
+    this.cleared.clear();
+    this.autoPressed.clear();
+    this.jumpStartedAt = -Infinity;
+    this.leftHeld = false;
+    this.rightHeld = false;
+    this.moveAxis = this.autoPlay ? 1 : 0;
+    this.character.setPosition(START_X, GROUND_Y).setScale(1).setRotation(0).setAlpha(1);
+    this.drawCharacterBody(false);
+    this.cameras.main.scrollX = 0;
+    this.comboElement.textContent = '0 STREAK';
+    this.progressElement.textContent = `0 / ${this.level.length}`;
+    this.enemies.forEach((enemy) => enemy.setScale(1).setAlpha(1).setY(573));
+    this.showIntroCard();
+    this.drawIndicator(0);
+    if (startImmediately) void this.startGame();
+  }
+
+  private showIntroCard(): void {
+    this.startButton.classList.remove('hidden');
+    this.startButton.querySelector('.start-card')!.innerHTML = `
+      <small>BEGINNER ROAD · ${BPM} BPM</small>
+      <strong>RUN RIGHT.<br>JUMP BIG.</strong>
+      <em>HOLD D OR → &nbsp; · &nbsp; TAP SPACE ON THE BIG BEAT</em>
+      <span class="start-cta">START THE MUSIC</span>`;
   }
 
   private press(action: Action): void {
@@ -357,21 +494,23 @@ class GameScene extends Phaser.Scene {
     const delta = timingDeltaMs(this.elapsedMs, event);
 
     if (Math.abs(delta) > ACTION_WINDOW_MS) {
-      if (delta < -ACTION_WINDOW_MS) this.feedback('TOO SOON', COLORS.muted);
+      if (delta < -ACTION_WINDOW_MS) this.feedback('WAIT FOR THE BEAT', COLORS.orange);
       return;
     }
-    if (action !== event.action) {
-      this.fail(`NEEDED ${event.action.toUpperCase()}`);
+    if (action !== event.action) return;
+    if (Math.abs(this.character.x - event.to.x) > POSITION_TOLERANCE) {
+      this.fail(this.character.x < event.to.x ? 'KEEP HOLDING →' : 'TOO FAR AHEAD');
       return;
     }
 
     this.accepted.add(event.index);
     this.nextEvent += 1;
     this.combo += 1;
-    const perfect = Math.abs(delta) <= 58;
-    this.feedback(perfect ? 'PERFECT' : delta < 0 ? 'EARLY' : 'LATE', perfect ? COLORS.mint : COLORS.yellow);
-    this.audio.hit(action, perfect ? 'perfect' : 'good');
-    this.comboElement.textContent = `${this.combo} COMBO`;
+    this.jumpStartedAt = this.elapsedMs;
+    const perfect = Math.abs(delta) <= 80;
+    this.feedback(perfect ? 'PERFECT JUMP!' : 'NICE!', perfect ? COLORS.mint : COLORS.yellow);
+    this.audio.hit('jump', perfect ? 'perfect' : 'good');
+    this.comboElement.textContent = `${this.combo} STREAK`;
     this.progressElement.textContent = `${this.nextEvent} / ${this.level.length}`;
   }
 
@@ -379,29 +518,35 @@ class GameScene extends Phaser.Scene {
     if (this.phase !== 'playing') return;
     this.phase = 'failed';
     this.combo = 0;
-    this.cameras.main.shake(230, 0.012);
-    this.characterBody.clear();
-    this.characterBody.fillStyle(COLORS.pink, 1).fillRoundedRect(-30, -18, 60, 36, 16);
-    this.characterBody.fillStyle(COLORS.ink, 1).fillCircle(-11, -4, 4).fillCircle(11, -4, 4);
-    this.feedback('BEAT BROKEN', COLORS.pink);
+    this.cameras.main.shake(180, 0.009);
+    this.drawCharacterBody(true);
+    this.feedback('TRY AGAIN!', COLORS.red);
     this.startButton.classList.remove('hidden');
-    this.startButton.querySelector('.start-card')!.innerHTML = `<small>${reason}</small><strong>OFF THE<br>BEAT</strong><em>PRESS SPACE TO RETRY</em>`;
+    this.startButton.querySelector('.start-card')!.innerHTML = `
+      <small>${reason}</small>
+      <strong>SO CLOSE!</strong>
+      <em>ONE PRESS RESTARTS THE RUN</em>
+      <span class="start-cta">TRY AGAIN</span>`;
   }
 
   private win(): void {
     if (this.phase !== 'playing') return;
     this.phase = 'won';
-    this.feedback('BOUND!', COLORS.yellow);
-    this.cameras.main.flash(450, 97, 244, 203);
+    this.feedback('ROAD CLEARED!', COLORS.yellow);
+    this.cameras.main.flash(420, 255, 247, 214);
     this.startButton.classList.remove('hidden');
-    this.startButton.querySelector('.start-card')!.innerHTML = `<small>${this.level.length} / ${this.level.length} CUES HIT</small><strong>BEAT<br>BOUND!</strong><em>PRESS SPACE TO RUN IT AGAIN</em>`;
+    this.startButton.querySelector('.start-card')!.innerHTML = `
+      <small>${this.level.length} / ${this.level.length} JUMPS</small>
+      <strong>BEATBOUND!</strong>
+      <em>YOU RAN THE WHOLE RHYTHM ROAD</em>
+      <span class="start-cta">RUN IT AGAIN</span>`;
   }
 
   private feedback(message: string, color: number): void {
-    this.feedbackText.setText(message).setColor(`#${color.toString(16).padStart(6, '0')}`).setScale(0.75).setAlpha(1);
+    this.feedbackText.setText(message).setColor(`#${color.toString(16).padStart(6, '0')}`).setScale(0.8).setAlpha(1);
     this.tweens.killTweensOf(this.feedbackText);
-    this.tweens.add({ targets: this.feedbackText, scale: 1, duration: 100, ease: 'Back.Out' });
-    this.tweens.add({ targets: this.feedbackText, alpha: 0, delay: 380, duration: 260 });
+    this.tweens.add({ targets: this.feedbackText, scale: 1, duration: 110, ease: 'Back.Out' });
+    this.tweens.add({ targets: this.feedbackText, alpha: 0, delay: 500, duration: 240 });
   }
 
   update(): void {
@@ -415,156 +560,106 @@ class GameScene extends Phaser.Scene {
     const gameDeltaMs = Math.min(50, now - this.lastClock) * this.speedScale;
     this.lastClock = now;
     this.elapsedMs += gameDeltaMs;
+
     const event = this.level[this.nextEvent];
-
-    if (AUTOPLAY && event && !this.autoPressed.has(event.index) && this.elapsedMs >= beatToMs(event.beat)) {
-      this.autoPressed.add(event.index);
-      this.moveAxis = event.to.x > event.from.x ? 1 : -1;
-      this.duckHeld = event.action === 'duck';
-      this.press(event.action);
+    if (this.autoPlay) {
+      this.moveAxis = 1;
+      if (event && !this.autoPressed.has(event.index) && this.elapsedMs >= beatToMs(event.beat)) {
+        this.autoPressed.add(event.index);
+        this.press('jump');
+      }
     }
-
     if (event && timingDeltaMs(this.elapsedMs, event) > ACTION_WINDOW_MS) {
-      this.fail(`MISSED ${event.action.toUpperCase()}`);
+      this.fail('MISSED THE JUMP');
+      return;
     }
 
     this.updateCharacter(gameDeltaMs);
-    this.validateLandings();
+    this.updateEnemies();
     this.checkHazardCollisions();
     this.drawIndicator(this.elapsedMs);
 
     const beat = this.elapsedMs / BEAT_MS;
-    const pulse = 1 + Math.max(0, 1 - (beat % 1) * 5) * 0.35;
-    this.beatPulse.setScale(pulse).setAlpha(0.18 + (pulse - 1) * 0.7);
+    const pulse = 1 + Math.max(0, 1 - (beat % 1) * 5) * 0.34;
+    this.beatPulse.setScale(pulse).setAlpha(0.2 + (pulse - 1) * 0.65);
 
-    const targetScroll = Math.min(0, this.character.y - 500);
-    this.cameras.main.scrollY = Phaser.Math.Linear(this.cameras.main.scrollY, targetScroll, 0.075);
-    this.progressText.setText(`CLIMB ${String(Math.min(this.nextEvent + 1, this.level.length)).padStart(2, '0')}`);
+    const targetScroll = Phaser.Math.Clamp(this.character.x - 280, 0, this.worldWidth - 960);
+    this.cameras.main.scrollX = Phaser.Math.Linear(this.cameras.main.scrollX, targetScroll, 0.09);
 
-    if (this.debugText) {
-      const nextDelta = event ? Math.round(timingDeltaMs(this.elapsedMs, event)) : 0;
-      this.debugText.setText(`DEBUG · ${AUTOPLAY ? 'AUTOPLAY' : 'MANUAL'} · ${Math.round(this.speedScale * 100)}%\nnext=${this.nextEvent} Δ=${nextDelta}ms · x=${Math.round(this.character.x)}\n±${ACTION_WINDOW_MS}ms · N=assist · T=slow`);
-    }
-
-    const finalEvent = this.level[this.level.length - 1];
-    if (this.nextEvent === this.level.length && this.validated.has(finalEvent.index)) this.win();
-  }
-
-  private activeEvent(): BeatEvent | undefined {
-    let active: BeatEvent | undefined;
-    for (const event of this.level) {
-      if (this.accepted.has(event.index) && this.elapsedMs >= beatToMs(event.beat)) active = event;
-    }
-    return active;
+    const finishX = this.level[this.level.length - 1].hazardX + 230;
+    if (this.nextEvent === this.level.length && this.character.x >= finishX) this.win();
   }
 
   private updateCharacter(gameDeltaMs: number): void {
-    const active = this.activeEvent();
-    if (!active) return;
+    this.character.x = Phaser.Math.Clamp(
+      this.character.x + this.moveAxis * RUN_SPEED * (gameDeltaMs / 1000),
+      55,
+      this.worldWidth - 80,
+    );
 
-    const duration = beatToMs(2);
-    const progress = Phaser.Math.Clamp((this.elapsedMs - beatToMs(active.beat)) / duration, 0, 1);
-    if (progress < 1) {
-      this.character.x = Phaser.Math.Clamp(this.character.x + this.moveAxis * RUN_SPEED * (gameDeltaMs / 1000), 76, 824);
-    }
-    this.character.y = Phaser.Math.Linear(active.from.y, active.to.y, Phaser.Math.Easing.Sine.InOut(progress));
-    this.character.rotation = 0;
-
-    if (active.action === 'jump') {
-      this.character.y -= Math.sin(progress * Math.PI) * 128;
-      this.character.setScale(1 + Math.sin(progress * Math.PI) * 0.08, 1 - Math.sin(progress * Math.PI) * 0.08);
-      this.character.rotation = Math.sin(progress * Math.PI * 2) * 0.06 * (active.to.x > active.from.x ? 1 : -1);
-    } else if (this.duckHeld && progress < 1) {
-      this.character.y += 16;
-      this.character.setScale(1.16, 0.38);
+    const jumpProgress = (this.elapsedMs - this.jumpStartedAt) / beatToMs(JUMP_BEATS);
+    if (jumpProgress >= 0 && jumpProgress < 1) {
+      this.character.y = GROUND_Y - Math.sin(jumpProgress * Math.PI) * 100;
+      this.character.rotation = Math.sin(jumpProgress * Math.PI * 2) * 0.08;
+      this.character.setScale(1 + Math.sin(jumpProgress * Math.PI) * 0.06, 1 - Math.sin(jumpProgress * Math.PI) * 0.04);
     } else {
+      this.character.y = GROUND_Y;
+      this.character.rotation = 0;
       this.character.setScale(1);
     }
   }
 
-  private validateLandings(): void {
-    for (const event of this.level) {
-      if (!this.accepted.has(event.index) || this.validated.has(event.index)) continue;
-      if (this.elapsedMs < beatToMs(event.beat + 2)) continue;
-      if (Math.abs(this.character.x - event.to.x) > LANDING_TOLERANCE) {
-        this.fail(event.action === 'jump' ? 'MISSED THE LEDGE' : 'MISSED THE EXIT');
-        return;
+  private updateEnemies(): void {
+    this.level.forEach((event) => {
+      const enemy = this.enemies.get(event.index)!;
+      if (!this.cleared.has(event.index)) enemy.y = 573 + Math.sin(this.elapsedMs / 170 + event.index) * 2;
+      if (this.accepted.has(event.index) && this.character.x > event.hazardX + 48 && !this.cleared.has(event.index)) {
+        this.cleared.add(event.index);
+        enemy.setScale(1, 0.3).setAlpha(0.45).setY(584);
       }
-      this.character.x = event.to.x;
-      this.character.y = event.to.y;
-      this.character.setScale(1);
-      this.validated.add(event.index);
-    }
+    });
   }
 
   private checkHazardCollisions(): void {
-    const event = this.activeEvent();
-    if (!event || this.validated.has(event.index)) return;
-    const progress = (this.elapsedMs - beatToMs(event.beat)) / beatToMs(2);
-    if (progress < 0 || progress > 1) return;
-
-    const halfWidth = 28 * this.character.scaleX;
-    const halfHeight = 31 * this.character.scaleY;
-    const left = this.character.x - halfWidth;
-    const right = this.character.x + halfWidth;
-    const top = this.character.y - halfHeight;
-    const bottom = this.character.y + halfHeight;
-
-    if (event.action === 'jump') {
-      const direction = event.to.x > event.from.x ? 1 : -1;
-      const first = event.from.x + direction * 110;
-      const last = event.from.x + direction * 136;
-      const hazardLeft = Math.min(first, last) - 9;
-      const hazardRight = Math.max(first, last) + 9;
-      const hazardTop = event.from.y + 2;
-      if (right > hazardLeft && left < hazardRight && bottom > hazardTop) this.fail('HIT THE SPIKES');
-    } else {
-      const flyerX = (event.from.x + event.to.x) / 2;
-      const flyerLeft = flyerX - 34;
-      const flyerRight = flyerX + 34;
-      const flyerTop = event.from.y - 25;
-      const flyerBottom = event.from.y + 3;
-      if (right > flyerLeft && left < flyerRight && bottom > flyerTop && top < flyerBottom) this.fail('HIT THE FLYER');
+    for (const event of this.level) {
+      if (this.cleared.has(event.index)) continue;
+      if (Math.abs(this.character.x - event.hazardX) > 42) continue;
+      const enemyTop = 552;
+      const playerBottom = this.character.y + 26 * this.character.scaleY;
+      if (playerBottom > enemyTop) {
+        this.fail('BONKED A BOUNCER');
+        return;
+      }
     }
   }
 
   private drawIndicator(elapsedMs: number): void {
     const g = this.indicator;
     g.clear();
-    g.fillStyle(COLORS.panel, 0.82).fillRoundedRect(768, 70, 144, 535, 28);
-    g.lineStyle(2, 0xffffff, 0.08).strokeRoundedRect(768, 70, 144, 535, 28);
-    g.lineStyle(4, COLORS.white, 0.8).lineBetween(786, 556, 894, 556);
-    g.fillStyle(COLORS.white, 0.9).fillTriangle(778, 556, 788, 549, 788, 563);
-    g.fillTriangle(902, 556, 892, 549, 892, 563);
+    g.fillStyle(COLORS.cream, 0.94).fillRoundedRect(180, 629, 600, 64, 25);
+    g.lineStyle(3, COLORS.ink, 0.15).strokeRoundedRect(180, 629, 600, 64, 25);
+    g.lineStyle(5, COLORS.red, 0.92).lineBetween(258, 635, 258, 687);
+    g.fillStyle(COLORS.red, 1).fillTriangle(258, 628, 249, 639, 267, 639);
 
     for (let i = this.nextEvent; i < Math.min(this.level.length, this.nextEvent + 5); i += 1) {
       const event = this.level[i];
       const beatsAway = (beatToMs(event.beat) - elapsedMs) / BEAT_MS;
-      const y = 556 - beatsAway * 82;
-      if (y < 92 || y > 585) continue;
-      const color = event.action === 'jump' ? COLORS.yellow : COLORS.mint;
-      g.fillStyle(color, 0.16).fillCircle(840, y, 30);
-      g.fillStyle(color, 1).fillCircle(840, y, 23);
-      g.lineStyle(4, COLORS.ink, 0.85);
-      if (event.action === 'jump') {
-        g.lineBetween(840, y + 10, 840, y - 10);
-        g.lineBetween(840, y - 10, 830, y);
-        g.lineBetween(840, y - 10, 850, y);
-      } else {
-        g.lineBetween(840, y - 10, 840, y + 10);
-        g.lineBetween(840, y + 10, 830, y);
-        g.lineBetween(840, y + 10, 850, y);
-      }
-      const direction = event.to.x > event.from.x ? 1 : -1;
-      g.fillStyle(COLORS.white, 0.9).fillCircle(877, y, 10);
-      g.lineStyle(3, COLORS.ink, 0.9).lineBetween(877 - direction * 5, y, 877 + direction * 5, y);
-      g.lineBetween(877 + direction * 5, y, 877 + direction * 1, y - 4);
-      g.lineBetween(877 + direction * 5, y, 877 + direction * 1, y + 4);
+      const x = 258 + beatsAway * 70;
+      if (x < 200 || x > 755) continue;
+      g.fillStyle(COLORS.yellow, 0.3).fillCircle(x, 661, 25);
+      g.fillStyle(COLORS.yellow, 1).fillCircle(x, 661, 18);
+      g.lineStyle(4, COLORS.ink, 0.9).lineBetween(x, 670, x, 651);
+      g.lineBetween(x, 651, x - 8, 659);
+      g.lineBetween(x, 651, x + 8, 659);
     }
 
     const next = this.level[this.nextEvent];
-    const direction = next ? (next.to.x > next.from.x ? '→' : '←') : '';
-    this.promptText.setText(next ? `${direction} ${next.action.toUpperCase()}` : 'FINISH!').setColor(next?.action === 'duck' ? '#61f4cb' : '#ffdd57');
+    if (!next) {
+      this.promptText.setText('KEEP RUNNING → TO THE FLAG');
+      return;
+    }
+    const beatsAway = Math.max(0, Math.ceil((beatToMs(next.beat) - elapsedMs) / BEAT_MS));
+    this.promptText.setText(beatsAway > 0 ? `HOLD → · JUMP IN ${beatsAway}` : 'JUMP!');
   }
 }
 
@@ -576,7 +671,7 @@ new Phaser.Game({
   parent: app,
   width: 960,
   height: 720,
-  backgroundColor: '#090b18',
+  backgroundColor: '#79c9ff',
   scene: [GameScene],
   scale: {
     mode: Phaser.Scale.FIT,

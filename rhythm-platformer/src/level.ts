@@ -1,11 +1,13 @@
-export const BPM = 132;
+export const BPM = 108;
 export const BEAT_MS = 60_000 / BPM;
-export const ACTION_WINDOW_MS = 125;
-export const TRAVEL_BEATS = 2;
-export const RUN_SPEED = 650;
-export const LANDING_TOLERANCE = 88;
+export const ACTION_WINDOW_MS = 210;
+export const RUN_SPEED = 190;
+export const POSITION_TOLERANCE = 105;
+export const JUMP_BEATS = 1.5;
+export const START_X = 180;
+export const GROUND_Y = 557;
 
-export type Action = 'jump' | 'duck';
+export type Action = 'jump';
 
 export interface Point {
   x: number;
@@ -18,28 +20,31 @@ export interface BeatEvent {
   action: Action;
   from: Point;
   to: Point;
+  hazardX: number;
+  travelBeats: number;
 }
 
-const ACTIONS: Action[] = [
-  'jump', 'jump', 'duck', 'jump',
-  'jump', 'duck', 'jump', 'jump',
-  'duck', 'jump', 'jump', 'duck',
-  'jump', 'jump', 'duck', 'jump',
-];
+// Each obstacle is separated by a comfortable four or five beats of running.
+const SEGMENT_BEATS = [4, 4, 4, 5, 5, 5, 5];
 
 export function createLevel(): BeatEvent[] {
-  let point: Point = { x: 180, y: 620 };
-  return ACTIONS.map((action, index) => {
+  let point: Point = { x: START_X, y: GROUND_Y };
+  let beat = 0;
+
+  return SEGMENT_BEATS.map((travelBeats, index) => {
+    beat += travelBeats;
     const next: Point = {
-      x: point.x < 480 ? 720 : 180,
-      y: point.y - (action === 'jump' ? 96 : 0),
+      x: point.x + RUN_SPEED * (beatToMs(travelBeats) / 1000),
+      y: GROUND_Y,
     };
     const event: BeatEvent = {
       index,
-      beat: 4 + index * TRAVEL_BEATS,
-      action,
+      beat,
+      action: 'jump',
       from: { ...point },
       to: next,
+      hazardX: next.x + 66,
+      travelBeats,
     };
     point = next;
     return event;
@@ -65,46 +70,44 @@ export interface ValidationResult {
   errors: string[];
 }
 
-/** Pure validation used both by tests and the debug overlay. */
+/** Pure validation used by tests and checked at runtime. */
 export function validateLevel(events: BeatEvent[]): ValidationResult {
   const errors: string[] = [];
 
   events.forEach((event, index) => {
-    if (event.beat % TRAVEL_BEATS !== 0) {
-      errors.push(`Event ${index} is not on the ${TRAVEL_BEATS}-beat grid`);
+    if (!Number.isInteger(event.beat)) errors.push(`Event ${index} is not on a whole beat`);
+    if (event.travelBeats < 4 || event.travelBeats > 5) {
+      errors.push(`Event ${index} does not leave a simple four-to-five-beat run`);
     }
-    if (index > 0) {
+    if (index === 0) {
+      if (event.from.x !== START_X || event.beat !== event.travelBeats) {
+        errors.push('The opening run is not connected to the start');
+      }
+    } else {
       const previous = events[index - 1];
       if (event.from.x !== previous.to.x || event.from.y !== previous.to.y) {
         errors.push(`Route breaks between events ${index - 1} and ${index}`);
       }
-      if (event.beat - previous.beat !== TRAVEL_BEATS) {
-        errors.push(`Event ${index} has an unreachable travel time`);
+      if (event.beat - previous.beat !== event.travelBeats) {
+        errors.push(`Event ${index} has the wrong travel time`);
       }
     }
-    const distance = Math.abs(event.to.x - event.from.x);
-    if (distance < 400 || distance > 620) {
-      errors.push(`Event ${index} has an invalid horizontal crossing`);
+
+    const expectedDistance = RUN_SPEED * (beatToMs(event.travelBeats) / 1000);
+    const actualDistance = event.to.x - event.from.x;
+    if (Math.abs(expectedDistance - actualDistance) > 0.01) {
+      errors.push(`Event ${index} cannot be reached at run speed`);
     }
-    const manualRunDistance = RUN_SPEED * (beatToMs(TRAVEL_BEATS) / 1000);
-    if (Math.abs(manualRunDistance - distance) > LANDING_TOLERANCE) {
-      errors.push(`Event ${index} cannot be reached with manual movement`);
-    }
-    const rise = event.from.y - event.to.y;
-    if (event.action === 'jump' && rise !== 96) {
-      errors.push(`Jump ${index} does not reach the next platform`);
-    }
-    if (event.action === 'duck' && rise !== 0) {
-      errors.push(`Duck ${index} cannot stay under its flyer`);
-    }
+    if (event.action !== 'jump') errors.push(`Event ${index} adds an advanced action`);
+    if (event.hazardX <= event.to.x) errors.push(`Hazard ${index} is not beyond its jump cue`);
   });
 
-  const precise = ACTION_WINDOW_MS / BEAT_MS < 0.3;
-  if (!precise) errors.push('Timing window is too broad to require rhythmic precision');
+  const precise = ACTION_WINDOW_MS / BEAT_MS < 0.4;
+  if (!precise) errors.push('Timing window is too broad to feel rhythmic');
 
   return {
-    reachable: !errors.some((error) => error.includes('Route') || error.includes('travel') || error.includes('reach') || error.includes('stay')),
-    quantized: !errors.some((error) => error.includes('grid') || error.includes('travel time')),
+    reachable: !errors.some((error) => error.includes('Route') || error.includes('connected') || error.includes('reach')),
+    quantized: !errors.some((error) => error.includes('whole beat') || error.includes('travel time')),
     precise,
     errors,
   };
