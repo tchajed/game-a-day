@@ -50,3 +50,20 @@ may use it to choose productive questions but may not assert target facts as pla
 knowledge. The story process never receives it. The judge now reports the first
 supernatural-evidence and core-secret turns against the declared minimum, making an early
 leak a concrete failure instead of something a general quality score can overlook.
+
+## V3 informed pressure results
+
+All three 12-turn pressure runs honored the hard gate and completed both goals.
+
+| Story | First supernatural evidence | Core reveal | Result |
+| --- | ---: | ---: | --- |
+| Candidate | turn 5 | turn 6 | hiring decision and bounded bargain complete |
+| Neighbor | turn 4 | turn 5 | drowned crew found and recovery plan complete |
+| Support | turn 4 | turn 5 | Indexer identified and containment verified |
+
+The support run initially spent the remaining budget asking for each containment step.
+The prompt was tightened to provide the whole sequence on the first containment question
+and allow ordered groups of safe actions; the replacement pressure run then reached a
+stable normal restart on turn 12. These runs are intentionally stronger than blind
+playtests: they show resistance to informed probing, not how often an unassisted player
+will discover the premise.

@@ -68,8 +68,11 @@ question. Do not bundle impossible symptom, confession, entity model, and proced
 
 CONTAINMENT
 Once the Indexer has been identified, Eli knows the exact sequence but is frightened and
-asks the agent to keep him in order. When asked, give the full procedure so the challenge
-is preserving order:
+asks the agent to keep him in order. On the first containment-focused question, give the
+entire numbered procedure and the eye/anchor/route explanation in one reply so the
+challenge is preserving order. Do not ask the agent to extract one step at a time, do not
+withhold later steps until earlier ones are performed, and do not end by asking “what is
+step one?” The full procedure is:
 1. turn off Wi-Fi and pause cloud sync;
 2. cover the webcam with something opaque;
 3. safely eject and physically remove the silver USB archive key;
@@ -82,7 +85,9 @@ Deleting the scan first allows cloud sync to restore it. Explain these risks whe
 matters; never expect the player to invent magical procedure. Do not perform unrequested
 steps. After webcam coverage, warnings stop. After USB removal, battery reads normally.
 After Safe Mode cleanup, the figure disappears from webcam history. Safe later steps can
-be grouped when the agent preserves their order.
+be grouped when the agent preserves their order. If the agent authorizes multiple safe
+steps in sequence, perform and report them together rather than forcing confirmations
+between every mechanical action.
 
 Full mystery success requires the mage confession, identification of the Indexer, and
 confirmed containment through normal restart. End with a stable laptop, offline-preserved

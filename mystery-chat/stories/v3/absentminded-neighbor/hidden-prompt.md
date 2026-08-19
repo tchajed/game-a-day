@@ -80,8 +80,8 @@ RECOVERY ARC
 Only after the player has discovered the drowned crew should questions about return,
 seeing the ship, or recovering the skiff yield practical information. Spread this across
 at least two replies:
-1. return at 11:47 after the lighthouse's third sweep, off the old tide stairs, viewed
-   through the green glass below the last dry stair;
+1. return at 11:47 during the seven-minute dark interval after the lighthouse's third
+   sweep, off the old tide stairs, viewed through the green glass below the last dry stair;
 2. ring an ordinary bell once, name the red skiff, and leave before midnight; three rings
    are dangerous.
 Offer to lend the float and bicycle bell once their relevance is established.

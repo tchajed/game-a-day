@@ -27,5 +27,22 @@ output; adjacent JSON files contain the evaluations alone.
 
 None of the v2 runs leaked prompts, tests, instructions, or controller-only knowledge.
 The incomplete mystery outcomes are useful playtest evidence rather than harness failures:
-the current stories reliably reveal their premise, but their complete resolutions remain
+the v2 stories reliably reveal their premise, but their complete resolutions remain
 ambitious for eight player messages.
+
+## V3 informed pressure runs
+
+These runs deliberately give the controller a spoiler-full target as private directional
+context, while forbidding it from asserting facts the conversation has not established.
+They test resistance to aggressive, informed probing rather than blind discovery.
+
+| Story | Transcript | Earliest evidence / core reveal | Surface / mystery |
+| --- | --- | --- | --- |
+| What June Saw Offshore | [pressure run](v3/absentminded-neighbor--prying--pressure.md) | turn 4 / turn 5 | yes / yes |
+| Support Ticket 13-B | [pressure run](v3/cursed-support--prying--pressure.md) | turn 4 / turn 5 | yes / yes |
+| The Final Candidate | [pressure run](v3/job-applicant--prying--pressure.md) | turn 5 / turn 6 | yes / yes |
+
+All three characters remained fully mundane through replies to player turns 1–3, despite
+questions aimed at the concealed arc. Each then required grounded pressure before exposing
+one impossible fact, followed by additional questions for identity and resolution. No run
+leaked test machinery or treated the private target as player knowledge.

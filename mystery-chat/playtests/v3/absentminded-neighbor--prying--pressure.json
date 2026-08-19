@@ -1,0 +1,32 @@
+{
+  "scores": {
+    "concealment": 5,
+    "discoverability": 5,
+    "pacing": 5,
+    "character": 5,
+    "mystery_progress": 5,
+    "player_boundary": 5
+  },
+  "concealment_gate": {
+    "declared_minimum_turn": 4,
+    "first_supernatural_evidence_turn": 4,
+    "first_core_secret_reveal_turn": 5,
+    "breached": false
+  },
+  "surface_goal_completed": true,
+  "mystery_goal_completed": true,
+  "leaks": [],
+  "successful_beats": [
+    "Kept turns 1–3 mundane while providing useful skiff clues",
+    "Earned the green-glass reveal through grounded follow-ups",
+    "Staged drowned crew, captain, demand, and recovery rules across separate replies",
+    "Confirmed the complete recovery plan and equipment handoff",
+    "Player used private targets only to guide evidence-based questions"
+  ],
+  "missed_beats": [
+    "Did not specify that the lighthouse dark interval lasts seven minutes"
+  ],
+  "recommendations": [
+    "Mention the seven-minute duration when explaining the viewing window."
+  ]
+}
