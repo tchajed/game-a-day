@@ -28,6 +28,7 @@ The testing should use GPT 5.6 Sol with medium thinking.
 
 ## Prototype artifacts
 
+- Spoiler-aware review website: [`review/`](review/)
 - Story briefings and hidden prompts: [`stories/`](stories/)
 - Reusable isolated playtest harness: [`PLAYTESTING.md`](PLAYTESTING.md)
 - Initial findings and revision rationale: [`ITERATION.md`](ITERATION.md)

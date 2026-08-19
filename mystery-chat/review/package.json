@@ -1,0 +1,25 @@
+{
+  "name": "mystery-chat-review",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview",
+    "test": "playwright test"
+  },
+  "dependencies": {
+    "marked": "^18.0.10",
+    "roughjs": "^4.6.6",
+    "vue": "^3.5.41"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.62.1",
+    "@types/node": "^24.13.3",
+    "@vitejs/plugin-vue": "^6.0.8",
+    "@vue/tsconfig": "^0.9.1",
+    "typescript": "^7.0.2",
+    "vite": "^8.2.1"
+  }
+}
