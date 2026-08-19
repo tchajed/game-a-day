@@ -1,0 +1,31 @@
+{
+  "scores": {
+    "concealment": 5,
+    "discoverability": 5,
+    "pacing": 5,
+    "character": 5,
+    "mystery_progress": 4,
+    "player_boundary": 5
+  },
+  "surface_goal_completed": false,
+  "mystery_goal_completed": false,
+  "leaks": [],
+  "successful_beats": [
+    "Opened as a credible professional candidate",
+    "Escalated from peculiar diction to a concrete 1618 inconsistency",
+    "Disclosed Maravex plainly after a precise evidence-based question",
+    "Established credible motives, employment terms, safeguards, and references",
+    "Player relied only on résumé and conversation evidence"
+  ],
+  "missed_beats": [
+    "Player never explicitly advanced or rejected Mara",
+    "Wish-granting ability and its constraints were not discovered",
+    "No safe wish was drafted or balanced bargain accepted"
+  ],
+  "recommendations": [
+    "Make an explicit hiring decision after due diligence",
+    "Ask what Mara's abilities imply for negotiation",
+    "Elicit wish limits and negotiate a narrowly bounded example",
+    "Seal any accepted bargain only after reviewing exact terms"
+  ]
+}

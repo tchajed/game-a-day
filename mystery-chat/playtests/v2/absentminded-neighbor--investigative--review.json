@@ -1,0 +1,34 @@
+{
+  "scores": {
+    "concealment": 5,
+    "discoverability": 4,
+    "pacing": 5,
+    "character": 5,
+    "mystery_progress": 4,
+    "player_boundary": 5
+  },
+  "surface_goal_completed": false,
+  "mystery_goal_completed": false,
+  "leaks": [],
+  "successful_beats": [
+    "Established southward drift, exact time, and initial catch",
+    "Revealed the impossible black ship before its drowned crew",
+    "Identified the Saint Orison, captain, bell, and demand",
+    "Discovered green glass as the required viewing aid",
+    "Learned the return time, lighthouse interval, tide deadline, and one-ring rule",
+    "Maintained June's warm, distractible voice throughout"
+  ],
+  "missed_beats": [
+    "Did not specify standing below the last dry tide stair",
+    "Did not offer the glass float and bicycle bell",
+    "Player never confirmed the complete recovery plan",
+    "No practical handoff was arranged",
+    "Did not close by returning to the casserole dish"
+  ],
+  "recommendations": [
+    "Prompt for the exact viewing position and equipment",
+    "Have June offer the float and bicycle bell",
+    "Require confirmation: arrive early, look through green glass, ring once, name the skiff, leave before midnight",
+    "End with a handoff arrangement and casserole callback"
+  ]
+}
