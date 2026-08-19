@@ -7,7 +7,12 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "tools"))
 
-from playtest import Scenario, parse_player_action, run_playtest  # noqa: E402
+from playtest import (  # noqa: E402
+    Scenario,
+    parse_json_object,
+    parse_player_action,
+    run_playtest,
+)
 
 
 class ParsePlayerActionTests(unittest.TestCase):
@@ -31,6 +36,12 @@ class ParsePlayerActionTests(unittest.TestCase):
         self.assertEqual(parsed["message"], "Could you clarify?")
         self.assertFalse(parsed["stop"])
         self.assertEqual(parsed["reason"], "unparsed response")
+
+    def test_generic_json_parser_handles_fences(self) -> None:
+        self.assertEqual(
+            parse_json_object('```json\n{"surface_goal_completed": true}\n```'),
+            {"surface_goal_completed": True},
+        )
 
 
 class IsolationTests(unittest.TestCase):

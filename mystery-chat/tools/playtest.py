@@ -40,10 +40,13 @@ JUDGE_SYSTEM = """You evaluate short mystery-chat playtests. You are outside the
 so testing language is allowed here. Judge only the supplied materials. Return exactly
 one valid JSON object with no markdown. Use integer scores from 1 (poor) to 5 (excellent).
 Required shape:
-{"scores":{"concealment":1,"discoverability":1,"pacing":1,"character":1,"goal_progress":1,"player_boundary":1},"goal_completed":false,"leaks":[],"successful_beats":[],"missed_beats":[],"recommendations":[]}
+{"scores":{"concealment":1,"discoverability":1,"pacing":1,"character":1,"mystery_progress":1,"player_boundary":1},"surface_goal_completed":false,"mystery_goal_completed":false,"leaks":[],"successful_beats":[],"missed_beats":[],"recommendations":[]}
 A leak is an out-of-character reference to prompts/tests/instructions or an unearned
 revelation. player_boundary measures whether the player acted only on public/conversation
-knowledge. Keep list items concise and concrete. Do not use tools."""
+knowledge. The surface goal comes from the public briefing. The mystery goal is the hidden
+prompt's satisfying-success condition and is false if the defining reveal or resolution
+was skipped, even when the surface task ended successfully. Keep list items concise and
+concrete. Do not use tools."""
 
 
 @dataclass(frozen=True)
@@ -89,7 +92,7 @@ def list_scenarios(version: str) -> list[str]:
     )
 
 
-def parse_player_action(raw: str) -> dict[str, Any]:
+def parse_json_object(raw: str) -> dict[str, Any] | None:
     candidates = [raw.strip()]
     fence = re.search(r"```(?:json)?\s*(\{.*?\})\s*```", raw, re.DOTALL)
     if fence:
@@ -103,14 +106,21 @@ def parse_player_action(raw: str) -> dict[str, Any]:
             data = json.loads(candidate)
         except json.JSONDecodeError:
             continue
-        if isinstance(data, dict) and isinstance(data.get("stop"), bool):
-            message = data.get("message", "")
-            if isinstance(message, str):
-                return {
-                    "message": message.strip(),
-                    "stop": data["stop"],
-                    "reason": str(data.get("reason", "")).strip(),
-                }
+        if isinstance(data, dict):
+            return data
+    return None
+
+
+def parse_player_action(raw: str) -> dict[str, Any]:
+    data = parse_json_object(raw)
+    if data is not None and isinstance(data.get("stop"), bool):
+        message = data.get("message", "")
+        if isinstance(message, str):
+            return {
+                "message": message.strip(),
+                "stop": data["stop"],
+                "reason": str(data.get("reason", "")).strip(),
+            }
     # A malformed controller response is still usable as a turn, and remains visible.
     return {"message": raw.strip(), "stop": False, "reason": "unparsed response"}
 
@@ -150,13 +160,8 @@ def judge(
         pi_command=pi_command,
     ) as evaluator:
         raw = evaluator.prompt(packet)
-    try:
-        return json.loads(raw)
-    except json.JSONDecodeError:
-        parsed = parse_player_action(raw)
-        if parsed["reason"] != "unparsed response":
-            return parsed
-        return {"parse_error": True, "raw": raw}
+    parsed = parse_json_object(raw)
+    return parsed if parsed is not None else {"parse_error": True, "raw": raw}
 
 
 def run_playtest(
@@ -319,8 +324,6 @@ def execute(args: argparse.Namespace, slugs: list[str]) -> int:
             strategy_path = ROOT / "strategies" / f"{strategy_name}.md"
             strategy = read_text(strategy_path)
             label = args.run_label
-            if len(args.strategy) > 1:
-                label = f"{label}-{args.strategy.index(strategy_name) + 1}"
             print(f"Running {slug} / {strategy_name}...", flush=True)
             try:
                 turns, evaluation, stop_reason = run_playtest(

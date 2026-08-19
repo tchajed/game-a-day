@@ -68,4 +68,6 @@ Story inputs live under `stories/<version>/<scenario>/`:
 Testing styles live in `strategies/`. Generated Markdown transcripts and machine-readable
 judge results go under `playtests/<version>/`. Each transcript records the exact model,
 thinking level, public context, controller style, stop reason, dialogue, and evaluation.
+The judge distinguishes completion of the visible task from completion of the hidden
+mystery arc, so an ordinary but premature resolution does not look like full success.
 Timestamps and repeated strategy runs make stochastic comparisons explicit.
