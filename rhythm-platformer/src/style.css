@@ -178,6 +178,7 @@ button { font: inherit; }
   touch-action: manipulation;
 }
 .jump-button { color: #8f472e; background: #ffd84ae8; }
+.duck-button { color: #17334a; background: #55d6a7e8; }
 .move-button { width: 58px; color: #fff; background: #e94c45df; font-size: 22px; }
 .action-button:active { translate: 0 4px; box-shadow: 0 1px 0 #17334a55; }
 
@@ -193,6 +194,6 @@ button { font: inherit; }
   .start-card { padding: 24px 20px 20px; }
   .start-card em { font-size: 11px; }
   #mobile-controls { gap: 7px; }
-  .action-button { width: 88px; }
-  .move-button { width: 54px; }
+  .action-button { width: 74px; font-size: 11px; }
+  .move-button { width: 48px; }
 }

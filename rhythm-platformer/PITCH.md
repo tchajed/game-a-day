@@ -1,7 +1,7 @@
 # Beatbound
 
-**Run right. Jump big.** Beatbound turns a bright, toy-box platforming road into a rhythm you can see: hold right through a few comfortable beats, listen for the musical warning, then vault a tiny bouncer exactly when the jump cue hits the marker. Seven forgiving jumps, one simple action, and a chunky procedural groove make this a welcoming first run—while perfect timing still builds a satisfying streak all the way to the flag.
+**Run right. Jump big. Then keep up.** Beatbound turns three bright, toy-box platforming roads into rhythms you can see. Learn the groove with seven generous jumps, add low-flying duck cues as the pattern quickens, then read both action and direction through the final switchback sprint. Tiny bouncers, musical warnings, and a chunky procedural soundtrack make every move readable—while a perfect three-level streak still takes focus all the way to the flag.
 
 ![Beatbound beginner road](screenshots/beginner-road-gameplay.png)
 
-![Beatbound start screen](screenshots/beginner-road-start.png)
+![All three Beatbound roads cleared](screenshots/three-level-finish.png)

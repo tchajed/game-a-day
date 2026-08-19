@@ -4,10 +4,11 @@ export const ACTION_WINDOW_MS = 210;
 export const RUN_SPEED = 190;
 export const POSITION_TOLERANCE = 105;
 export const JUMP_BEATS = 1.5;
+export const DUCK_BEATS = 1.25;
 export const START_X = 180;
 export const GROUND_Y = 557;
 
-export type Action = 'jump';
+export type Action = 'jump' | 'duck';
 
 export interface Point {
   x: number;
@@ -18,37 +19,102 @@ export interface BeatEvent {
   index: number;
   beat: number;
   action: Action;
+  direction: -1 | 1;
   from: Point;
   to: Point;
   hazardX: number;
   travelBeats: number;
 }
 
-// Each obstacle is separated by a comfortable four or five beats of running.
-const SEGMENT_BEATS = [4, 4, 4, 5, 5, 5, 5];
+export interface LevelDefinition {
+  id: string;
+  name: string;
+  subtitle: string;
+  startX: number;
+  events: BeatEvent[];
+}
 
-export function createLevel(): BeatEvent[] {
-  let point: Point = { x: START_X, y: GROUND_Y };
+interface EventSpec {
+  beats: number;
+  action: Action;
+  direction: -1 | 1;
+}
+
+const TUTORIAL: EventSpec[] = [
+  { beats: 4, action: 'jump', direction: 1 },
+  { beats: 4, action: 'jump', direction: 1 },
+  { beats: 4, action: 'jump', direction: 1 },
+  { beats: 5, action: 'jump', direction: 1 },
+  { beats: 5, action: 'jump', direction: 1 },
+  { beats: 5, action: 'jump', direction: 1 },
+  { beats: 5, action: 'jump', direction: 1 },
+];
+
+const DUCK_AND_RUN: EventSpec[] = [
+  { beats: 4, action: 'jump', direction: 1 },
+  { beats: 3, action: 'duck', direction: 1 },
+  { beats: 4, action: 'jump', direction: 1 },
+  { beats: 3, action: 'duck', direction: 1 },
+  { beats: 3, action: 'jump', direction: 1 },
+  { beats: 4, action: 'jump', direction: 1 },
+  { beats: 3, action: 'duck', direction: 1 },
+  { beats: 3, action: 'jump', direction: 1 },
+  { beats: 4, action: 'duck', direction: 1 },
+];
+
+const SWITCHBACK: EventSpec[] = [
+  { beats: 4, action: 'jump', direction: 1 },
+  { beats: 3, action: 'duck', direction: 1 },
+  { beats: 3, action: 'jump', direction: 1 },
+  { beats: 4, action: 'jump', direction: -1 },
+  { beats: 3, action: 'duck', direction: -1 },
+  { beats: 3, action: 'jump', direction: -1 },
+  { beats: 3, action: 'duck', direction: 1 },
+  { beats: 2, action: 'jump', direction: 1 },
+  { beats: 2, action: 'duck', direction: 1 },
+  { beats: 3, action: 'jump', direction: 1 },
+];
+
+function buildEvents(startX: number, specs: EventSpec[]): BeatEvent[] {
+  let point: Point = { x: startX, y: GROUND_Y };
   let beat = 0;
 
-  return SEGMENT_BEATS.map((travelBeats, index) => {
-    beat += travelBeats;
+  return specs.map((spec, index) => {
+    beat += spec.beats;
     const next: Point = {
-      x: point.x + RUN_SPEED * (beatToMs(travelBeats) / 1000),
+      x: point.x + spec.direction * RUN_SPEED * (beatToMs(spec.beats) / 1000),
       y: GROUND_Y,
     };
     const event: BeatEvent = {
       index,
       beat,
-      action: 'jump',
+      action: spec.action,
+      direction: spec.direction,
       from: { ...point },
       to: next,
-      hazardX: next.x + 66,
-      travelBeats,
+      hazardX: next.x + spec.direction * 66,
+      travelBeats: spec.beats,
     };
     point = next;
     return event;
   });
+}
+
+export function createLevels(): LevelDefinition[] {
+  const definitions = [
+    { id: 'beginner-road', name: 'BEGINNER ROAD', subtitle: 'RUN RIGHT · JUMP BIG', startX: START_X, specs: TUTORIAL },
+    { id: 'bop-and-duck', name: 'BOP & DUCK', subtitle: 'TWO MOVES · QUICKER CUES', startX: START_X, specs: DUCK_AND_RUN },
+    { id: 'switchback', name: 'SWITCHBACK SPRINT', subtitle: 'WATCH THE ARROWS', startX: 1_350, specs: SWITCHBACK },
+  ] as const;
+
+  return definitions.map(({ specs, ...definition }) => ({
+    ...definition,
+    events: buildEvents(definition.startX, [...specs]),
+  }));
+}
+
+export function createLevel(index = 0): BeatEvent[] {
+  return createLevels()[index].events;
 }
 
 export function beatToMs(beat: number): number {
@@ -76,13 +142,11 @@ export function validateLevel(events: BeatEvent[]): ValidationResult {
 
   events.forEach((event, index) => {
     if (!Number.isInteger(event.beat)) errors.push(`Event ${index} is not on a whole beat`);
-    if (event.travelBeats < 4 || event.travelBeats > 5) {
-      errors.push(`Event ${index} does not leave a simple four-to-five-beat run`);
+    if (event.travelBeats < 2 || event.travelBeats > 5) {
+      errors.push(`Event ${index} has an unreadable run length`);
     }
     if (index === 0) {
-      if (event.from.x !== START_X || event.beat !== event.travelBeats) {
-        errors.push('The opening run is not connected to the start');
-      }
+      if (event.beat !== event.travelBeats) errors.push('The opening run is not connected to the start');
     } else {
       const previous = events[index - 1];
       if (event.from.x !== previous.to.x || event.from.y !== previous.to.y) {
@@ -93,13 +157,14 @@ export function validateLevel(events: BeatEvent[]): ValidationResult {
       }
     }
 
-    const expectedDistance = RUN_SPEED * (beatToMs(event.travelBeats) / 1000);
+    const expectedDistance = event.direction * RUN_SPEED * (beatToMs(event.travelBeats) / 1000);
     const actualDistance = event.to.x - event.from.x;
     if (Math.abs(expectedDistance - actualDistance) > 0.01) {
       errors.push(`Event ${index} cannot be reached at run speed`);
     }
-    if (event.action !== 'jump') errors.push(`Event ${index} adds an advanced action`);
-    if (event.hazardX <= event.to.x) errors.push(`Hazard ${index} is not beyond its jump cue`);
+    if (Math.sign(event.hazardX - event.to.x) !== event.direction) {
+      errors.push(`Hazard ${index} is on the wrong side of its cue`);
+    }
   });
 
   const precise = ACTION_WINDOW_MS / BEAT_MS < 0.4;
