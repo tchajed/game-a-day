@@ -182,8 +182,7 @@ button { font: inherit; }
 .action-button:active { translate: 0 4px; box-shadow: 0 1px 0 #17334a55; }
 
 @media (min-width: 800px) {
-  #mobile-controls { opacity: .72; }
-  .action-button { height: 48px; }
+  #mobile-controls { display: none; }
 }
 @media (max-width: 620px) {
   .topbar { padding-inline: 10px; }
