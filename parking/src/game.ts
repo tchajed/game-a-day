@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { carShapeAt, CONE_LOCAL_SHAPE, shapesIntersect, transformShape, type CompoundShape } from './carCollision';
 
 type Held = { left:boolean; right:boolean; gas:boolean; brake:boolean };
 type Level = { name:string; subtitle:string; player:{x:number;y:number;a:number}; bay:Phaser.Geom.Rectangle; parked:{x:number;y:number;color:number}[]; cones?:{x:number;y:number}[] };
@@ -15,7 +16,7 @@ const levels:Level[]=[
 class ParkingScene extends Phaser.Scene {
   level=0; car!:Phaser.GameObjects.Container; body!:Phaser.GameObjects.Graphics; wheels:Phaser.GameObjects.Rectangle[]=[];
   x=0;y=0;a=0;speed=0;gear:1|-1=1;controlMode:'drive'|'tank'='drive';held:Held={left:false,right:false,gas:false,brake:false}; injected:Partial<Held>={};
-  keys!:Record<string,Phaser.Input.Keyboard.Key>; obstacles:Phaser.Geom.Rectangle[]=[]; bay!:Phaser.Geom.Rectangle;
+  keys!:Record<string,Phaser.Input.Keyboard.Key>; obstacles:CompoundShape[]=[]; bay!:Phaser.Geom.Rectangle;
   speedText!:Phaser.GameObjects.Text; gearText!:Phaser.GameObjects.Text; levelText!:Phaser.GameObjects.Text; statusText!:Phaser.GameObjects.Text;
   parkingTime=0; completed=false; bumps=0; startTime=0; lastGear=false;
   constructor(){super('parking')}
@@ -67,8 +68,8 @@ class ParkingScene extends Phaser.Scene {
     pg.fillStyle(0x4fb87c,.13).fillRoundedRect(L.bay.x,L.bay.y,L.bay.width,L.bay.height,8);
     pg.lineStyle(3,0x76d69c,.82);pg.strokeRoundedRect(L.bay.x,L.bay.y,L.bay.width,L.bay.height,8);
     pg.lineStyle(2,0xffffff,.42);pg.lineBetween(L.bay.x,L.bay.y,L.bay.x+16,L.bay.y);pg.lineBetween(L.bay.right-16,L.bay.y,L.bay.right,L.bay.y);
-    L.parked.forEach(p=>{this.makeCar(p.x,p.y,p.color,false).setRotation(NORTH).setData('level',true);this.obstacles.push(new Phaser.Geom.Rectangle(p.x-35,p.y-77,70,154))});
-    L.cones?.forEach(c=>this.makeCone(c.x,c.y).setData('level',true));
+    L.parked.forEach(p=>{this.makeCar(p.x,p.y,p.color,false).setRotation(NORTH).setData('level',true);this.obstacles.push(carShapeAt({x:p.x,y:p.y,angle:NORTH}))});
+    L.cones?.forEach(c=>{this.makeCone(c.x,c.y).setData('level',true);this.obstacles.push(transformShape(CONE_LOCAL_SHAPE,{x:c.x,y:c.y,angle:0}))});
     this.car=this.makeCar(this.x,this.y,0xf0ede4,true);this.car.setRotation(this.a);this.levelText.setText(`${String(i+1).padStart(2,'0')}  ${L.name}`);
     this.statusText.setText('');
   }
@@ -112,18 +113,19 @@ class ParkingScene extends Phaser.Scene {
     }
     this.speed=Phaser.Math.Clamp(this.speed,-MAX_REVERSE_SPEED,MAX_DRIVE_SPEED);
     const steer=(right?1:0)-(left?1:0);const steerPower=Phaser.Math.Clamp(Math.abs(this.speed)/15,0,1)*1.28;
+    const oldX=this.x,oldY=this.y,oldA=this.a;
     if(steer&&Math.abs(this.speed)>.25)this.a+=steer*steerPower*Math.sign(this.speed)*dt;
     this.wheels.forEach(w=>w.setAngle(steer*22));
-    const oldX=this.x,oldY=this.y;this.x+=Math.cos(this.a)*this.speed*dt;this.y+=Math.sin(this.a)*this.speed*dt;
+    this.x+=Math.cos(this.a)*this.speed*dt;this.y+=Math.sin(this.a)*this.speed*dt;
     this.x=Phaser.Math.Clamp(this.x,190,790);this.y=Phaser.Math.Clamp(this.y,60,H-60);
-    if(this.collides()){this.x=oldX;this.y=oldY;this.speed*=-.18;this.bumps++;playCrash();this.cameras.main.shake(100,.004);this.statusText.setText('BUMP').setColor('#f39a76');this.time.delayedCall(500,()=>!this.completed&&this.statusText.setText(''))}
+    if(this.collides()){this.x=oldX;this.y=oldY;this.a=oldA;this.speed*=-.18;this.bumps++;playCrash();this.cameras.main.shake(100,.004);this.statusText.setText('BUMP').setColor('#f39a76');this.time.delayedCall(500,()=>!this.completed&&this.statusText.setText(''))}
     this.car.setPosition(this.x,this.y).setRotation(this.a);
     const mph=Math.round(Math.abs(this.speed)/PIXELS_PER_MPH);this.speedText.setText(String(mph).padStart(2,'0'));this.gearText.setText(this.gear===1?'D':'R');
     this.checkParking(dt);
   }
   collides(){
-    const vertical=Math.abs(Math.sin(this.a))>.7;const r=new Phaser.Geom.Rectangle(this.x-(vertical?25:59),this.y-(vertical?59:25),vertical?50:118,vertical?118:50);
-    return this.obstacles.some(o=>Phaser.Geom.Intersects.RectangleToRectangle(r,o));
+    const playerShape=carShapeAt({x:this.x,y:this.y,angle:this.a});
+    return this.obstacles.some(obstacle=>shapesIntersect(playerShape,obstacle));
   }
   checkParking(dt:number){
     if(this.completed)return;const marginX=27,marginY=58;const inBay=this.x-marginX>this.bay.x&&this.x+marginX<this.bay.right&&this.y-marginY>this.bay.y&&this.y+marginY<this.bay.bottom;
