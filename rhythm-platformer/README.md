@@ -1,6 +1,6 @@
 # Rhythm platformer
 
-Beatbound is a three-level rhythm platformer built with Phaser and Tone.js. Hold a direction for several beats, then jump or duck when the next cue reaches the timing marker. The procedural soundtrack supplies a heavy downbeat and a one-beat audio warning for every action.
+Beatbound is a three-level rhythm platformer built with Phaser and Tone.js. Hold a direction for several beats, then jump or duck when the next cue reaches the timing marker. The procedural soundtrack layers a heavy downbeat, an eight-bar lead melody, a changing chord progression, and a one-beat audio warning for every action.
 
 The bright side-scrolling roads use small enemies, rolling hills, clouds, beat blocks, and a procedural dash-and-dot background texture. The difficulty now builds across three short stages:
 
