@@ -1,0 +1,28 @@
+{
+  "scores": {
+    "concealment": 5,
+    "discoverability": 5,
+    "pacing": 5,
+    "character": 5,
+    "goal_progress": 5,
+    "player_boundary": 5
+  },
+  "goal_completed": true,
+  "leaks": [],
+  "successful_beats": [
+    "Opened as a credible professional candidate",
+    "Escalated clues through specific follow-ups",
+    "Answered the direct supernatural question plainly",
+    "Explained motives and employment safeguards",
+    "Established acceptable salary, schedule, and authority",
+    "Player advanced Mara to a second interview"
+  ],
+  "missed_beats": [
+    "No detailed exploration of supernatural abilities",
+    "Wish bargain was declined, so no sealed agreement"
+  ],
+  "recommendations": [
+    "Keep the wish separate from hiring unless invited",
+    "Provide conventionally verifiable references promptly"
+  ]
+}

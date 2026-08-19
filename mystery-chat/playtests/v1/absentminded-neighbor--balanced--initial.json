@@ -1,0 +1,22 @@
+{
+  "scores": {
+    "concealment": 5,
+    "discoverability": 5,
+    "pacing": 5,
+    "character": 5,
+    "goal_progress": 5,
+    "player_boundary": 5
+  },
+  "goal_completed": true,
+  "leaks": [],
+  "successful_beats": [
+    "Established the skiff's southward drift and exact time",
+    "Revealed the Saint Orison gradually through specific questions",
+    "Provided a complete, safe recovery procedure",
+    "Strongly warned against ringing three times",
+    "Arranged a practical handoff of the float, bell, and rope",
+    "Closed with an in-character casserole callback"
+  ],
+  "missed_beats": [],
+  "recommendations": []
+}
