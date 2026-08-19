@@ -9,6 +9,13 @@ export type GameConfig = {
 // Slugs, release dates, artwork, and card accents live here rather than in the games.
 export const games: GameConfig[] = [
   {
+    directory: "mystery-chat",
+    slug: "mystery-chat",
+    date: "2026-08-20",
+    cover: "screenshots/home-desktop.png",
+    crop: { left: 0, top: 0, width: 1280, height: 720 },
+  },
+  {
     directory: "rhythm-platformer",
     slug: "beatbound",
     date: "2026-08-19",

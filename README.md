@@ -6,6 +6,7 @@ A collection of games each built in one day, with AI assistance. Each game focus
 
 | Game | Directory | Description |
 | --- | --- | --- |
+| [Mystery Chat](mystery-chat/) | `mystery-chat` | Question three ordinary conversations until their hidden truths begin to surface. |
 | [Beatbound](rhythm-platformer/) | `rhythm-platformer` | Auto-run through three bright platforming roads, jumping and ducking to the beat. |
 | [Route 529](sw-rpg/) | `sw-rpg` | Battle bugs, memory leaks, and scope creep on a software team’s road to Ship City. |
 | [NULL PROTOCOL](deckbuilder/) | `deckbuilder` | Read alien signals, build trust, and recover better diplomacy protocols across time loops. |
