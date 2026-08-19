@@ -8,7 +8,6 @@ interface Scenario {
 export interface Story {
   slug: StorySlug
   number: string
-  label: string
   title: string
   roleLabel: string
   hook: string
@@ -46,7 +45,6 @@ function source(files: Record<string, string>, slug: StorySlug): string {
 const storyDetails: Record<StorySlug, Omit<Story, 'slug' | 'title' | 'roleLabel' | 'briefing' | 'prompt'>> = {
   'absentminded-neighbor': {
     number: '01',
-    label: 'A missing boat',
     hook: 'Ask your neighbor whether she saw where your skiff went during last night’s storm.',
     image: 'june-barlow.webp',
     accent: 'sea',
@@ -58,7 +56,6 @@ const storyDetails: Record<StorySlug, Omit<Story, 'slug' | 'title' | 'roleLabel'
   },
   'job-applicant': {
     number: '02',
-    label: 'A first-round interview',
     hook: 'Conduct a first-round interview for an Operations Coordinator at Wayline Logistics.',
     image: 'mara-voss.webp',
     accent: 'ember',
@@ -70,7 +67,6 @@ const storyDetails: Record<StorySlug, Omit<Story, 'slug' | 'title' | 'roleLabel'
   },
   'cursed-support': {
     number: '03',
-    label: 'An evening support ticket',
     hook: 'Help a researcher diagnose a freezing laptop before his morning client call.',
     image: 'eli-ward.webp',
     accent: 'signal',

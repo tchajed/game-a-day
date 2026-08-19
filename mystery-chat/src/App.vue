@@ -104,9 +104,17 @@ onBeforeUnmount(() => {
 
     <main v-if="!activeStory" class="entry-page">
       <section class="entry-intro">
-        <p class="kicker">A conversation game</p>
-        <h1>Mystery<br />Chat</h1>
-        <p>Choose a conversation.</p>
+        <div class="abstract-art" aria-hidden="true">
+          <span class="art-orbit" />
+          <span class="art-card art-card-one" />
+          <span class="art-card art-card-two" />
+          <span class="art-dot" />
+        </div>
+        <div class="entry-copy">
+          <p class="kicker">A conversation game</p>
+          <h1>Mystery Chat</h1>
+          <p>Choose a conversation.</p>
+        </div>
       </section>
 
       <nav class="conversation-list" aria-label="Conversations">
@@ -119,7 +127,6 @@ onBeforeUnmount(() => {
         >
           <span class="conversation-number">{{ story.number }}</span>
           <span class="conversation-text">
-            <small>{{ story.label }}</small>
             <strong>{{ story.title }}</strong>
             <span>{{ story.hook }}</span>
           </span>

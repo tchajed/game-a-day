@@ -15,6 +15,7 @@ test('entry page stays minimal and links to all three conversations', async ({ p
   await expect(page.getByRole('link', { name: /Interview for Operations Coordinator/ })).toBeVisible()
   await expect(page.getByRole('link', { name: /Support Ticket 13-B/ })).toBeVisible()
   await expect(page.getByText('Copy conversation prompt')).toHaveCount(0)
+  await expect(page.getByText('A missing boat')).toHaveCount(0)
   await expect(page.getByText(/hidden truth|left unsaid|secret/i)).toHaveCount(0)
 })
 
