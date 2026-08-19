@@ -16,6 +16,7 @@ test('starts unspoiled and can copy the current prompt unseen', async ({ page })
   const clipboard = await page.evaluate(() => navigator.clipboard.readText())
   expect(clipboard).toContain('Mara Voss')
   expect(clipboard).toContain('THE TRUTH')
+  expect(clipboard).toContain('HARD CONCEALMENT GATE')
 })
 
 test('reveals prompts and runs only after explicit navigation', async ({ page }) => {
@@ -26,9 +27,9 @@ test('reveals prompts and runs only after explicit navigation', async ({ page })
 
   await page.getByRole('button', { name: /Inspect playtests/ }).click()
   await expect(page.getByRole('article').getByText('Playtest evidence', { exact: true })).toBeVisible()
-  await expect(page.locator('.message-row')).toHaveCount(15)
+  await expect(page.locator('.message-row')).toHaveCount(21)
   await expect(page.getByText('Hidden mystery')).toBeVisible()
-  await expect(page).toHaveURL(/view=runs&run=natural/)
+  await expect(page).toHaveURL(/view=runs&run=pressure/)
 
   await page.getByRole('tab', { name: /Investigative/ }).click()
   await expect(page).toHaveURL(/run=investigative/)

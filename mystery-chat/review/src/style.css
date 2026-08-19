@@ -763,7 +763,7 @@ a:focus-visible {
 .run-tabs {
   margin-bottom: 20px;
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   border: 1px solid var(--line);
 }
 
@@ -870,6 +870,50 @@ a:focus-visible {
 .outcome-card.miss {
   border-color: var(--coral);
   background: var(--coral-soft);
+}
+
+.gate-summary {
+  margin: -14px 0 26px;
+  padding: 13px 15px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  color: #405b56;
+  background: var(--teal-soft);
+  border-left: 3px solid var(--teal);
+}
+
+.gate-summary > div {
+  flex: 0 0 auto;
+}
+
+.gate-summary span,
+.gate-summary strong {
+  display: block;
+}
+
+.gate-summary span {
+  margin-bottom: 4px;
+  font: 500 9px/1 var(--mono);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.gate-summary strong {
+  font: 600 17px/1 var(--serif);
+}
+
+.gate-summary p {
+  margin: 0;
+  text-align: right;
+  font: 400 10px/1.5 var(--mono);
+}
+
+.gate-summary.breached {
+  color: #8b4837;
+  background: var(--coral-soft);
+  border-color: var(--coral);
 }
 
 .legacy-outcome {
@@ -1278,12 +1322,35 @@ footer {
     gap: 7px;
   }
 
+  .run-tabs {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
   .run-tabs button {
     padding: 12px 9px;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .run-tabs button:nth-child(even) {
+    border-right: 0;
+  }
+
+  .run-tabs button:nth-last-child(-n + 2) {
+    border-bottom: 0;
   }
 
   .outcome-row {
     grid-template-columns: 1fr;
+  }
+
+  .gate-summary {
+    align-items: flex-start;
+    flex-direction: column;
+    margin-top: -12px;
+  }
+
+  .gate-summary p {
+    text-align: left;
   }
 
   .outcome-card {

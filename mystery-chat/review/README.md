@@ -2,11 +2,12 @@
 
 A spoiler-aware review website for the three Mystery Chat prototypes. Every story starts
 on the exact public briefing. Hidden prompts and playtest evidence are separate, explicit
-reveals, and the current v2 prompt can be copied to the clipboard without rendering it.
+reveals, and the current v3 prompt can be copied to the clipboard without rendering it.
 
 The site imports source material directly from `../stories/` and `../playtests/` during
 the Vite build, so new prompt text and transcript artifacts do not need to be duplicated
-in the UI code.
+in the UI code. The default evidence view is the informed v3 pressure run; the blind v2
+runs and v1 baseline remain available for comparison.
 
 ## Run locally
 

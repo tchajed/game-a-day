@@ -13,8 +13,8 @@ import {
 type View = 'briefing' | 'prompt' | 'runs'
 
 const validViews: View[] = ['briefing', 'prompt', 'runs']
-const validRuns: ReviewRun[] = ['baseline', 'natural', 'investigative']
-const validVersions: StoryVersion[] = ['v1', 'v2']
+const validRuns: ReviewRun[] = ['baseline', 'natural', 'investigative', 'pressure']
+const validVersions: StoryVersion[] = ['v1', 'v2', 'v3']
 
 const hashParams = new URLSearchParams(window.location.hash.slice(1))
 const requestedStory = hashParams.get('story') as StorySlug | null
@@ -24,10 +24,10 @@ const selectedSlug = ref<StorySlug>(
 const requestedView = hashParams.get('view') as View | null
 const activeView = ref<View>(validViews.includes(requestedView as View) ? requestedView! : 'briefing')
 const requestedRun = hashParams.get('run') as ReviewRun | null
-const activeRun = ref<ReviewRun>(validRuns.includes(requestedRun as ReviewRun) ? requestedRun! : 'natural')
+const activeRun = ref<ReviewRun>(validRuns.includes(requestedRun as ReviewRun) ? requestedRun! : 'pressure')
 const requestedVersion = hashParams.get('prompt') as StoryVersion | null
 const promptVersion = ref<StoryVersion>(
-  validVersions.includes(requestedVersion as StoryVersion) ? requestedVersion! : 'v2',
+  validVersions.includes(requestedVersion as StoryVersion) ? requestedVersion! : 'v3',
 )
 const copyStatus = ref<'idle' | 'copied' | 'error'>('idle')
 let copyResetTimer: number | undefined
@@ -37,6 +37,7 @@ const transcript = computed(() => selectedStory.value.runs[activeRun.value])
 const evaluation = computed(() => transcript.value.evaluation)
 
 const runTabs: { id: ReviewRun; label: string; detail: string }[] = [
+  { id: 'pressure', label: 'Pressure', detail: 'V3 informed' },
   { id: 'natural', label: 'Natural', detail: 'V2 review' },
   { id: 'investigative', label: 'Investigative', detail: 'V2 review' },
   { id: 'baseline', label: 'Balanced', detail: 'V1 baseline' },
@@ -65,14 +66,14 @@ function markdown(source: string, promoteCaps = false): string {
 function selectStory(slug: StorySlug) {
   selectedSlug.value = slug
   activeView.value = 'briefing'
-  activeRun.value = 'natural'
-  promptVersion.value = 'v2'
+  activeRun.value = 'pressure'
+  promptVersion.value = 'v3'
   copyStatus.value = 'idle'
   window.scrollTo({ top: 0, behavior: 'smooth' })
 }
 
 async function copyPromptUnseen() {
-  const prompt = selectedStory.value.prompts.v2
+  const prompt = selectedStory.value.prompts.v3
   try {
     if (navigator.clipboard?.writeText) {
       await navigator.clipboard.writeText(prompt)
@@ -252,13 +253,13 @@ onBeforeUnmount(() => window.clearTimeout(copyResetTimer))
                   :class="{ active: promptVersion === version }"
                   @click="promptVersion = version"
                 >
-                  {{ version === 'v2' ? 'Revised v2' : 'Initial v1' }}
+                  {{ version === 'v3' ? 'Current v3' : version === 'v2' ? 'Revised v2' : 'Initial v1' }}
                 </button>
               </div>
-              <span class="version-note">{{ promptVersion === 'v2' ? 'Current review prompt' : 'Original baseline prompt' }}</span>
+              <span class="version-note">{{ promptVersion === 'v3' ? 'Current review prompt' : promptVersion === 'v2' ? 'Previous revision' : 'Original baseline prompt' }}</span>
             </div>
 
-            <div v-if="promptVersion === 'v2'" class="change-callout">
+            <div v-if="promptVersion === 'v3'" class="change-callout">
               <span>What changed</span>
               <p>{{ selectedStory.changeNote }}</p>
             </div>
@@ -280,7 +281,11 @@ onBeforeUnmount(() => window.clearTimeout(copyResetTimer))
               <button type="button" class="text-button" @click="navigate('briefing')">Return to player view</button>
             </div>
             <h2>{{ selectedStory.title }}</h2>
-            <p class="panel-subtitle">Blind runs: the player controller knew the briefing, never the hidden prompt.</p>
+            <p class="panel-subtitle">
+              {{ activeRun === 'pressure'
+                ? 'Informed pressure run: the controller knew the test target but had to earn every fact in-world.'
+                : 'Blind run: the player controller knew the briefing, never the hidden prompt.' }}
+            </p>
 
             <div class="run-tabs" role="tablist" aria-label="Playtest run">
               <button
@@ -320,7 +325,18 @@ onBeforeUnmount(() => window.clearTimeout(copyResetTimer))
                 <strong>{{ evaluation.leaks.length === 0 ? 'None' : evaluation.leaks.length }}</strong>
               </div>
             </div>
-            <div v-else class="legacy-outcome">
+            <div v-if="evaluation.concealment_gate" :class="['gate-summary', { breached: evaluation.concealment_gate.breached }]">
+              <div>
+                <span>Hard concealment gate</span>
+                <strong>{{ evaluation.concealment_gate.breached ? 'Breached' : 'Held' }}</strong>
+              </div>
+              <p>
+                Minimum turn {{ evaluation.concealment_gate.declared_minimum_turn ?? '—' }} ·
+                first supernatural evidence turn {{ evaluation.concealment_gate.first_supernatural_evidence_turn ?? '—' }} ·
+                core reveal turn {{ evaluation.concealment_gate.first_core_secret_reveal_turn ?? '—' }}
+              </p>
+            </div>
+            <div v-else-if="!goalStatus(evaluation)" class="legacy-outcome">
               <span>V1 evaluator</span>
               <strong>{{ evaluation.goal_completed ? 'Goal marked complete' : 'Goal marked incomplete' }}</strong>
               <p>The original judge did not yet separate the surface task from the hidden arc.</p>
@@ -391,7 +407,7 @@ onBeforeUnmount(() => window.clearTimeout(copyResetTimer))
 
     <footer>
       <span>Mystery Chat · prompt prototype review</span>
-      <span>3 stories · 9 runs · 0 reported context leaks</span>
+      <span>3 stories · 12 runs · 0 reported context leaks</span>
     </footer>
   </div>
 </template>
