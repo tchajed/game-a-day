@@ -9,6 +9,13 @@ export type GameConfig = {
 // Slugs, release dates, artwork, and card accents live here rather than in the games.
 export const games: GameConfig[] = [
   {
+    directory: "rhythm-platformer",
+    slug: "beatbound",
+    date: "2026-08-19",
+    cover: "screenshots/beginner-road-gameplay.png",
+    crop: { left: 207, top: 0, width: 866, height: 577 },
+  },
+  {
     directory: "sw-rpg",
     slug: "route-529",
     date: "2026-08-18",
