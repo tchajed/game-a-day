@@ -1,4 +1,4 @@
-# What June Saw Offshore — natural — review
+# Your Neighbor June — natural — review
 
 - Story version: `v2`
 - Model: `gpt-5.6-sol`

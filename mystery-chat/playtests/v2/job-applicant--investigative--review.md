@@ -1,4 +1,4 @@
-# The Final Candidate — investigative — review
+# Interview for Operations Coordinator — investigative — review
 
 - Story version: `v2`
 - Model: `gpt-5.6-sol`

@@ -1,4 +1,4 @@
-# What June Saw Offshore — balanced — initial
+# Your Neighbor June — balanced — initial
 
 - Story version: `v1`
 - Model: `gpt-5.6-sol`

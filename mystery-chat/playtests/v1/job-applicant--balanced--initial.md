@@ -1,4 +1,4 @@
-# The Final Candidate — balanced — initial
+# Interview for Operations Coordinator — balanced — initial
 
 - Story version: `v1`
 - Model: `gpt-5.6-sol`

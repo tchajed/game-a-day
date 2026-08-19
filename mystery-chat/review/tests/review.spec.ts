@@ -4,7 +4,7 @@ test('starts unspoiled and can copy the current prompt unseen', async ({ page })
   await page.goto('/')
 
   await expect(page.getByText('Spoilers concealed')).toBeVisible()
-  await expect(page.getByRole('heading', { name: 'The Final Candidate', level: 2 })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Interview for Operations Coordinator', level: 2 })).toBeVisible()
   await expect(page.getByText('THE TRUTH')).toHaveCount(0)
   await expect(page.locator('.message-row')).toHaveCount(0)
 
@@ -39,7 +39,7 @@ test('switching stories restores the player-only view', async ({ page }) => {
   await page.goto('/#story=job-applicant&view=prompt&prompt=v2')
   await expect(page.getByRole('heading', { name: 'THE TRUTH' })).toBeVisible()
 
-  await page.getByRole('button', { name: /What June Saw Offshore/ }).click()
+  await page.getByRole('button', { name: /Your Neighbor June/ }).click()
   await expect(page.getByText('Spoilers concealed')).toBeVisible()
   await expect(page.getByText(/Last night.?s storm/)).toBeVisible()
   await expect(page.getByText('WHAT ACTUALLY HAPPENED')).toHaveCount(0)

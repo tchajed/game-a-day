@@ -1,4 +1,4 @@
-# What June Saw Offshore — investigative — review
+# Your Neighbor June — investigative — review
 
 - Story version: `v2`
 - Model: `gpt-5.6-sol`

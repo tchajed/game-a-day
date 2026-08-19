@@ -1,4 +1,4 @@
-# The Final Candidate — natural — review
+# Interview for Operations Coordinator — natural — review
 
 - Story version: `v2`
 - Model: `gpt-5.6-sol`

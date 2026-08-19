@@ -7,9 +7,9 @@ output; adjacent JSON files contain the evaluations alone.
 
 | Story | Natural run | Investigative run | Surface / mystery result |
 | --- | --- | --- | --- |
-| What June Saw Offshore | [transcript](v2/absentminded-neighbor--natural--review.md) | [transcript](v2/absentminded-neighbor--investigative--review.md) | Natural: yes/no; investigative: no/no |
+| Your Neighbor June | [transcript](v2/absentminded-neighbor--natural--review.md) | [transcript](v2/absentminded-neighbor--investigative--review.md) | Natural: yes/no; investigative: no/no |
 | Support Ticket 13-B | [transcript](v2/cursed-support--natural--review.md) | [transcript](v2/cursed-support--investigative--review.md) | Natural: no/no; investigative: no/no |
-| The Final Candidate | [transcript](v2/job-applicant--natural--review.md) | [transcript](v2/job-applicant--investigative--review.md) | Natural: yes/no; investigative: no/no |
+| Interview for Operations Coordinator | [transcript](v2/job-applicant--natural--review.md) | [transcript](v2/job-applicant--investigative--review.md) | Natural: yes/no; investigative: no/no |
 
 ## Reading notes
 
