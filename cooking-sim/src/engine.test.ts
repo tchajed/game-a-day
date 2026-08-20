@@ -31,6 +31,25 @@ describe('kitchen simulation', () => {
     expect(result.served).toBe(0)
   })
 
+  test('chefs finish traveling before their action timer starts', () => {
+    let state = tick(createGame('running'), 0.01, DEFAULT_CONFIG)
+    const assigned = state.chefs.Mise.action
+    expect(assigned).not.toBeNull()
+    if (!assigned) return
+
+    state = tick(state, assigned.travelTime / 2, DEFAULT_CONFIG)
+    const traveling = state.chefs.Mise
+    expect(traveling.action).not.toBeNull()
+    expect(traveling.position.x).not.toBeCloseTo(assigned.to.x, 2)
+    expect((traveling.action?.timeLeft ?? 0) - assigned.workTime).toBeGreaterThan(0)
+
+    state = tick(state, assigned.travelTime / 2 + 0.01, DEFAULT_CONFIG)
+    const working = state.chefs.Mise
+    expect(working.position.x).toBeCloseTo(assigned.to.x, 2)
+    expect(working.position.y).toBeCloseTo(assigned.to.y, 2)
+    expect(working.action?.timeLeft ?? 0).toBeLessThanOrEqual(assigned.workTime)
+  })
+
   test('the engine keeps station capacity and unique work assignments', () => {
     let state = createGame('running')
     while (state.status === 'running') {

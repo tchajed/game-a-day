@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Bot, Braces, ChefHat, ChevronRight, CircleHelp, Clock3, Code2, FastForward, Gauge, Music2, PanelRightOpen, Pause, Play, RotateCcw, Settings2, Sparkles, Utensils, VolumeX } from 'lucide-react'
-import { ACTIONS, ACTION_LABELS, DEFAULT_CONFIG, configFromRuleCode, createGame, tick, type ActionKind, type ChefId, type GameConfig, type GameState, type PizzaKind } from './engine'
+import { ACTIONS, ACTION_LABELS, DEFAULT_CONFIG, configFromRuleCode, createGame, tick, type ActionKind, type ChefAction, type ChefId, type GameConfig, type GameState, type PizzaKind } from './engine'
 
 type ProgramMode = 'assist' | 'rules' | 'script' | 'auto'
 type Theme = 'bistro' | 'blueprint' | 'diner' | 'paper'
@@ -68,16 +68,30 @@ function Pizza({ kind, small = false, stage = 'cooked' }: { kind: PizzaKind; sma
   </span>
 }
 
+function isTraveling(action: ChefAction) {
+  return action.timeLeft - action.workTime > 0.02
+}
+
+function actionDestination(action: ChefAction, game: GameState) {
+  if (action.kind === 'serve' || action.kind === 'clear') {
+    const table = game.orders.find(order => order.id === action.orderId)?.table ?? 0
+    return `→ table 0${table + 1}`
+  }
+  return action.kind === 'bake' ? '→ ovens' : action.kind === 'top' ? '→ prep' : '→ dough'
+}
+
 function Kitchen({ game }: { game: GameState }) {
   const visibleAtTable = [0, 1, 2].map(table => game.orders.filter(o => o.table === table && !['done', 'left'].includes(o.state)).at(-1))
+  const chefs = Object.values(game.chefs)
+  const activeCounters = new Set(chefs.filter(chef => chef.action?.counterId !== undefined && !isTraveling(chef.action)).map(chef => chef.action?.counterId))
   return <section className="kitchen-card" aria-label="Kitchen simulation">
     <div className="kitchen">
       <div className="wall-label">TWO TOP <span>· OPEN KITCHEN ·</span></div>
       <div className="tile-lines" />
       <div className="station pantry"><span>DOUGH</span><div className="sacks"><i /><i /></div></div>
       <div className="station prep"><span>PREP</span><div className="board">✦</div></div>
-      <div className="station ovens"><span>OVENS</span>{[0, 1].map(id => { const oven = game.ovens.find(o => o.id === id); return <div className="oven" key={id}><b>{oven ? (oven.loading ? 'LOAD' : `${Math.max(0, oven.timeLeft).toFixed(0)}s`) : '—'}</b>{oven && !oven.loading && <Pizza kind={game.orders.find(o => o.id === oven.orderId)?.kind ?? 'tomato'} stage="baking" small />}</div> })}</div>
-      <div className="station counters"><span>COUNTERS</span><div className="counter-row">{game.counters.map(c => <div className="counter" key={c.id}>{c.kind === 'base' && <span className="dough-disc" title="Prepared dough" />}{c.kind === 'topped' && <Pizza kind={game.orders.find(o => o.id === c.orderId)?.kind ?? 'tomato'} stage="raw" small />}{c.kind.startsWith('working') && <span className="work-dots">···</span>}</div>)}</div></div>
+      <div className="station ovens"><span>OVENS</span>{[0, 1].map(id => { const oven = game.ovens.find(o => o.id === id); const loader = chefs.find(chef => chef.action?.kind === 'bake' && chef.action.orderId === oven?.orderId); const atOven = loader?.action && !isTraveling(loader.action); return <div className="oven" key={id}><b>{oven ? (oven.loading ? (atOven ? 'LOAD' : 'NEXT') : `${Math.max(0, oven.timeLeft).toFixed(0)}s`) : '—'}</b>{oven && !oven.loading && <Pizza kind={game.orders.find(o => o.id === oven.orderId)?.kind ?? 'tomato'} stage="baking" small />}</div> })}</div>
+      <div className="station counters"><span>COUNTERS</span><div className="counter-row">{game.counters.map(c => <div className="counter" key={c.id}>{c.kind === 'base' && <span className="dough-disc" title="Prepared dough" />}{c.kind === 'topped' && <Pizza kind={game.orders.find(o => o.id === c.orderId)?.kind ?? 'tomato'} stage="raw" small />}{c.kind.startsWith('working') && (activeCounters.has(c.id) ? <span className="work-dots">···</span> : <span className="queued-mark">next</span>)}</div>)}</div></div>
       <div className="station pass"><span>PASS</span><div className="pass-row">{game.pass.map(p => <Pizza key={p.orderId} kind={game.orders.find(o => o.id === p.orderId)?.kind ?? 'tomato'} small />)}</div></div>
       {visibleAtTable.map((order, table) => <div className={`table table-${table}`} key={table}>
         <span className="table-no">0{table + 1}</span>
@@ -87,14 +101,20 @@ function Kitchen({ game }: { game: GameState }) {
           <div className="order-bubble">{order.state === 'dirty' || order.state === 'clearing' ? <Utensils size={13} /> : order.state === 'eating' ? <span className="eating-mark">yum</span> : <Pizza kind={order.kind} stage="order" small />}</div>
         </> : <span className="empty-table">free</span>}
       </div>)}
-      {Object.values(game.chefs).map(chef => <div className={`chef chef-${chef.id.toLowerCase()}`} key={chef.id} style={{ left: `${chef.position.x}%`, top: `${chef.position.y}%`, '--chef': chef.color } as React.CSSProperties}>
-        {chef.action && <span className="task-bubble">{chef.action.label.replace(/ .*/, '')}<b>{Math.ceil(chef.action.timeLeft)}</b></span>}
-        <div className="chef-body"><ChefHat size={21} /><i /></div>
-        {chef.action && <span className={`carried-item carried-${chef.action.kind}`}>
-          {chef.action.kind === 'clear' ? <span className="dirty-plate"><i /><i /></span> : chef.action.kind === 'knead' ? <span className="dough-ball" /> : <Pizza kind={game.orders.find(o => o.id === chef.action?.orderId)?.kind ?? 'tomato'} stage={chef.action.kind === 'serve' ? 'cooked' : 'raw'} small />}
-        </span>}
-        <strong>{chef.id}</strong>
-      </div>)}
+      {chefs.map(chef => {
+        const action = chef.action
+        const traveling = action ? isTraveling(action) : false
+        const phaseTime = action ? (traveling ? action.timeLeft - action.workTime : action.timeLeft) : 0
+        const showCarriedItem = action && (action.kind !== 'clear' || !traveling)
+        return <div className={`chef chef-${chef.id.toLowerCase()} ${traveling ? 'chef-traveling' : ''}`} key={chef.id} style={{ left: `${chef.position.x}%`, top: `${chef.position.y}%`, '--chef': chef.color } as React.CSSProperties}>
+          {action && <span className={`task-bubble ${traveling ? 'traveling' : 'working'}`}><span>{traveling ? actionDestination(action, game) : action.label.replace(/ .*/, '')}</span><b>{Math.max(1, Math.ceil(phaseTime))}s</b></span>}
+          <div className="chef-body"><ChefHat size={21} /><i /></div>
+          {showCarriedItem && <span className={`carried-item carried-${action.kind}`}>
+            {action.kind === 'clear' ? <span className="dirty-plate"><i /><i /></span> : action.kind === 'knead' ? <span className="dough-ball" /> : <Pizza kind={game.orders.find(o => o.id === action.orderId)?.kind ?? 'tomato'} stage={action.kind === 'serve' ? 'cooked' : 'raw'} small />}
+          </span>}
+          <strong>{chef.id}</strong>
+        </div>
+      })}
       {game.status === 'planning' && <div className="kitchen-idle"><Bot size={22} /><b>Chefs waiting for program</b></div>}
     </div>
   </section>

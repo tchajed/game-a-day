@@ -13,6 +13,8 @@ export type ChefAction = {
   counterId?: number
   timeLeft: number
   total: number
+  travelTime: number
+  workTime: number
   from: Position
   to: Position
   label: string
@@ -157,8 +159,10 @@ function assignAction(state: GameState, chef: Chef, config: GameConfig) {
   if (best.kind === 'serve' && order) { state.pass = state.pass.filter(p => p.orderId !== order.id); order.state = 'serving' }
   if (best.kind === 'clear' && order) order.state = 'clearing'
   const target = best.kind === 'serve' || best.kind === 'clear' ? tablePosition(order?.table ?? 0) : STATIONS[best.kind]
-  const total = ACTION_TIMES[best.kind] + distance(chef.position, target)
-  chef.action = { kind: best.kind, orderId: best.orderId, counterId: best.counterId, timeLeft: total, total, from: { ...chef.position }, to: target, label: ACTION_LABELS[best.kind] }
+  const travelTime = distance(chef.position, target)
+  const workTime = ACTION_TIMES[best.kind]
+  const total = travelTime + workTime
+  chef.action = { kind: best.kind, orderId: best.orderId, counterId: best.counterId, timeLeft: total, total, travelTime, workTime, from: { ...chef.position }, to: target, label: ACTION_LABELS[best.kind] }
 }
 
 function finishAction(state: GameState, chef: Chef) {
@@ -223,9 +227,10 @@ export function tick(source: GameState, dt: number, config: GameConfig): GameSta
   for (const chef of Object.values(state.chefs)) {
     if (chef.action) {
       chef.action.timeLeft -= dt
-      const progress = 1 - Math.max(0, chef.action.timeLeft) / chef.action.total
-      chef.position.x = chef.action.from.x + (chef.action.to.x - chef.action.from.x) * Math.min(1, progress * 2)
-      chef.position.y = chef.action.from.y + (chef.action.to.y - chef.action.from.y) * Math.min(1, progress * 2)
+      const elapsed = chef.action.total - Math.max(0, chef.action.timeLeft)
+      const travelProgress = chef.action.travelTime <= 0 ? 1 : Math.min(1, elapsed / chef.action.travelTime)
+      chef.position.x = chef.action.from.x + (chef.action.to.x - chef.action.from.x) * travelProgress
+      chef.position.y = chef.action.from.y + (chef.action.to.y - chef.action.from.y) * travelProgress
       if (chef.action.timeLeft <= 0) finishAction(state, chef)
     }
   }
