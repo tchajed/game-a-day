@@ -9,6 +9,13 @@ export type GameConfig = {
 // Slugs, release dates, artwork, and card accents live here rather than in the games.
 export const games: GameConfig[] = [
   {
+    directory: "cooking-sim",
+    slug: "two-top",
+    date: "2026-08-21",
+    cover: "screenshots/two-top-service.png",
+    crop: { left: 65, top: 0, width: 1150, height: 766 },
+  },
+  {
     directory: "mystery-chat",
     slug: "mystery-chat",
     date: "2026-08-20",

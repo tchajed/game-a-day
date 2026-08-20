@@ -6,6 +6,7 @@ A collection of games each built in one day, with AI assistance. Each game focus
 
 | Game | Directory | Description |
 | --- | --- | --- |
+| [Two Top](cooking-sim/) | `cooking-sim` | Program two tiny chefs and debug their kitchen strategy through a frantic dinner shift. |
 | [Mystery Chat](mystery-chat/) | `mystery-chat` | Question three ordinary conversations until their hidden truths begin to surface. |
 | [Beatbound](rhythm-platformer/) | `rhythm-platformer` | Auto-run through three bright platforming roads, jumping and ducking to the beat. |
 | [Route 529](sw-rpg/) | `sw-rpg` | Battle bugs, memory leaks, and scope creep on a software team’s road to Ship City. |
