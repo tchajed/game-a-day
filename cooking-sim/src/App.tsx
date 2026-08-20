@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Bot, Braces, ChefHat, CircleHelp, Clock3, Code2, FastForward, Gauge, Music2, Pause, Play, RotateCcw, Settings2, Sparkles, Utensils, VolumeX } from 'lucide-react'
+import { Bot, Braces, ChefHat, ChevronRight, CircleHelp, Clock3, Code2, FastForward, Gauge, Music2, PanelRightOpen, Pause, Play, RotateCcw, Settings2, Sparkles, Utensils, VolumeX } from 'lucide-react'
 import { ACTIONS, ACTION_LABELS, DEFAULT_CONFIG, configFromRuleCode, createGame, tick, type ActionKind, type ChefId, type GameConfig, type GameState, type PizzaKind } from './engine'
 
 type ProgramMode = 'assist' | 'rules' | 'script' | 'auto'
@@ -70,8 +70,8 @@ function Kitchen({ game }: { game: GameState }) {
       <div className="tile-lines" />
       <div className="station pantry"><span>DOUGH</span><div className="sacks"><i /><i /></div></div>
       <div className="station prep"><span>PREP</span><div className="board">✦</div></div>
-      <div className="station ovens"><span>OVENS</span>{[0, 1].map(id => { const oven = game.ovens.find(o => o.id === id); return <div className="oven" key={id}><b>{oven ? (oven.loading ? 'LOAD' : `${Math.max(0, oven.timeLeft).toFixed(0)}s`) : '—'}</b>{oven && <Pizza kind={game.orders.find(o => o.id === oven.orderId)?.kind ?? 'tomato'} small />}</div> })}</div>
-      <div className="station counters"><span>COUNTERS</span><div className="counter-row">{game.counters.map(c => <div className="counter" key={c.id}>{c.kind === 'base' && <Pizza kind="tomato" small />}{c.kind === 'topped' && <Pizza kind={game.orders.find(o => o.id === c.orderId)?.kind ?? 'tomato'} small />}{c.kind.startsWith('working') && <span className="work-dots">···</span>}</div>)}</div></div>
+      <div className="station ovens"><span>OVENS</span>{[0, 1].map(id => { const oven = game.ovens.find(o => o.id === id); return <div className="oven" key={id}><b>{oven ? (oven.loading ? 'LOAD' : `${Math.max(0, oven.timeLeft).toFixed(0)}s`) : '—'}</b>{oven && !oven.loading && <Pizza kind={game.orders.find(o => o.id === oven.orderId)?.kind ?? 'tomato'} small />}</div> })}</div>
+      <div className="station counters"><span>COUNTERS</span><div className="counter-row">{game.counters.map(c => <div className="counter" key={c.id}>{c.kind === 'base' && <span className="dough-disc" title="Prepared dough" />}{c.kind === 'topped' && <Pizza kind={game.orders.find(o => o.id === c.orderId)?.kind ?? 'tomato'} small />}{c.kind.startsWith('working') && <span className="work-dots">···</span>}</div>)}</div></div>
       <div className="station pass"><span>PASS</span><div className="pass-row">{game.pass.map(p => <Pizza key={p.orderId} kind={game.orders.find(o => o.id === p.orderId)?.kind ?? 'tomato'} small />)}</div></div>
       {visibleAtTable.map((order, table) => <div className={`table table-${table}`} key={table}>
         <span className="table-no">0{table + 1}</span>
@@ -83,7 +83,11 @@ function Kitchen({ game }: { game: GameState }) {
       </div>)}
       {Object.values(game.chefs).map(chef => <div className={`chef chef-${chef.id.toLowerCase()}`} key={chef.id} style={{ left: `${chef.position.x}%`, top: `${chef.position.y}%`, '--chef': chef.color } as React.CSSProperties}>
         {chef.action && <span className="task-bubble">{chef.action.label.replace(/ .*/, '')}<b>{Math.ceil(chef.action.timeLeft)}</b></span>}
-        <div className="chef-body"><ChefHat size={21} /><i /></div><strong>{chef.id}</strong>
+        <div className="chef-body"><ChefHat size={21} /><i /></div>
+        {chef.action && <span className={`carried-item carried-${chef.action.kind}`}>
+          {chef.action.kind === 'clear' ? <span className="dirty-plate"><i /><i /></span> : chef.action.kind === 'knead' ? <span className="dough-ball" /> : <Pizza kind={game.orders.find(o => o.id === chef.action?.orderId)?.kind ?? 'tomato'} small />}
+        </span>}
+        <strong>{chef.id}</strong>
       </div>)}
       {game.status === 'planning' && <div className="kitchen-idle"><Bot size={22} /><b>Chefs waiting for program</b></div>}
     </div>
@@ -106,7 +110,7 @@ function AssistEditor({ config, setConfig }: { config: GameConfig; setConfig: (c
   </div>
 }
 
-function ProgramPanel({ mode, setMode, config, setConfig, running, onRun }: { mode: ProgramMode; setMode: (m: ProgramMode) => void; config: GameConfig; setConfig: (c: GameConfig) => void; running: boolean; onRun: () => void }) {
+function ProgramPanel({ mode, setMode, config, setConfig, running, onRun, onCollapse }: { mode: ProgramMode; setMode: (m: ProgramMode) => void; config: GameConfig; setConfig: (c: GameConfig) => void; running: boolean; onRun: () => void; onCollapse: () => void }) {
   const [ruleCode, setRuleCode] = useState(RULE_CODE)
   const [scriptCode, setScriptCode] = useState(SCRIPT_CODE)
   const modes: { id: ProgramMode; label: string; icon: React.ReactNode }[] = [
@@ -119,7 +123,7 @@ function ProgramPanel({ mode, setMode, config, setConfig, running, onRun }: { mo
     if (next === 'script') setConfig(configFromRuleCode(scriptCode))
   }
   return <section className={`program-card ${running ? 'running' : ''}`}>
-    <header className="program-head"><div><span className="eyebrow">PROGRAM YOUR CREW</span><h2>Service logic</h2></div><span className="status-pill"><i />{running ? 'Program live' : 'Draft mode'}</span></header>
+    <header className="program-head"><div><span className="eyebrow">PROGRAM YOUR CREW</span><h2>Service logic</h2></div><div className="program-head-actions"><span className="status-pill"><i />{running ? 'Program live' : 'Draft mode'}</span><button className="collapse-button" onClick={onCollapse} title="Fold away the logic panel"><ChevronRight size={18} /></button></div></header>
     <nav className="mode-tabs" aria-label="Programming style">{modes.map(m => <button key={m.id} className={mode === m.id ? 'active' : ''} onClick={() => select(m.id)}>{m.icon}{m.label}</button>)}</nav>
     <div className="editor-body">
       {mode === 'assist' && <AssistEditor config={config} setConfig={setConfig} />}
@@ -151,6 +155,7 @@ export default function App() {
   const [mode, setMode] = useState<ProgramMode>('assist')
   const [config, setConfig] = useState<GameConfig>(() => cloneConfig(DEFAULT_CONFIG))
   const [game, setGame] = useState<GameState>(() => createGame())
+  const [programOpen, setProgramOpen] = useState(true)
   const [music, setMusic] = useState(query.get('music') !== 'off')
   const debug = query.get('debug') === 'true'
   useKitchenAudio(music, game.events)
@@ -165,8 +170,12 @@ export default function App() {
     id = requestAnimationFrame(frame); return () => cancelAnimationFrame(id)
   }, [game.status, game.speed, config])
 
-  function runPause() { setGame(current => ({ ...current, status: current.status === 'running' ? 'paused' : 'running' })) }
-  function restart() { setGame(createGame('planning')) }
+  function runPause() {
+    const starting = game.status !== 'running'
+    if (starting) setProgramOpen(false)
+    setGame(current => ({ ...current, status: starting ? 'running' : 'paused' }))
+  }
+  function restart() { setGame(createGame('planning')); setProgramOpen(true) }
   function speedTo(speed: 1 | 2 | 4) { setGame(g => ({ ...g, speed })) }
 
   return <main className={`app theme-${theme}`}>
@@ -178,7 +187,7 @@ export default function App() {
         <button className="reset-button" onClick={restart}><RotateCcw size={15} /> Reset</button>
       </div>
     </header>
-    <div className="game-shell">
+    <div className={`game-shell ${programOpen ? '' : 'program-folded'}`}>
       <div className="simulation-column">
         <ScoreStrip game={game} />
         <Kitchen game={game} />
@@ -187,7 +196,11 @@ export default function App() {
           <div className="speed-control"><FastForward size={14} />{([1, 2, 4] as const).map(s => <button className={game.speed === s ? 'active' : ''} onClick={() => speedTo(s)} key={s}>{s}×</button>)}</div>
         </div>
       </div>
-      <ProgramPanel mode={mode} setMode={setMode} config={config} setConfig={setConfig} running={game.status === 'running'} onRun={runPause} />
+      {programOpen ? <ProgramPanel mode={mode} setMode={setMode} config={config} setConfig={setConfig} running={game.status === 'running'} onRun={runPause} onCollapse={() => setProgramOpen(false)} /> : <aside className="folded-program">
+        <div className="folded-status"><span><Bot size={18} /><i /></span><div><b>{game.status === 'running' ? 'Program running' : 'Program paused'}</b><small>{mode === 'assist' ? 'Tuned priorities' : mode === 'rules' ? 'Rules API' : mode === 'script' ? 'KitchenScript' : 'Autopilot'}</small></div></div>
+        <button className="edit-logic-button" onClick={() => setProgramOpen(true)}><PanelRightOpen size={17} />Edit logic</button>
+        <button className="folded-pause" onClick={runPause}>{game.status === 'running' ? <Pause size={16} /> : <Play size={16} fill="currentColor" />}{game.status === 'running' ? 'Pause' : 'Resume'}</button>
+      </aside>}
     </div>
     <footer className="page-note"><span>Today’s menu</span><Pizza kind="tomato" small /> tomato <b>·</b><Pizza kind="mushroom" small /> mushroom <b>·</b> dishes clean themselves, thankfully.</footer>
     {debug && <button className="debug-win" onClick={() => setGame(g => ({ ...g, time: g.shiftLength - .1 }))}>end shift</button>}

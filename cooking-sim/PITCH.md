@@ -4,4 +4,4 @@
 
 ![Two Top planning screen](screenshots/two-top-planning.png)
 
-![Two Top during dinner service](screenshots/two-top-service.png)
+![Two Top during dinner service](screenshots/two-top-folded-service.png)
