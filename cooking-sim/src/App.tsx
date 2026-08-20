@@ -58,8 +58,14 @@ function useKitchenAudio(enabled: boolean, events: GameState['events']) {
   }, [enabled, events])
 }
 
-function Pizza({ kind, small = false }: { kind: PizzaKind; small?: boolean }) {
-  return <span className={`pizza pizza-${kind} ${small ? 'pizza-small' : ''}`}><i /><i /><i /></span>
+type PizzaStage = 'raw' | 'baking' | 'cooked' | 'order'
+
+function Pizza({ kind, small = false, stage = 'cooked' }: { kind: PizzaKind; small?: boolean; stage?: PizzaStage }) {
+  return <span className={`pizza pizza-${kind} pizza-${stage} ${small ? 'pizza-small' : ''}`} aria-label={`${stage} ${kind} pizza`}>
+    <span className="pizza-surface" />
+    <i className="topping topping-1" /><i className="topping topping-2" /><i className="topping topping-3" /><i className="topping topping-4" />
+    <em className="pizza-garnish" />
+  </span>
 }
 
 function Kitchen({ game }: { game: GameState }) {
@@ -70,22 +76,22 @@ function Kitchen({ game }: { game: GameState }) {
       <div className="tile-lines" />
       <div className="station pantry"><span>DOUGH</span><div className="sacks"><i /><i /></div></div>
       <div className="station prep"><span>PREP</span><div className="board">✦</div></div>
-      <div className="station ovens"><span>OVENS</span>{[0, 1].map(id => { const oven = game.ovens.find(o => o.id === id); return <div className="oven" key={id}><b>{oven ? (oven.loading ? 'LOAD' : `${Math.max(0, oven.timeLeft).toFixed(0)}s`) : '—'}</b>{oven && !oven.loading && <Pizza kind={game.orders.find(o => o.id === oven.orderId)?.kind ?? 'tomato'} small />}</div> })}</div>
-      <div className="station counters"><span>COUNTERS</span><div className="counter-row">{game.counters.map(c => <div className="counter" key={c.id}>{c.kind === 'base' && <span className="dough-disc" title="Prepared dough" />}{c.kind === 'topped' && <Pizza kind={game.orders.find(o => o.id === c.orderId)?.kind ?? 'tomato'} small />}{c.kind.startsWith('working') && <span className="work-dots">···</span>}</div>)}</div></div>
+      <div className="station ovens"><span>OVENS</span>{[0, 1].map(id => { const oven = game.ovens.find(o => o.id === id); return <div className="oven" key={id}><b>{oven ? (oven.loading ? 'LOAD' : `${Math.max(0, oven.timeLeft).toFixed(0)}s`) : '—'}</b>{oven && !oven.loading && <Pizza kind={game.orders.find(o => o.id === oven.orderId)?.kind ?? 'tomato'} stage="baking" small />}</div> })}</div>
+      <div className="station counters"><span>COUNTERS</span><div className="counter-row">{game.counters.map(c => <div className="counter" key={c.id}>{c.kind === 'base' && <span className="dough-disc" title="Prepared dough" />}{c.kind === 'topped' && <Pizza kind={game.orders.find(o => o.id === c.orderId)?.kind ?? 'tomato'} stage="raw" small />}{c.kind.startsWith('working') && <span className="work-dots">···</span>}</div>)}</div></div>
       <div className="station pass"><span>PASS</span><div className="pass-row">{game.pass.map(p => <Pizza key={p.orderId} kind={game.orders.find(o => o.id === p.orderId)?.kind ?? 'tomato'} small />)}</div></div>
       {visibleAtTable.map((order, table) => <div className={`table table-${table}`} key={table}>
         <span className="table-no">0{table + 1}</span>
         <div className="guest"><i /></div>
         {order ? <>
           <div className={`patience ${order.patience < 10 ? 'danger' : ''}`}><i style={{ width: `${Math.max(0, order.patience / 35 * 100)}%` }} /></div>
-          <div className="order-bubble">{order.state === 'dirty' || order.state === 'clearing' ? <Utensils size={13} /> : order.state === 'eating' ? <span className="eating-mark">yum</span> : <Pizza kind={order.kind} small />}</div>
+          <div className="order-bubble">{order.state === 'dirty' || order.state === 'clearing' ? <Utensils size={13} /> : order.state === 'eating' ? <span className="eating-mark">yum</span> : <Pizza kind={order.kind} stage="order" small />}</div>
         </> : <span className="empty-table">free</span>}
       </div>)}
       {Object.values(game.chefs).map(chef => <div className={`chef chef-${chef.id.toLowerCase()}`} key={chef.id} style={{ left: `${chef.position.x}%`, top: `${chef.position.y}%`, '--chef': chef.color } as React.CSSProperties}>
         {chef.action && <span className="task-bubble">{chef.action.label.replace(/ .*/, '')}<b>{Math.ceil(chef.action.timeLeft)}</b></span>}
         <div className="chef-body"><ChefHat size={21} /><i /></div>
         {chef.action && <span className={`carried-item carried-${chef.action.kind}`}>
-          {chef.action.kind === 'clear' ? <span className="dirty-plate"><i /><i /></span> : chef.action.kind === 'knead' ? <span className="dough-ball" /> : <Pizza kind={game.orders.find(o => o.id === chef.action?.orderId)?.kind ?? 'tomato'} small />}
+          {chef.action.kind === 'clear' ? <span className="dirty-plate"><i /><i /></span> : chef.action.kind === 'knead' ? <span className="dough-ball" /> : <Pizza kind={game.orders.find(o => o.id === chef.action?.orderId)?.kind ?? 'tomato'} stage={chef.action.kind === 'serve' ? 'cooked' : 'raw'} small />}
         </span>}
         <strong>{chef.id}</strong>
       </div>)}
