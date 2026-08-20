@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Bot, Braces, ChefHat, ChevronRight, CircleHelp, Clock3, Code2, FastForward, Gauge, Music2, PanelRightOpen, Pause, Play, RotateCcw, Settings2, Sparkles, Utensils, VolumeX } from 'lucide-react'
+import { Bot, Braces, ChefHat, ChevronRight, CircleHelp, Clock3, Code2, FastForward, Gauge, Grid2X2, Layers3, Music2, PanelRightOpen, Pause, Play, RotateCcw, Ruler, Settings2, Sparkles, Utensils, VolumeX } from 'lucide-react'
 import { ACTIONS, ACTION_LABELS, DEFAULT_CONFIG, configFromRuleCode, createGame, tick, type ActionKind, type ChefAction, type ChefId, type GameConfig, type GameState, type PizzaKind } from './engine'
 
 type ProgramMode = 'assist' | 'rules' | 'script' | 'auto'
-type Theme = 'bistro' | 'blueprint' | 'diner' | 'paper'
+type Design = 'classic' | 'schematic' | 'dispatch' | 'playset'
 
 const RULE_CODE = `Mise {
   top().oldest()
@@ -32,11 +32,11 @@ chef Sunny {
   otherwise -> top oldest
 }`
 
-const THEMES: { id: Theme; name: string; subtitle: string; colors: string[] }[] = [
-  { id: 'bistro', name: 'Soft bistro', subtitle: 'warm & tactile', colors: ['#f2ead9', '#e35d4f', '#3e8a79'] },
-  { id: 'blueprint', name: 'Blueprint', subtitle: 'cool & technical', colors: ['#dbe8ec', '#266b85', '#e39b46'] },
-  { id: 'diner', name: 'Night diner', subtitle: 'dark & electric', colors: ['#17272a', '#ff6b63', '#5dd4b4'] },
-  { id: 'paper', name: 'Paper plan', subtitle: 'ink & highlighter', colors: ['#f5f0df', '#2c2b29', '#e8bd44'] },
+const DESIGNS: { id: Design; name: string; subtitle: string; icon: React.ReactNode }[] = [
+  { id: 'classic', name: 'Bistro', subtitle: 'The original warm interface', icon: <Layers3 size={15} /> },
+  { id: 'schematic', name: 'Plan', subtitle: 'A precise kitchen floor plan', icon: <Ruler size={15} /> },
+  { id: 'dispatch', name: 'Rail', subtitle: 'A brisk service dispatch board', icon: <Grid2X2 size={15} /> },
+  { id: 'playset', name: 'Playset', subtitle: 'A chunky tabletop diorama', icon: <Sparkles size={15} /> },
 ]
 
 function cloneConfig(config: GameConfig): GameConfig { return structuredClone(config) }
@@ -177,7 +177,7 @@ function Results({ game, restart }: { game: GameState; restart: () => void }) {
 
 export default function App() {
   const query = useMemo(() => new URLSearchParams(location.search), [])
-  const [theme, setTheme] = useState<Theme>('bistro')
+  const [design, setDesign] = useState<Design>('classic')
   const [mode, setMode] = useState<ProgramMode>('assist')
   const [config, setConfig] = useState<GameConfig>(() => cloneConfig(DEFAULT_CONFIG))
   const [game, setGame] = useState<GameState>(() => createGame())
@@ -204,11 +204,11 @@ export default function App() {
   function restart() { setGame(createGame('planning')); setProgramOpen(true) }
   function speedTo(speed: 1 | 2 | 4) { setGame(g => ({ ...g, speed })) }
 
-  return <main className={`app theme-${theme}`}>
+  return <main className={`app design-${design}`}>
     <header className="topbar">
       <div className="brand"><span className="brand-mark"><ChefHat size={22} /></span><div><h1>TWO TOP</h1><small>A PROGRAMMED KITCHEN</small></div></div>
       <div className="top-actions">
-        <div className="theme-picker">{THEMES.map(t => <button key={t.id} title={`${t.name} — ${t.subtitle}`} aria-label={`Use ${t.name} style`} onClick={() => setTheme(t.id)} className={theme === t.id ? 'active' : ''} style={{ '--swatch-a': t.colors[0], '--swatch-b': t.colors[1], '--swatch-c': t.colors[2] } as React.CSSProperties}><i /><i /><i /></button>)}</div>
+        <div className="design-picker" aria-label="Simulation design">{DESIGNS.map(option => <button key={option.id} title={`${option.name} — ${option.subtitle}`} aria-label={`Use ${option.name} design`} aria-pressed={design === option.id} onClick={() => setDesign(option.id)} className={design === option.id ? 'active' : ''}>{option.icon}<span>{option.name}</span></button>)}</div>
         <button className="icon-button" onClick={() => setMusic(!music)} title={music ? 'Mute sounds' : 'Enable sounds'}>{music ? <Music2 size={18} /> : <VolumeX size={18} />}</button>
         <button className="reset-button" onClick={restart}><RotateCcw size={15} /> Reset</button>
       </div>
