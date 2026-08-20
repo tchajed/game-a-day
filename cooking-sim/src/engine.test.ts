@@ -44,7 +44,7 @@ describe('kitchen simulation', () => {
   })
 
   test('KitchenScript order changes agent priorities', () => {
-    const config = configFromRuleCode(`Mise { serve(); clear(); bake(); top(); knead(); bases < 1 } Sunny { knead(); top(); bake(); clear(); serve(); }`)
+    const config = configFromRuleCode(`Mise { serve(); clear(); bake(); top(); knead(); bases <= 1 } Sunny { knead(); top(); bake(); clear(); serve(); }`)
     expect(config.chefs.Mise.priorities.serve).toBeGreaterThan(config.chefs.Mise.priorities.knead)
     expect(config.chefs.Sunny.priorities.knead).toBeGreaterThan(config.chefs.Sunny.priorities.serve)
     expect(config.baseReserve).toBe(1)

@@ -254,7 +254,7 @@ export function configFromRuleCode(code: string): GameConfig {
     const found = ACTIONS.map(kind => ({ kind, index: block.toLowerCase().indexOf(kind) })).filter(x => x.index >= 0).sort((a, b) => a.index - b.index)
     if (found.length) found.forEach((entry, i) => { config.chefs[chef].priorities[entry.kind] = 100 - i * 18 })
   }
-  const reserve = code.match(/bases\s*[=<]\s*(\d)/i)?.[1]
+  const reserve = code.match(/bases\s*(?:<=|<|=)\s*(\d)/i)?.[1]
   if (reserve) config.baseReserve = Math.max(1, Math.min(3, Number(reserve)))
   return config
 }
