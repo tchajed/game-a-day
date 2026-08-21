@@ -97,9 +97,8 @@ function Kitchen({ game }: { game: GameState }) {
         <span className="table-no">0{table + 1}</span>
         {order ? <>
           <div className={`guest guest-look-${order.id % 6} ${order.patience < 10 ? 'guest-worried' : ''}`} aria-label={`Customer at table ${table + 1}`}>
-            <span className="guest-chair" />
             <span className="guest-body"><i className="guest-arm guest-arm-left" /><i className="guest-arm guest-arm-right" /></span>
-            <span className="guest-head"><i className="guest-hair" /><i className="guest-face" /></span>
+            <span className="guest-head"><i className="guest-face" /></span>
           </div>
           <div className={`patience ${order.patience < 10 ? 'danger' : ''}`}><i style={{ width: `${Math.max(0, order.patience / 35 * 100)}%` }} /></div>
           <div className="order-bubble">{order.state === 'dirty' || order.state === 'clearing' ? <Utensils size={13} /> : order.state === 'eating' ? <span className="eating-mark">yum</span> : <Pizza kind={order.kind} stage="order" small />}</div>
@@ -112,7 +111,10 @@ function Kitchen({ game }: { game: GameState }) {
         const showCarriedItem = action && (action.kind !== 'clear' || !traveling)
         return <div className={`chef chef-${chef.id.toLowerCase()} ${traveling ? 'chef-traveling' : ''}`} key={chef.id} style={{ left: `${chef.position.x}%`, top: `${chef.position.y}%`, '--chef': chef.color } as React.CSSProperties}>
           {action && <span className={`task-bubble ${traveling ? 'traveling' : 'working'}`}><span>{traveling ? actionDestination(action, game) : action.label.replace(/ .*/, '')}</span><b>{Math.max(1, Math.ceil(phaseTime))}s</b></span>}
-          <div className="chef-body"><ChefHat size={21} /><i /></div>
+          <div className="chef-person">
+            <span className="chef-body"><i className="chef-arm chef-arm-left" /><i className="chef-arm chef-arm-right" /></span>
+            <span className="chef-head"><ChefHat size={24} /></span>
+          </div>
           {showCarriedItem && <span className={`carried-item carried-${action.kind}`}>
             {action.kind === 'clear' ? <span className="dirty-plate"><i /><i /></span> : action.kind === 'knead' ? <span className="dough-ball" /> : <Pizza kind={game.orders.find(o => o.id === action.orderId)?.kind ?? 'tomato'} stage={action.kind === 'serve' ? 'cooked' : 'raw'} small />}
           </span>}
