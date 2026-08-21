@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Bot, Braces, ChefHat, ChevronRight, CircleHelp, Clock3, Code2, FastForward, Gauge, Grid2X2, Layers3, Music2, PanelRightOpen, Pause, Play, RotateCcw, Ruler, Settings2, Sparkles, Utensils, VolumeX } from 'lucide-react'
-import { ACTIONS, ACTION_LABELS, DEFAULT_CONFIG, configFromRuleCode, createGame, tick, type ActionKind, type ChefAction, type ChefId, type GameConfig, type GameState, type PizzaKind } from './engine'
+import { Bot, Braces, ChefHat, ChevronRight, CircleHelp, Clock3, Code2, FastForward, Gauge, Grid2X2, Layers3, Music2, PanelRightOpen, Pause, Play, RotateCcw, Ruler, Settings2, SkipForward, Sparkles, Utensils, VolumeX } from 'lucide-react'
+import { ACTIONS, ACTION_LABELS, DEFAULT_CONFIG, configFromRuleCode, createGame, finishSimulation, tick, type ActionKind, type ChefAction, type ChefId, type GameConfig, type GameState, type PizzaKind } from './engine'
 
 type ProgramMode = 'assist' | 'rules' | 'script' | 'auto'
 type Design = 'classic' | 'schematic' | 'dispatch' | 'playset'
@@ -176,9 +176,40 @@ function ScoreStrip({ game }: { game: GameState }) {
   </div>
 }
 
+const WAIT_PHASES = [
+  { key: 'seated', label: 'Waiting for prep', color: '#dc5c4d' },
+  { key: 'topped', label: 'Waiting for oven', color: '#d09236' },
+  { key: 'ready', label: 'Waiting on pass', color: '#3d8977' },
+  { key: 'dirty', label: 'Waiting to clear', color: '#795b91' },
+] as const
+
+function formatSeconds(value: number) { return `${value.toFixed(value >= 10 ? 0 : 1)}s` }
+
 function Results({ game, restart }: { game: GameState; restart: () => void }) {
   const stars = game.served >= 8 ? 3 : game.served >= 6 ? 2 : game.served >= 4 ? 1 : 0
-  return <div className="modal-backdrop"><div className="results-modal"><span className="eyebrow">SHIFT REPORT</span><div className="stars">{[0, 1, 2].map(i => <Sparkles key={i} className={i < stars ? 'earned' : ''} fill="currentColor" />)}</div><h2>{stars === 3 ? 'Beautiful service.' : stars === 2 ? 'A solid little kitchen.' : stars === 1 ? 'Some hungry lessons.' : 'Back to the whiteboard.'}</h2><p>Your agents served <b>{game.served} of 9</b> tables and earned <b>{game.score} tips</b>.</p><div className="result-bars"><span>Guests served<i style={{ width: `${game.served / 9 * 100}%` }} /></span><span>Tables retained<i style={{ width: `${(9 - game.lost) / 9 * 100}%` }} /></span></div><button className="run-button" onClick={restart}><RotateCcw size={17} />Reprogram shift</button></div></div>
+  const waits = WAIT_PHASES.map(phase => ({ ...phase, value: game.stats.orderStateTime[phase.key] }))
+  const maxWait = Math.max(1, ...waits.map(wait => wait.value))
+  const bottleneck = waits.reduce((largest, wait) => wait.value > largest.value ? wait : largest)
+  const completedJourneys = game.stats.orders.map(order => (order.finishedAt ?? order.leftAt ?? game.time) - order.arrivedAt)
+  const averageJourney = completedJourneys.reduce((sum, time) => sum + time, 0) / Math.max(1, completedJourneys.length)
+
+  return <div className="modal-backdrop"><div className="results-modal">
+    <div className="result-scroll">
+      <header className="result-heading"><div><span className="eyebrow">SHIFT REPORT</span><h2>{stars === 3 ? 'Beautiful service.' : stars === 2 ? 'A solid little kitchen.' : stars === 1 ? 'Some hungry lessons.' : 'Back to the whiteboard.'}</h2><p>Your agents served <b>{game.served} of 9</b> tables and earned <b>{game.score} tips</b>.</p></div><div className="stars">{[0, 1, 2].map(i => <Sparkles key={i} className={i < stars ? 'earned' : ''} fill="currentColor" />)}</div></header>
+      <div className="result-summary">
+        <div><span>AVG. GUEST JOURNEY</span><b>{formatSeconds(averageJourney)}</b><small>arrival to cleared / left</small></div>
+        <div><span>BIGGEST WAIT</span><b>{bottleneck.label.replace('Waiting ', '')}</b><small>{formatSeconds(bottleneck.value)} across all parties</small></div>
+        <div><span>OUTCOME</span><b>{game.served} served · {game.lost} lost</b><small>{game.score.toLocaleString()} total tips</small></div>
+      </div>
+
+      <section className="report-section"><div className="report-title"><span className="eyebrow">WHERE GUESTS WAITED</span><small>Cumulative party-seconds</small></div><div className="wait-chart">{waits.map(wait => <div className="wait-row" key={wait.key}><span><i style={{ background: wait.color }} />{wait.label}</span><div><i style={{ width: `${wait.value / maxWait * 100}%`, background: wait.color }} /></div><b>{formatSeconds(wait.value)}</b></div>)}</div></section>
+
+      <section className="report-section"><div className="report-title"><span className="eyebrow">CREW TIME</span><small>Work vs. walking vs. idle</small></div><div className="crew-stats">{(Object.keys(game.stats.chefs) as ChefId[]).map((chefId, index) => { const chef = game.stats.chefs[chefId]; const total = Math.max(1, chef.work + chef.travel + chef.idle); return <div className="crew-row" key={chefId}><div className={`crew-name agent-${index}`}><ChefHat size={15} /><b>{chefId}</b><small>{Object.values(chef.actions).reduce((sum, count) => sum + count, 0)} jobs</small></div><div className="utilization"><div className="util-bar"><i className="util-work" style={{ width: `${chef.work / total * 100}%` }} /><i className="util-travel" style={{ width: `${chef.travel / total * 100}%` }} /><i className="util-idle" style={{ width: `${chef.idle / total * 100}%` }} /></div><span><b>{Math.round(chef.work / total * 100)}%</b> work <b>{Math.round(chef.travel / total * 100)}%</b> walking <b>{Math.round(chef.idle / total * 100)}%</b> idle</span></div></div> })}</div></section>
+
+      <section className="report-section timeline-section"><div className="report-title"><span className="eyebrow">SERVICE TIMELINE</span><small>● oven&nbsp;&nbsp;◆ pass&nbsp;&nbsp;▲ served</small></div><div className="timeline-axis"><span>0s</span><span>{Math.round(game.shiftLength / 2)}s</span><span>{game.shiftLength}s</span></div><div className="timeline">{game.stats.orders.map(stat => { const order = game.orders.find(item => item.id === stat.orderId); const end = stat.finishedAt ?? stat.leftAt ?? game.time; const pct = (time: number) => Math.min(100, time / game.shiftLength * 100); return <div className="timeline-row" key={stat.orderId}><b>T{(order?.table ?? 0) + 1}</b><span className={`timeline-track ${stat.leftAt !== undefined ? 'lost' : ''}`}><i className="ticket-span" style={{ left: `${pct(stat.arrivedAt)}%`, width: `${Math.max(1, pct(end) - pct(stat.arrivedAt))}%` }} />{stat.ovenAt !== undefined && <i className="timeline-mark oven-mark" style={{ left: `${pct(stat.ovenAt)}%` }} title={`Oven at ${formatSeconds(stat.ovenAt)}`} />}{stat.readyAt !== undefined && <i className="timeline-mark ready-mark" style={{ left: `${pct(stat.readyAt)}%` }} title={`On pass at ${formatSeconds(stat.readyAt)}`} />}{stat.servedAt !== undefined && <i className="timeline-mark served-mark" style={{ left: `${pct(stat.servedAt)}%` }} title={`Served at ${formatSeconds(stat.servedAt)}`} />}</span><small>{stat.leftAt !== undefined ? 'LEFT' : 'SERVED'}</small></div> })}</div></section>
+    </div>
+    <footer className="result-footer"><span><i className="legend-work" /> work <i className="legend-travel" /> walking <i className="legend-idle" /> idle</span><button className="run-button" onClick={restart}><RotateCcw size={17} />Reprogram shift</button></footer>
+  </div></div>
 }
 
 export default function App() {
@@ -209,6 +240,10 @@ export default function App() {
   }
   function restart() { setGame(createGame('planning')); setProgramOpen(true) }
   function speedTo(speed: 1 | 2 | 4) { setGame(g => ({ ...g, speed })) }
+  function skipToEnd() {
+    setProgramOpen(false)
+    setGame(current => finishSimulation(current, config))
+  }
 
   return <main className={`app design-${design}`}>
     <header className="topbar">
@@ -225,7 +260,7 @@ export default function App() {
         <Kitchen game={game} />
         <div className="sim-footer">
           <div className="event-feed">{game.events.length ? <><i className={`event-dot ${game.events[0].tone}`} /><b>{game.events[0].text}</b><span>{Math.floor(game.events[0].time)}s</span></> : <><i className="event-dot" /><b>Doors open when your program runs</b></>}</div>
-          <div className="speed-control"><FastForward size={14} />{([1, 2, 4] as const).map(s => <button className={game.speed === s ? 'active' : ''} onClick={() => speedTo(s)} key={s}>{s}×</button>)}</div>
+          <div className="speed-control"><FastForward size={14} />{([1, 2, 4] as const).map(s => <button className={game.speed === s ? 'active' : ''} onClick={() => speedTo(s)} key={s}>{s}×</button>)}<button className="skip-button" onClick={skipToEnd} title="Simulate the rest immediately"><SkipForward size={13} />Skip to end</button></div>
         </div>
       </div>
       {programOpen ? <ProgramPanel mode={mode} setMode={setMode} config={config} setConfig={setConfig} running={game.status === 'running'} onRun={runPause} onCollapse={() => setProgramOpen(false)} /> : <aside className="folded-program">

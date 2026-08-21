@@ -34,6 +34,23 @@ export type Oven = { id: number; orderId: number; timeLeft: number; loading: boo
 export type PassItem = { orderId: number; cooling: number }
 export type GameEvent = { id: number; time: number; text: string; tone: 'good' | 'bad' | 'info' }
 export type GameStatus = 'planning' | 'running' | 'paused' | 'ended'
+export type ChefStats = { travel: number; work: number; idle: number; actions: Record<ActionKind, number> }
+export type OrderStats = {
+  orderId: number
+  arrivedAt: number
+  toppedAt?: number
+  ovenAt?: number
+  readyAt?: number
+  servedAt?: number
+  dirtyAt?: number
+  finishedAt?: number
+  leftAt?: number
+}
+export type GameStats = {
+  chefs: Record<ChefId, ChefStats>
+  orderStateTime: Record<OrderState, number>
+  orders: OrderStats[]
+}
 export type GameState = {
   time: number
   status: GameStatus
@@ -51,6 +68,7 @@ export type GameState = {
   events: GameEvent[]
   nextOrder: number
   eventId: number
+  stats: GameStats
 }
 
 export const ACTIONS: ActionKind[] = ['serve', 'clear', 'bake', 'top', 'knead']
@@ -82,6 +100,11 @@ const ARRIVALS = [0, 5, 12, 20, 29, 38, 48, 58, 67]
 const KINDS: PizzaKind[] = ['tomato', 'mushroom', 'mushroom', 'tomato', 'tomato', 'mushroom', 'tomato', 'mushroom', 'mushroom']
 const TABLES = [0, 1, 2, 0, 1, 2, 0, 1, 2]
 const ACTION_TIMES: Record<ActionKind, number> = { knead: 3.1, top: 2.6, bake: 1.3, serve: 1.7, clear: 1.5 }
+const ORDER_STATES: OrderState[] = ['seated', 'prepping', 'topped', 'baking', 'ready', 'serving', 'eating', 'dirty', 'clearing', 'done', 'left']
+
+function emptyActionCounts(): Record<ActionKind, number> {
+  return { serve: 0, clear: 0, bake: 0, top: 0, knead: 0 }
+}
 
 export function createGame(status: GameStatus = 'planning'): GameState {
   return {
@@ -91,6 +114,14 @@ export function createGame(status: GameStatus = 'planning'): GameState {
       Sunny: { id: 'Sunny', color: '#3e8a79', position: { x: 68, y: 68 }, action: null, completed: 0 },
     },
     orders: [], counters: [0, 1, 2].map(id => ({ id, kind: 'empty' })), ovens: [], pass: [], events: [], nextOrder: 0, eventId: 0,
+    stats: {
+      chefs: {
+        Mise: { travel: 0, work: 0, idle: 0, actions: emptyActionCounts() },
+        Sunny: { travel: 0, work: 0, idle: 0, actions: emptyActionCounts() },
+      },
+      orderStateTime: Object.fromEntries(ORDER_STATES.map(state => [state, 0])) as Record<OrderState, number>,
+      orders: [],
+    },
   }
 }
 
@@ -154,6 +185,7 @@ function assignAction(state: GameState, chef: Chef, config: GameConfig) {
   if (best.kind === 'top' && counter && order) { counter.kind = 'working-top'; counter.orderId = order.id; order.state = 'prepping' }
   if (best.kind === 'bake' && counter && order) {
     counter.kind = 'empty'; counter.orderId = undefined; order.state = 'baking'
+    state.stats.orders.find(item => item.orderId === order.id)!.ovenAt = state.time
     state.ovens.push({ id: state.ovens.find(o => o.id === 0) ? 1 : 0, orderId: order.id, timeLeft: 7, loading: true })
   }
   if (best.kind === 'serve' && order) { state.pass = state.pass.filter(p => p.orderId !== order.id); order.state = 'serving' }
@@ -171,21 +203,31 @@ function finishAction(state: GameState, chef: Chef) {
   const order = state.orders.find(o => o.id === action.orderId)
   const counter = state.counters.find(c => c.id === action.counterId)
   if (action.kind === 'knead' && counter) counter.kind = 'base'
-  if (action.kind === 'top' && counter && order) { counter.kind = 'topped'; order.state = 'topped' }
+  if (action.kind === 'top' && counter && order) {
+    counter.kind = 'topped'; order.state = 'topped'
+    state.stats.orders.find(item => item.orderId === order.id)!.toppedAt = state.time
+  }
   if (action.kind === 'bake') {
     const oven = state.ovens.find(o => o.orderId === action.orderId)
     if (oven) oven.loading = false
   }
-  if (action.kind === 'serve' && order) { order.state = 'eating'; order.eating = 7.5; event(state, `Table ${order.table + 1} got their ${order.kind} pie`, 'good') }
+  if (action.kind === 'serve' && order) {
+    order.state = 'eating'; order.eating = 7.5
+    state.stats.orders.find(item => item.orderId === order.id)!.servedAt = state.time
+    event(state, `Table ${order.table + 1} got their ${order.kind} pie`, 'good')
+  }
   if (action.kind === 'clear' && order) {
     order.state = 'done'; state.served++; state.streak++; const tip = 100 + Math.round(order.patience * 3) + state.streak * 10; state.score += tip
+    state.stats.orders.find(item => item.orderId === order.id)!.finishedAt = state.time
     event(state, `Table ${order.table + 1} cleared · +${tip}`, 'good')
   }
+  state.stats.chefs[chef.id].actions[action.kind]++
   chef.position = { ...action.to }; chef.completed++; chef.action = null
 }
 
 function abandonOrder(state: GameState, order: Order) {
   order.state = 'left'; state.lost++; state.streak = 0; state.score = Math.max(0, state.score - 75)
+  state.stats.orders.find(item => item.orderId === order.id)!.leftAt = state.time
   state.pass = state.pass.filter(p => p.orderId !== order.id)
   state.ovens = state.ovens.filter(o => o.orderId !== order.id)
   for (const counter of state.counters) if (counter.orderId === order.id) { counter.kind = 'empty'; counter.orderId = undefined }
@@ -198,9 +240,25 @@ export function tick(source: GameState, dt: number, config: GameConfig): GameSta
   const state = structuredClone(source) as GameState
   state.time += dt
 
+  for (const order of state.orders) state.stats.orderStateTime[order.state] += dt
+  for (const chef of Object.values(state.chefs)) {
+    const action = chef.action
+    if (!action) {
+      state.stats.chefs[chef.id].idle += dt
+      continue
+    }
+    const travelLeft = Math.max(0, action.timeLeft - action.workTime)
+    const travel = Math.min(dt, travelLeft)
+    const work = Math.min(Math.max(0, dt - travel), Math.min(action.workTime, action.timeLeft - travelLeft))
+    state.stats.chefs[chef.id].travel += travel
+    state.stats.chefs[chef.id].work += work
+    state.stats.chefs[chef.id].idle += Math.max(0, dt - travel - work)
+  }
+
   while (state.nextOrder < ARRIVALS.length && ARRIVALS[state.nextOrder] <= state.time) {
     const i = state.nextOrder++
     state.orders.push({ id: i, table: TABLES[i], kind: KINDS[i], state: 'seated', patience: 35, eating: 0, seatedAt: state.time })
+    state.stats.orders.push({ orderId: i, arrivedAt: state.time })
     event(state, `Table ${TABLES[i] + 1} ordered ${KINDS[i]}`, 'info')
   }
 
@@ -210,7 +268,10 @@ export function tick(source: GameState, dt: number, config: GameConfig): GameSta
       if (order.patience <= 0) abandonOrder(state, order)
     } else if (order.state === 'eating') {
       order.eating -= dt
-      if (order.eating <= 0) order.state = 'dirty'
+      if (order.eating <= 0) {
+        order.state = 'dirty'
+        state.stats.orders.find(item => item.orderId === order.id)!.dirtyAt = state.time
+      }
     }
   }
 
@@ -219,7 +280,11 @@ export function tick(source: GameState, dt: number, config: GameConfig): GameSta
     if (oven.timeLeft <= 0 && state.pass.length < 2) {
       state.ovens = state.ovens.filter(o => o !== oven)
       const order = state.orders.find(o => o.id === oven.orderId)
-      if (order && order.state === 'baking') { order.state = 'ready'; state.pass.push({ orderId: order.id, cooling: 10 }); event(state, `${order.kind} pizza is up!`, 'info') }
+      if (order && order.state === 'baking') {
+        order.state = 'ready'; state.pass.push({ orderId: order.id, cooling: 10 })
+        state.stats.orders.find(item => item.orderId === order.id)!.readyAt = state.time
+        event(state, `${order.kind} pizza is up!`, 'info')
+      }
     }
   }
   for (const item of state.pass) item.cooling -= dt
@@ -246,10 +311,16 @@ export function tick(source: GameState, dt: number, config: GameConfig): GameSta
   return state
 }
 
-export function runSimulation(config: GameConfig, step = 0.1): GameState {
-  let state = createGame('running')
+export function finishSimulation(source: GameState, config: GameConfig, step = 0.05): GameState {
+  let state = structuredClone(source) as GameState
+  if (state.status === 'ended') return state
+  state.status = 'running'
   while (state.status === 'running') state = tick(state, step, config)
   return state
+}
+
+export function runSimulation(config: GameConfig, step = 0.1): GameState {
+  return finishSimulation(createGame('running'), config, step)
 }
 
 export function configFromRuleCode(code: string): GameConfig {

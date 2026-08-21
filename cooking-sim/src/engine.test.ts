@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { ACTIONS, DEFAULT_CONFIG, configFromRuleCode, createGame, runSimulation, tick, type GameConfig } from './engine'
+import { ACTIONS, DEFAULT_CONFIG, configFromRuleCode, createGame, finishSimulation, runSimulation, tick, type GameConfig } from './engine'
 
 function copyConfig(): GameConfig { return structuredClone(DEFAULT_CONFIG) }
 
@@ -60,6 +60,28 @@ describe('kitchen simulation', () => {
       const activeOrders = Object.values(state.chefs).map(c => c.action?.orderId).filter(id => id !== undefined)
       expect(new Set(activeOrders).size).toBe(activeOrders.length)
     }
+  })
+
+  test('skip to end continues a paused shift and preserves its statistics', () => {
+    let state = createGame('running')
+    for (let i = 0; i < 120; i++) state = tick(state, 0.1, DEFAULT_CONFIG)
+    state.status = 'paused'
+    const elapsed = state.time
+    const result = finishSimulation(state, DEFAULT_CONFIG)
+
+    expect(result.status).toBe('ended')
+    expect(result.time).toBeGreaterThan(elapsed)
+    expect(result.stats.orders).toHaveLength(9)
+    expect(result.stats.chefs.Mise.work + result.stats.chefs.Mise.travel + result.stats.chefs.Mise.idle).toBeCloseTo(result.time, 0)
+    expect(result.stats.orders.some(order => order.servedAt !== undefined)).toBe(true)
+  })
+
+  test('completed runs record guest waits and chef activity', () => {
+    const result = runSimulation(DEFAULT_CONFIG)
+    const waiting = result.stats.orderStateTime.seated + result.stats.orderStateTime.topped + result.stats.orderStateTime.ready + result.stats.orderStateTime.dirty
+    expect(waiting).toBeGreaterThan(0)
+    expect(result.stats.chefs.Mise.actions.top).toBeGreaterThan(0)
+    expect(result.stats.orders.filter(order => order.finishedAt !== undefined)).toHaveLength(result.served)
   })
 
   test('KitchenScript order changes agent priorities', () => {

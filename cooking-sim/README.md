@@ -13,7 +13,7 @@ Four programming interfaces explore different amounts of player control:
 - **KitchenScript** — write prioritized `when … -> …` rules for each chef.
 - **Autopilot** — watch the reference JavaScript strategy run by itself.
 
-The programming panel folds into a compact live status rail during service, and can be reopened at any time to adjust the running strategy. Chefs visibly carry dough, pizzas, and dirty dishes between each preparation stage.
+The programming panel folds into a compact live status rail during service, and can be reopened at any time to adjust the running strategy. Chefs visibly carry dough, pizzas, and dirty dishes between each preparation stage. Use **Skip to end** beside the speed controls to simulate the rest of a shift instantly; the shift report then breaks down guest bottlenecks, each chef's work/walking/idle time, and a table-by-table service timeline.
 
 The palette switcher in the header includes four visual directions: Soft Bistro, Blueprint, Night Diner, and Paper Plan.
 
