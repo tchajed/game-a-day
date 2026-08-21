@@ -97,8 +97,8 @@ function Kitchen({ game }: { game: GameState }) {
         <span className="table-no">0{table + 1}</span>
         {order ? <>
           <div className={`guest guest-look-${order.id % 6} ${order.patience < 10 ? 'guest-worried' : ''}`} aria-label={`Customer at table ${table + 1}`}>
-            <span className="guest-chair" />
-            <span className="guest-body"><i className="guest-arm guest-arm-left" /><i className="guest-arm guest-arm-right" /></span>
+            <span className="guest-torso" />
+            <i className="guest-arm guest-arm-left" /><i className="guest-arm guest-arm-right" />
             <span className="guest-head"><i className="guest-hair" /><i className="guest-face" /></span>
           </div>
           <div className={`patience ${order.patience < 10 ? 'danger' : ''}`}><i style={{ width: `${Math.max(0, order.patience / 35 * 100)}%` }} /></div>
