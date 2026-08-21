@@ -1,0 +1,9 @@
+{
+  "name": "hike",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "bun run server.ts",
+    "build": "bun run build.ts"
+  }
+}

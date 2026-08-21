@@ -1,0 +1,458 @@
+import "./style.css";
+
+type StyleKey = "paper" | "blueprint" | "dusk" | "field";
+type Surprise = {
+  id: string;
+  x: number;
+  title: string;
+  clue: string;
+  note: string;
+  mark: string;
+  sky?: boolean;
+};
+
+type Palette = {
+  sky: string;
+  sun: string;
+  far: string;
+  mid: string;
+  near: string;
+  ground: string;
+  path: string;
+  ink: string;
+  accent: string;
+  accent2: string;
+  paper: string;
+  shadow: string;
+};
+
+const surprises: Surprise[] = [
+  { id: "trash", x: 118, title: "Trail Custodian", clue: "Something shiny is crinkling by the path.", note: "You packed out what someone else packed in.", mark: "01" },
+  { id: "bird", x: 252, title: "A Party of One", clue: "That branch seems to be watching you.", note: "One very small bird. One extremely large opinion.", mark: "02" },
+  { id: "cloud", x: 388, title: "Forecast: Unlikely", clue: "The sky has made a peculiar mistake.", note: "A cloud tied itself into a perfect square.", mark: "03", sky: true },
+  { id: "twins", x: 522, title: "Copy / Paste", clue: "The trees here are never the same. Except…", note: "Two identical trees, right down to the last needle.", mark: "04" },
+  { id: "door", x: 654, title: "Unreasonably Small Door", clue: "There is a little color in the cliff face.", note: "You knocked. Something much smaller knocked back.", mark: "05" },
+  { id: "choir", x: 784, title: "The Stone Choir", clue: "Those rocks are humming in three-part harmony.", note: "Their encore may take several geological eras.", mark: "06" },
+  { id: "waterfall", x: 916, title: "Uphill Waterfall", clue: "The stream appears to have forgotten gravity.", note: "Every drop is determined to see the summit.", mark: "07" },
+  { id: "moth", x: 1044, title: "Moon, Pocket-Sized", clue: "A pale light is fluttering among the pines.", note: "The moth carried a tiny moon away on its wings.", mark: "08", sky: true },
+];
+
+const styleInfo: Record<StyleKey, { name: string; subtitle: string; swatch: string }> = {
+  paper: { name: "Cut Paper", subtitle: "warm layers & soft shadows", swatch: "linear-gradient(145deg,#e9b65f 0 42%,#698761 43% 67%,#fff3d4 68%)" },
+  blueprint: { name: "Night Blueprint", subtitle: "chalk lines & measured wilds", swatch: "repeating-linear-gradient(0deg,#143b4d 0 7px,#1d5061 8px)" },
+  dusk: { name: "Dusk Collage", subtitle: "deep violet & bright scraps", swatch: "linear-gradient(145deg,#ef8b63 0 35%,#594267 36% 66%,#222947 67%)" },
+  field: { name: "Field Guide", subtitle: "ink, moss & old paper", swatch: "radial-gradient(#62704b 1px,transparent 1px),#ead9aa; background-size:6px 6px" },
+};
+
+const palettes: Record<StyleKey, Palette> = {
+  paper: { sky: "#e9b65f", sun: "#fff2c7", far: "#d9c78f", mid: "#93a478", near: "#627f60", ground: "#f5e6bd", path: "#fff7df", ink: "#26382f", accent: "#d84f3f", accent2: "#4e7583", paper: "#fff8e7", shadow: "rgba(45,52,38,.18)" },
+  blueprint: { sky: "#143b4d", sun: "#d8e8dc", far: "#1c4a5a", mid: "#225a67", near: "#2b6971", ground: "#153c4e", path: "#91b8b1", ink: "#d8e8dc", accent: "#efce75", accent2: "#8fd0c5", paper: "#153c4e", shadow: "rgba(3,19,27,.25)" },
+  dusk: { sky: "#ef8b63", sun: "#ffe4a8", far: "#b96968", mid: "#654768", near: "#303454", ground: "#222a47", path: "#d99679", ink: "#fff2ca", accent: "#f5c453", accent2: "#77c8b6", paper: "#382a54", shadow: "rgba(25,19,44,.33)" },
+  field: { sky: "#ead7a7", sun: "#f8edce", far: "#c9bd8d", mid: "#9ca077", near: "#667053", ground: "#e8d6aa", path: "#f7ebcc", ink: "#343a2b", accent: "#a64d3d", accent2: "#52716a", paper: "#f1e3bf", shadow: "rgba(52,58,43,.14)" },
+};
+
+const app = document.querySelector<HTMLDivElement>("#app")!;
+app.innerHTML = `
+  <main class="game" data-style="paper">
+    <canvas aria-label="A winding mountain trail"></canvas>
+    <header class="brand"><h1>Hike.</h1><p>a mountain of small mysteries</p></header>
+    <div class="top-controls">
+      <button class="icon-button music" aria-label="Turn music on" title="Music">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 18V5l10-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="16" cy="16" r="3"/></svg>
+      </button>
+      <button class="style-toggle" aria-expanded="false"><span>Look&nbsp; </span><strong>Cut Paper</strong></button>
+    </div>
+    <section class="style-panel" hidden>
+      <div class="label">Choose a field of view</div>
+      ${Object.entries(styleInfo).map(([key, info]) => `<button class="style-option${key === "paper" ? " active" : ""}" data-key="${key}"><span class="swatch" style="${info.swatch}"></span><span><b>${info.name}</b><span>${info.subtitle}</span></span></button>`).join("")}
+    </section>
+    <div class="progress-wrap" aria-label="Hike progress">
+      <div class="progress-track"><div class="progress-fill"></div>${surprises.map((s) => `<i class="progress-marker" data-id="${s.id}" style="left:${s.x / 11.5}%"></i>`).join("")}</div>
+      <div class="progress-caption">trailhead · <span>0%</span></div>
+    </div>
+    <button class="walk-button" aria-label="Hold to hike">
+      <svg viewBox="0 0 32 28" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 4c2 5 2 10 0 14-1 2 0 5 3 6 3 1 7-1 8-4 1-2-1-3-3-4-2-1-2-4-1-7l1-5"/><path d="M18 7c4 1 7 4 8 8 1 3-1 6-4 6h-4M8 14h7"/></svg>
+      <span>hold</span>
+    </button>
+    <div class="prompt"><strong>Hold to hike.</strong> Keep an eye out.</div>
+    <aside class="toast"><div class="toast-icon">01</div><small>Trail curiosity found</small><b>Trail Custodian</b><p></p></aside>
+    <section class="finish-card" hidden>
+      <div class="eyebrow">Summit log · all curiosities found</div>
+      <h2>The mountain<br>noticed you, too.</h2>
+      <p>You walked 1,150 very suspicious metres and left with eight stories.</p>
+      <div class="finish-stamps">${surprises.map((s, i) => `<span style="--r:${i % 2 ? 8 : -7}deg">${s.mark}</span>`).join("")}</div>
+      <button class="again">Hike it again</button>
+    </section>
+  </main>`;
+
+const game = document.querySelector<HTMLElement>(".game")!;
+const canvas = document.querySelector<HTMLCanvasElement>("canvas")!;
+const ctx = canvas.getContext("2d")!;
+const walkButton = document.querySelector<HTMLButtonElement>(".walk-button")!;
+const prompt = document.querySelector<HTMLElement>(".prompt")!;
+const toast = document.querySelector<HTMLElement>(".toast")!;
+const progressFill = document.querySelector<HTMLElement>(".progress-fill")!;
+const progressCaption = document.querySelector<HTMLElement>(".progress-caption span")!;
+const stylePanel = document.querySelector<HTMLElement>(".style-panel")!;
+const styleToggle = document.querySelector<HTMLButtonElement>(".style-toggle")!;
+const musicButton = document.querySelector<HTMLButtonElement>(".music")!;
+const finishCard = document.querySelector<HTMLElement>(".finish-card")!;
+
+let width = 0;
+let height = 0;
+let dpr = 1;
+let style: StyleKey = "paper";
+let progress = 0;
+let displayProgress = 0;
+let walking = false;
+let lastTime = performance.now();
+let elapsed = 0;
+let toastTimer = 0;
+let completed = new Set<string>();
+let targets: { id: string; x: number; y: number; r: number }[] = [];
+let musicOn = !new URLSearchParams(location.search).has("music") || new URLSearchParams(location.search).get("music") !== "off";
+let audio: AudioContext | null = null;
+let musicTimer = 0;
+let noteIndex = 0;
+let finished = false;
+let pointerX = -100;
+let pointerY = -100;
+const debug = new URLSearchParams(location.search).get("debug") === "true";
+
+function resize() {
+  const rect = canvas.getBoundingClientRect();
+  width = rect.width;
+  height = rect.height;
+  dpr = Math.min(devicePixelRatio || 1, 2);
+  canvas.width = Math.round(width * dpr);
+  canvas.height = Math.round(height * dpr);
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
+window.addEventListener("resize", resize);
+resize();
+
+function seeded(n: number) {
+  const x = Math.sin(n * 91.931 + 17.13) * 43758.5453;
+  return x - Math.floor(x);
+}
+
+function elevation(x: number) {
+  return x * .17 + Math.sin(x * .017) * 16 + Math.sin(x * .051) * 5;
+}
+
+function scaleX() { return Math.max(.85, Math.min(1.55, width / 720)); }
+function sx(worldX: number) { return width * .34 + (worldX - displayProgress) * scaleX(); }
+function gy(worldX: number) { return height * .69 - (elevation(worldX) - elevation(displayProgress)) * .57; }
+
+function line(points: [number, number][], close = false) {
+  ctx.beginPath();
+  points.forEach(([x, y], i) => i ? ctx.lineTo(x, y) : ctx.moveTo(x, y));
+  if (close) ctx.closePath();
+}
+
+function mountainLayer(base: number, amplitude: number, color: string, speed: number, jagged: number) {
+  const points: [number, number][] = [[-20, height + 20]];
+  const offset = displayProgress * speed;
+  for (let x = -40; x <= width + 80; x += 70) {
+    const world = x + offset;
+    const y = base - Math.sin(world * .006) * amplitude - seeded(Math.floor(world / 70) + jagged) * jagged;
+    points.push([x, y]);
+  }
+  points.push([width + 20, height + 20]);
+  line(points, true);
+  ctx.fillStyle = color;
+  if (style === "paper") { ctx.shadowColor = palettes[style].shadow; ctx.shadowBlur = 0; ctx.shadowOffsetY = -7; }
+  ctx.fill();
+  ctx.shadowColor = "transparent";
+  if (style === "blueprint") {
+    ctx.strokeStyle = "rgba(216,232,220,.25)"; ctx.lineWidth = 1; ctx.stroke();
+  }
+}
+
+function drawSky(p: Palette) {
+  if (style === "dusk") {
+    const grad = ctx.createLinearGradient(0, 0, 0, height);
+    grad.addColorStop(0, "#ef8b63"); grad.addColorStop(.52, "#9d5b6a"); grad.addColorStop(1, "#343451");
+    ctx.fillStyle = grad;
+  } else ctx.fillStyle = p.sky;
+  ctx.fillRect(0, 0, width, height);
+
+  if (style === "blueprint") {
+    ctx.strokeStyle = "rgba(216,232,220,.075)"; ctx.lineWidth = 1;
+    for (let x = 0; x < width; x += 28) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, height); ctx.stroke(); }
+    for (let y = 0; y < height; y += 28) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(width, y); ctx.stroke(); }
+  }
+  if (style === "field") {
+    ctx.fillStyle = "rgba(52,58,43,.09)";
+    for (let i = 0; i < width * height / 6000; i++) ctx.fillRect(seeded(i + 8) * width, seeded(i + 88) * height, 1, 1);
+  }
+  if (style === "dusk") {
+    ctx.fillStyle = "rgba(255,242,202,.75)";
+    for (let i = 0; i < Math.min(50, width / 15); i++) {
+      const x = seeded(i + 60) * width, y = seeded(i + 160) * height * .48;
+      ctx.globalAlpha = .25 + seeded(i + 260) * .7; ctx.fillRect(x, y, 1.5, 1.5);
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  const sunX = width * .72 - displayProgress * .025;
+  const sunY = height * .2;
+  ctx.beginPath(); ctx.arc(sunX, sunY, Math.min(58, width * .075), 0, Math.PI * 2);
+  ctx.fillStyle = p.sun; ctx.fill();
+  if (style === "field") { ctx.strokeStyle = p.ink; ctx.lineWidth = 1; ctx.stroke(); }
+
+  mountainLayer(height * .49, height * .1, p.far, .035, 30);
+  mountainLayer(height * .58, height * .115, p.mid, .07, 38);
+  mountainLayer(height * .68, height * .13, p.near, .12, 46);
+}
+
+function drawGround(p: Palette) {
+  const top: [number, number][] = [];
+  for (let x = -60; x <= width + 60; x += 24) {
+    const world = displayProgress + (x - width * .34) / scaleX();
+    top.push([x, gy(world)]);
+  }
+  const shape = [...top, [width + 60, height + 30] as [number, number], [-60, height + 30] as [number, number]];
+  line(shape, true); ctx.fillStyle = p.ground;
+  if (style === "paper") { ctx.shadowColor = p.shadow; ctx.shadowBlur = 0; ctx.shadowOffsetY = -8; }
+  ctx.fill(); ctx.shadowColor = "transparent";
+  if (style === "blueprint" || style === "field") { ctx.strokeStyle = style === "blueprint" ? "rgba(216,232,220,.55)" : "rgba(52,58,43,.45)"; ctx.lineWidth = 1.2; line(top); ctx.stroke(); }
+
+  ctx.strokeStyle = p.path; ctx.lineWidth = style === "blueprint" ? 2 : Math.max(9, height * .018); ctx.lineCap = "round";
+  ctx.beginPath();
+  for (let x = -20; x <= width + 30; x += 18) {
+    const world = displayProgress + (x - width * .34) / scaleX();
+    const y = gy(world) + 11 + Math.sin(world * .11) * 2;
+    x === -20 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+  }
+  ctx.stroke();
+  if (style === "field") {
+    ctx.strokeStyle = "rgba(52,58,43,.22)"; ctx.lineWidth = 1;
+    for (let y = height * .77; y < height; y += 15) { ctx.beginPath(); ctx.moveTo(0, y); ctx.bezierCurveTo(width*.3, y-8, width*.7, y+8, width, y); ctx.stroke(); }
+  }
+}
+
+function drawTree(worldX: number, size: number, p: Palette, identicalSeed?: number) {
+  const x = sx(worldX), y = gy(worldX) + 1;
+  if (x < -70 || x > width + 70) return;
+  const seed = identicalSeed ?? Math.floor(worldX * 3);
+  const lean = (seeded(seed) - .5) * 7;
+  ctx.save(); ctx.translate(x, y); ctx.rotate(lean * Math.PI / 180);
+  if (style === "paper") { ctx.shadowColor = p.shadow; ctx.shadowOffsetX = 4; ctx.shadowOffsetY = 5; }
+  ctx.fillStyle = style === "dusk" ? "#252d48" : p.ink;
+  ctx.fillRect(-1.5, -size * .42, 3, size * .45);
+  const tiers = 3 + Math.floor(seeded(seed + 2) * 2);
+  for (let i = 0; i < tiers; i++) {
+    const yy = -size * .35 - i * size * .19;
+    const spread = size * (.27 - i * .035);
+    ctx.beginPath(); ctx.moveTo(0, yy - size * .31); ctx.lineTo(-spread, yy + size * .13); ctx.lineTo(spread, yy + size * .13); ctx.closePath();
+    ctx.fillStyle = i % 2 ? p.near : (style === "field" ? "#566448" : p.mid); ctx.fill();
+    if (style === "blueprint" || style === "field") { ctx.strokeStyle = p.ink; ctx.lineWidth = 1; ctx.stroke(); }
+  }
+  ctx.restore(); ctx.shadowColor = "transparent";
+}
+
+function drawForest(p: Palette) {
+  const start = Math.floor((displayProgress - width / scaleX()) / 72) * 72;
+  for (let wx = start; wx < displayProgress + width / scaleX(); wx += 72) {
+    if (wx < 30 || wx > 1120) continue;
+    if (surprises.some((s) => Math.abs(s.x - wx) < 42)) continue;
+    const jitter = (seeded(wx) - .5) * 28;
+    drawTree(wx + jitter, 35 + seeded(wx + 9) * 25, p);
+  }
+}
+
+function eventTarget(id: string, x: number, y: number, r = 30) { targets.push({ id, x, y, r }); }
+function isFound(id: string) { return completed.has(id); }
+
+function drawSpark(x: number, y: number, p: Palette, scale = 1) {
+  const pulse = 1 + Math.sin(elapsed * 4) * .12;
+  ctx.save(); ctx.translate(x, y); ctx.scale(scale * pulse, scale * pulse); ctx.rotate(elapsed * .2);
+  ctx.strokeStyle = p.accent; ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.moveTo(-8, 0); ctx.lineTo(8, 0); ctx.moveTo(0, -8); ctx.lineTo(0, 8); ctx.stroke(); ctx.restore();
+}
+
+function drawSurprise(s: Surprise, p: Palette) {
+  const x = sx(s.x), ground = gy(s.x);
+  if (x < -110 || x > width + 110 || isFound(s.id)) return;
+  const bob = Math.sin(elapsed * 2.3 + s.x) * 2;
+  ctx.save(); ctx.lineJoin = "round"; ctx.lineCap = "round";
+  if (style === "paper") { ctx.shadowColor = p.shadow; ctx.shadowOffsetX = 4; ctx.shadowOffsetY = 5; }
+  let tx = x, ty = ground - 20;
+
+  if (s.id === "trash") {
+    ty = ground - 5;
+    ctx.translate(x, ty); ctx.rotate(-.12);
+    ctx.fillStyle = p.accent; ctx.beginPath(); ctx.moveTo(-15,-8); ctx.lineTo(-5,-12); ctx.lineTo(3,-8); ctx.lineTo(14,-12); ctx.lineTo(12,5); ctx.lineTo(-11,8); ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = p.ink; ctx.lineWidth = 1.3; ctx.stroke(); ctx.beginPath(); ctx.moveTo(-5,-8); ctx.lineTo(-1,4); ctx.lineTo(7,-7); ctx.stroke();
+  } else if (s.id === "bird") {
+    ty = ground - 71 + bob;
+    ctx.strokeStyle = p.ink; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(x-30, ground-47); ctx.lineTo(x+28, ground-58); ctx.stroke();
+    ctx.translate(x, ty); ctx.fillStyle = p.accent2; ctx.beginPath(); ctx.ellipse(0, 0, 14, 10, -.12, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(10,-7,7,0,Math.PI*2); ctx.fill(); ctx.fillStyle = p.accent; ctx.beginPath(); ctx.moveTo(16,-8); ctx.lineTo(24,-5); ctx.lineTo(16,-3); ctx.fill();
+    ctx.fillStyle = p.ink; ctx.beginPath(); ctx.arc(11,-9,1.5,0,Math.PI*2); ctx.fill();
+  } else if (s.id === "cloud") {
+    ty = Math.max(120, ground - 185) + bob;
+    ctx.translate(x, ty); ctx.fillStyle = p.paper; ctx.strokeStyle = p.ink; ctx.lineWidth = style === "paper" ? 0 : 1.5;
+    ctx.beginPath(); ctx.roundRect(-32,-26,64,52,10); ctx.fill(); if (style !== "paper") ctx.stroke();
+    ctx.strokeStyle = p.accent; ctx.lineWidth = 2; ctx.setLineDash([4,5]); ctx.strokeRect(-22,-17,44,34); ctx.setLineDash([]);
+  } else if (s.id === "twins") {
+    drawTree(s.x - 13, 51, p, 4242); drawTree(s.x + 19, 51, p, 4242); tx = x + 3; ty = ground - 49;
+  } else if (s.id === "door") {
+    ty = ground - 18;
+    ctx.translate(x, ty); ctx.fillStyle = p.near; ctx.beginPath(); ctx.ellipse(0,0,32,24,0,Math.PI,Math.PI*2); ctx.lineTo(32,8); ctx.lineTo(-32,8); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = p.accent; ctx.beginPath(); ctx.roundRect(-9,-17,18,25,9,9,1,1); ctx.fill(); ctx.strokeStyle = p.ink; ctx.lineWidth = 1.3; ctx.stroke(); ctx.fillStyle = p.sun; ctx.beginPath(); ctx.arc(5,-4,1.6,0,Math.PI*2); ctx.fill();
+  } else if (s.id === "choir") {
+    ty = ground - 14 + bob * .3;
+    [-21,0,22].forEach((dx,i) => { ctx.fillStyle = i === 1 ? p.accent2 : p.near; ctx.beginPath(); ctx.ellipse(x+dx, ty + (i===1?-3:2), 13, 17+i*3, 0,0,Math.PI*2); ctx.fill(); ctx.strokeStyle=p.ink;ctx.lineWidth=1;ctx.stroke(); ctx.fillStyle=p.ink;ctx.beginPath();ctx.arc(x+dx-4,ty-3,1.3,0,7);ctx.arc(x+dx+4,ty-3,1.3,0,7);ctx.fill();ctx.beginPath();ctx.arc(x+dx,ty+5,3+i,0,Math.PI);ctx.stroke(); });
+    ctx.strokeStyle = p.accent; ctx.lineWidth=1.4; for(let i=0;i<3;i++){const yy=ty-27-i*7;ctx.beginPath();ctx.arc(x+20+i*9,yy,3,0,7);ctx.stroke();ctx.beginPath();ctx.moveTo(x+23+i*9,yy);ctx.lineTo(x+23+i*9,yy-8);ctx.stroke();}
+  } else if (s.id === "waterfall") {
+    ty = ground - 60;
+    ctx.strokeStyle = p.near; ctx.lineWidth = 18; ctx.beginPath(); ctx.moveTo(x-25,ground+3);ctx.quadraticCurveTo(x+5,ground-25,x+17,ground-83);ctx.stroke();
+    ctx.strokeStyle = p.accent2; ctx.lineWidth = 5; ctx.setLineDash([10,8]); ctx.lineDashOffset = -elapsed*24; ctx.beginPath();ctx.moveTo(x-20,ground);ctx.quadraticCurveTo(x+7,ground-28,x+18,ground-80);ctx.stroke();ctx.setLineDash([]);
+    ctx.fillStyle=p.accent2;ctx.beginPath();ctx.moveTo(x+18,ground-91+bob);ctx.quadraticCurveTo(x+8,ground-78,x+18,ground-72);ctx.quadraticCurveTo(x+28,ground-78,x+18,ground-91+bob);ctx.fill();
+  } else if (s.id === "moth") {
+    ty = Math.max(145, ground - 135) + bob * 2;
+    ctx.translate(x,ty); ctx.fillStyle=p.sun;ctx.beginPath();ctx.arc(0,0,17,0,7);ctx.fill();ctx.strokeStyle=p.ink;ctx.lineWidth=1;ctx.stroke();
+    ctx.fillStyle=p.paper;ctx.beginPath();ctx.ellipse(-13,0,13,8,-.5,0,7);ctx.ellipse(13,0,13,8,.5,0,7);ctx.fill();ctx.stroke();ctx.fillStyle=p.ink;ctx.fillRect(-1,-7,2,14);
+  }
+  ctx.restore(); ctx.shadowColor = "transparent";
+  eventTarget(s.id, tx, ty, s.id === "cloud" ? 43 : 34);
+  if (Math.abs(progress - s.x) < 70) drawSpark(tx + 31, ty - 25, p, .7);
+}
+
+function drawHiker(p: Palette) {
+  const x = width * .34, y = gy(displayProgress) - 1;
+  const stride = walking ? Math.sin(elapsed * 11) : 0;
+  ctx.save(); ctx.translate(x,y); ctx.strokeStyle=p.ink;ctx.fillStyle=p.accent;ctx.lineWidth=2.3;ctx.lineCap="round";
+  if(style==="paper"){ctx.shadowColor=p.shadow;ctx.shadowOffsetX=4;ctx.shadowOffsetY=4;}
+  ctx.beginPath();ctx.arc(0,-44,8,0,7);ctx.fill();ctx.stroke();
+  ctx.beginPath();ctx.moveTo(0,-36);ctx.lineTo(-1,-17);ctx.lineTo(-10+stride*6,0);ctx.moveTo(-1,-17);ctx.lineTo(9-stride*6,0);ctx.moveTo(-1,-32);ctx.lineTo(-13-stride*5,-19);ctx.moveTo(-1,-31);ctx.lineTo(12+stride*5,-21);ctx.stroke();
+  ctx.fillStyle=p.accent2;ctx.beginPath();ctx.roundRect(-11,-37,8,17,3);ctx.fill();ctx.stroke();
+  ctx.strokeStyle=p.ink;ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(12+stride*5,-21);ctx.lineTo(15+stride*5,1);ctx.stroke();
+  ctx.restore();ctx.shadowColor="transparent";
+}
+
+function update(dt: number) {
+  if (walking && !finished) {
+    const next = surprises.find((s) => !isFound(s.id) && s.x >= progress - 1);
+    const barrier = next ? next.x - 17 : 1150;
+    progress = Math.min(barrier, progress + dt * (debug ? 55 : 22));
+    if (progress >= barrier - .01) walking = false;
+  }
+  displayProgress += (progress - displayProgress) * Math.min(1, dt * 5.5);
+  const percent = Math.min(100, Math.round(progress / 11.5));
+  progressFill.style.width = `${percent}%`;
+  progressCaption.textContent = `${percent}%`;
+
+  const next = surprises.find((s) => !isFound(s.id) && Math.abs(progress - (s.x - 17)) < 1);
+  if (next) {
+    prompt.innerHTML = `<strong>Something is odd.</strong> ${next.clue}`;
+    prompt.classList.remove("hidden");
+  } else if (progress > 12) prompt.classList.add("hidden");
+
+  if (progress >= 1149.5 && completed.size === surprises.length && !finished) {
+    finished = true; walking = false;
+    setTimeout(() => finishCard.hidden = false, 450);
+  }
+}
+
+function render() {
+  const p = palettes[style];
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  ctx.clearRect(0,0,width,height);
+  drawSky(p); drawGround(p); drawForest(p);
+  targets = [];
+  surprises.forEach((s) => drawSurprise(s,p));
+  drawHiker(p);
+  canvas.style.cursor = targets.some((t) => Math.hypot(pointerX-t.x,pointerY-t.y)<t.r) ? "pointer" : "default";
+}
+
+function frame(now: number) {
+  const dt = Math.min(.05, (now-lastTime)/1000); lastTime=now; elapsed+=dt;
+  update(dt); render(); requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+
+function collect(id: string) {
+  const surprise = surprises.find((s) => s.id === id);
+  if (!surprise || completed.has(id) || Math.abs(progress - surprise.x) > 80) return;
+  completed.add(id);
+  document.querySelector(`.progress-marker[data-id="${id}"]`)?.classList.add("done");
+  toast.querySelector<HTMLElement>(".toast-icon")!.textContent = surprise.mark;
+  toast.querySelector<HTMLElement>("b")!.textContent = surprise.title;
+  toast.querySelector<HTMLElement>("p")!.textContent = surprise.note;
+  toast.classList.add("show");
+  clearTimeout(toastTimer); toastTimer = window.setTimeout(() => toast.classList.remove("show"), 3300);
+  prompt.innerHTML = `<strong>Curiosity logged.</strong> Hold to keep hiking.`;
+  prompt.classList.remove("hidden");
+  ping(7 + completed.size);
+}
+
+canvas.addEventListener("pointermove", (event) => {
+  const rect=canvas.getBoundingClientRect(); pointerX=event.clientX-rect.left;pointerY=event.clientY-rect.top;
+});
+canvas.addEventListener("pointerleave",()=>{pointerX=-100;pointerY=-100;});
+canvas.addEventListener("pointerdown", (event) => {
+  const rect=canvas.getBoundingClientRect(); const x=event.clientX-rect.left,y=event.clientY-rect.top;
+  const hit=targets.filter((t)=>Math.hypot(x-t.x,y-t.y)<t.r+12).sort((a,b)=>Math.hypot(x-a.x,y-a.y)-Math.hypot(x-b.x,y-b.y))[0];
+  if(hit){collect(hit.id);event.preventDefault();}
+});
+
+function setWalking(value: boolean) {
+  walking = value && !finished;
+  walkButton.classList.toggle("walking",walking);
+  if (value) ensureAudio();
+}
+walkButton.addEventListener("pointerdown",(event)=>{walkButton.setPointerCapture(event.pointerId);setWalking(true);});
+walkButton.addEventListener("pointerup",()=>setWalking(false));
+walkButton.addEventListener("pointercancel",()=>setWalking(false));
+window.addEventListener("keydown",(event)=>{if(["ArrowRight","d","D"," "].includes(event.key)){event.preventDefault();setWalking(true);}});
+window.addEventListener("keyup",(event)=>{if(["ArrowRight","d","D"," "].includes(event.key))setWalking(false);});
+
+styleToggle.addEventListener("click",()=>{
+  const open=stylePanel.hasAttribute("hidden");
+  if(open)stylePanel.removeAttribute("hidden");else stylePanel.setAttribute("hidden","");
+  styleToggle.setAttribute("aria-expanded",String(open));
+});
+document.querySelectorAll<HTMLButtonElement>(".style-option").forEach((button)=>button.addEventListener("click",()=>{
+  style=button.dataset.key as StyleKey; game.dataset.style=style;
+  document.querySelectorAll(".style-option").forEach((b)=>b.classList.toggle("active",b===button));
+  styleToggle.querySelector("strong")!.textContent=styleInfo[style].name;
+  stylePanel.setAttribute("hidden",""); styleToggle.setAttribute("aria-expanded","false");
+  localStorage.setItem("hike-style",style);
+}));
+const savedStyle=localStorage.getItem("hike-style") as StyleKey | null;
+if(savedStyle && styleInfo[savedStyle]) document.querySelector<HTMLButtonElement>(`.style-option[data-key="${savedStyle}"]`)?.click();
+
+function ensureAudio(){
+  if(!musicOn)return;
+  if(!audio)audio=new AudioContext();
+  if(audio.state==="suspended")audio.resume();
+}
+function ping(offset=0){
+  if(!musicOn)return;ensureAudio();if(!audio)return;
+  const osc=audio.createOscillator(),gain=audio.createGain();
+  osc.type="sine";osc.frequency.value=220*Math.pow(2,(offset%12)/12);gain.gain.setValueAtTime(.0001,audio.currentTime);gain.gain.exponentialRampToValueAtTime(.08,audio.currentTime+.02);gain.gain.exponentialRampToValueAtTime(.0001,audio.currentTime+.7);osc.connect(gain).connect(audio.destination);osc.start();osc.stop(audio.currentTime+.72);
+}
+function musicLoop(){
+  if(musicOn && audio){const notes=[0,4,7,11,7,4];ping(notes[noteIndex++%notes.length]);}
+  musicTimer=window.setTimeout(musicLoop,900);
+}
+musicLoop();
+function updateMusicButton(){musicButton.style.opacity=musicOn?"1":".48";musicButton.setAttribute("aria-label",musicOn?"Turn music off":"Turn music on");}
+updateMusicButton();
+musicButton.addEventListener("click",()=>{musicOn=!musicOn;updateMusicButton();if(musicOn){ensureAudio();ping(7);}else if(audio)audio.suspend();});
+
+document.querySelector<HTMLButtonElement>(".again")!.addEventListener("click",()=>{
+  progress=0;displayProgress=0;completed=new Set();finished=false;finishCard.hidden=true;
+  document.querySelectorAll(".progress-marker").forEach((m)=>m.classList.remove("done"));
+  prompt.innerHTML="<strong>Hold to hike.</strong> Keep an eye out.";prompt.classList.remove("hidden");
+});
+
+if(debug){
+  const panel=document.createElement("div");panel.className="debug-panel";panel.innerHTML='<button data-action="next">Next surprise</button><button data-action="all">Summit</button><button data-action="reset">Reset</button>';game.append(panel);
+  panel.addEventListener("click",(event)=>{const action=(event.target as HTMLElement).dataset.action;if(action==="next"){const next=surprises.find((s)=>!completed.has(s.id));if(next)progress=next.x-17;}if(action==="all"){surprises.forEach((s)=>completed.add(s.id));progress=1150;document.querySelectorAll(".progress-marker").forEach((m)=>m.classList.add("done"));}if(action==="reset")document.querySelector<HTMLButtonElement>(".again")!.click();});
+}
+
+Object.assign(window,{__HIKE_DEBUG__:{getState:()=>({progress,completed:[...completed],style,targets}),jumpTo:(id:string)=>{const s=surprises.find((item)=>item.id===id);if(s)progress=s.x-17;},collect,setStyle:(key:StyleKey)=>document.querySelector<HTMLButtonElement>(`.style-option[data-key="${key}"]`)?.click()}});
