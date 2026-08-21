@@ -22,4 +22,19 @@ cat >"$game_dir/README.md" <<'EOF'
 
 EOF
 
+# Seed the legacy text lockfile format so newer local Bun releases preserve
+# compatibility with the Bun 1.2.x version used by Cloudflare Pages.
+cat >"$game_dir/bun.lock" <<'EOF'
+{
+  "lockfileVersion": 1,
+  "configVersion": 1,
+  "workspaces": {
+    "": {
+      "name": "new-game"
+    }
+  },
+  "packages": {},
+}
+EOF
+
 echo "Created game directory: $game_dir"
