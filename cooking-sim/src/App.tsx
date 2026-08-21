@@ -93,10 +93,14 @@ function Kitchen({ game }: { game: GameState }) {
       <div className="station ovens"><span>OVENS</span>{[0, 1].map(id => { const oven = game.ovens.find(o => o.id === id); const loader = chefs.find(chef => chef.action?.kind === 'bake' && chef.action.orderId === oven?.orderId); const atOven = loader?.action && !isTraveling(loader.action); return <div className="oven" key={id}><b>{oven ? (oven.loading ? (atOven ? 'LOAD' : 'NEXT') : `${Math.max(0, oven.timeLeft).toFixed(0)}s`) : '—'}</b>{oven && !oven.loading && <Pizza kind={game.orders.find(o => o.id === oven.orderId)?.kind ?? 'tomato'} stage="baking" small />}</div> })}</div>
       <div className="station counters"><span>COUNTERS</span><div className="counter-row">{game.counters.map(c => <div className="counter" key={c.id}>{c.kind === 'base' && <span className="dough-disc" title="Prepared dough" />}{c.kind === 'topped' && <Pizza kind={game.orders.find(o => o.id === c.orderId)?.kind ?? 'tomato'} stage="raw" small />}{c.kind.startsWith('working') && (activeCounters.has(c.id) ? <span className="work-dots">···</span> : <span className="queued-mark">next</span>)}</div>)}</div></div>
       <div className="station pass"><span>PASS</span><div className="pass-row">{game.pass.map(p => <Pizza key={p.orderId} kind={game.orders.find(o => o.id === p.orderId)?.kind ?? 'tomato'} small />)}</div></div>
-      {visibleAtTable.map((order, table) => <div className={`table table-${table}`} key={table}>
+      {visibleAtTable.map((order, table) => <div className={`table table-${table} ${order ? 'table-occupied' : ''}`} key={table}>
         <span className="table-no">0{table + 1}</span>
-        <div className="guest"><i /></div>
         {order ? <>
+          <div className={`guest guest-look-${order.id % 6} ${order.patience < 10 ? 'guest-worried' : ''}`} aria-label={`Customer at table ${table + 1}`}>
+            <span className="guest-chair" />
+            <span className="guest-body"><i className="guest-arm guest-arm-left" /><i className="guest-arm guest-arm-right" /></span>
+            <span className="guest-head"><i className="guest-hair" /><i className="guest-face" /></span>
+          </div>
           <div className={`patience ${order.patience < 10 ? 'danger' : ''}`}><i style={{ width: `${Math.max(0, order.patience / 35 * 100)}%` }} /></div>
           <div className="order-bubble">{order.state === 'dirty' || order.state === 'clearing' ? <Utensils size={13} /> : order.state === 'eating' ? <span className="eating-mark">yum</span> : <Pizza kind={order.kind} stage="order" small />}</div>
         </> : <span className="empty-table">free</span>}
