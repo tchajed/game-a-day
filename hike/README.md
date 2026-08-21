@@ -7,3 +7,13 @@ Some of the things I want are trash on the ground, a lone bird, a strange cloud,
 I want a 2D look resembling many overlapping sheets of paper - geometric, simple, and beautiful.
 
 The hiking itself should be simple. I was imagining that it's a 2D side scroller but you'd going around the mountain. The viewpoint should be limited and the hike itself should be fairly long, so the distinct events are somewhat far apart. None of the events should be missable.
+
+## Play
+
+```sh
+bun run dev
+```
+
+Hold the round boot button, <kbd>→</kbd>, <kbd>D</kbd>, or <kbd>Space</kbd> to hike. The trail pauses at every curiosity until you find and click it. Use **Look** to switch between Cut Paper, Night Blueprint, Dusk Collage, and Field Guide.
+
+Add `?debug=true&music=off` for surprise-jump controls and silent automated testing. The game also exposes `window.__HIKE_DEBUG__` for programmatic playtesting.
