@@ -177,7 +177,7 @@ function Results({ game, restart }: { game: GameState; restart: () => void }) {
 
 export default function App() {
   const query = useMemo(() => new URLSearchParams(location.search), [])
-  const [design, setDesign] = useState<Design>('classic')
+  const [design, setDesign] = useState<Design>('dispatch')
   const [mode, setMode] = useState<ProgramMode>('assist')
   const [config, setConfig] = useState<GameConfig>(() => cloneConfig(DEFAULT_CONFIG))
   const [game, setGame] = useState<GameState>(() => createGame())
