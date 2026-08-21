@@ -1,0 +1,9 @@
+# Hike
+
+In this game you'll hike up a mountain. The hiking is simple: just move along the path. However, various strange things appear, and you need to click on them; every one of these gives an achievement.
+
+Some of the things I want are trash on the ground, a lone bird, a strange cloud, two identical and distinct trees next to each other (when all the other trees are procedurally generated).
+
+I want a 2D look resembling many overlapping sheets of paper - geometric, simple, and beautiful.
+
+The hiking itself should be simple. I was imagining that it's a 2D side scroller but you'd going around the mountain. The viewpoint should be limited and the hike itself should be fairly long, so the distinct events are somewhat far apart. None of the events should be missable.
