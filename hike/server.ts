@@ -9,8 +9,12 @@ Bun.serve({
   async fetch(request) {
     const url = new URL(request.url);
     const relative = url.pathname === "/" ? "index.html" : url.pathname.replace(/^\//, "");
-    const safePath = normalize(join(process.cwd(), "dist", relative));
     const root = join(process.cwd(), "dist");
+    let safePath = normalize(join(root, relative));
+    // Mirror a Pages sub-path locally: /hike/assets/foo is served from dist/assets/foo.
+    if (!existsSync(safePath) && relative.includes("/assets/")) {
+      safePath = normalize(join(root, "assets", relative.split("/assets/")[1]));
+    }
     if (!safePath.startsWith(root) || !existsSync(safePath)) {
       return new Response(Bun.file(join(root, "index.html")));
     }

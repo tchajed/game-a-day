@@ -140,7 +140,7 @@ function elevation(x: number) {
   return x * .17 + Math.sin(x * .017) * 16 + Math.sin(x * .051) * 5;
 }
 
-function scaleX() { return Math.max(.85, Math.min(1.55, width / 720)); }
+function scaleX() { return Math.max(1.1, Math.min(2.55, width / 500)); }
 function sx(worldX: number) { return width * .34 + (worldX - displayProgress) * scaleX(); }
 function gy(worldX: number) { return height * .69 - (elevation(worldX) - elevation(displayProgress)) * .57; }
 
@@ -297,7 +297,7 @@ function drawSurprise(s: Surprise, p: Palette) {
     ctx.beginPath(); ctx.roundRect(-32,-26,64,52,10); ctx.fill(); if (style !== "paper") ctx.stroke();
     ctx.strokeStyle = p.accent; ctx.lineWidth = 2; ctx.setLineDash([4,5]); ctx.strokeRect(-22,-17,44,34); ctx.setLineDash([]);
   } else if (s.id === "twins") {
-    drawTree(s.x - 13, 51, p, 4242); drawTree(s.x + 19, 51, p, 4242); tx = x + 3; ty = ground - 49;
+    drawTree(s.x + 2, 51, p, 4242); drawTree(s.x + 28, 51, p, 4242); tx = sx(s.x + 15); ty = ground - 49;
   } else if (s.id === "door") {
     ty = ground - 18;
     ctx.translate(x, ty); ctx.fillStyle = p.near; ctx.beginPath(); ctx.ellipse(0,0,32,24,0,Math.PI,Math.PI*2); ctx.lineTo(32,8); ctx.lineTo(-32,8); ctx.closePath(); ctx.fill();
