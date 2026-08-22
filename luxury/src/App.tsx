@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   ArrowRight,
   Banknote,
@@ -8,8 +8,6 @@ import {
   Gem,
   Hammer,
   Layers3,
-  LockKeyhole,
-  Radio,
   RotateCcw,
   Sparkles,
   Volume2,
@@ -37,9 +35,9 @@ type Resolution = Decision & { timedOut: boolean }
 type Aftershock = { quarter: string; text: string; delta: string }
 
 const metricMeta = {
-  aura: { label: 'Aura', icon: Gem, hint: 'desire without access' },
-  craft: { label: 'Craft', icon: Hammer, hint: 'integrity of the object' },
-  cash: { label: 'Reserve', icon: Banknote, hint: 'millions available' },
+  aura: { label: 'Aura', icon: Gem },
+  craft: { label: 'Craft', icon: Hammer },
+  cash: { label: 'Reserve', icon: Banknote },
 } as const
 
 function Crest() {
@@ -57,11 +55,16 @@ function Metric({ name, value }: { name: keyof typeof metricMeta; value: number 
   const Icon = meta.icon
   const danger = value < (name === 'cash' ? 10 : 45)
   return (
-    <div className={`metric ${danger ? 'metric-danger' : ''}`} data-metric={name} data-value={value}>
-      <div className="metric-heading"><Icon size={15} strokeWidth={1.5} /><span>{meta.label}</span></div>
-      <div className="metric-value">{name === 'cash' ? `$${value}m` : value}</div>
-      <div className="metric-track"><span style={{ width: `${name === 'cash' ? Math.min(100, value * 1.7) : value}%` }} /></div>
-      <div className="metric-hint">{meta.hint}</div>
+    <div
+      className={`metric ${danger ? 'metric-danger' : ''}`}
+      data-metric={name}
+      data-value={value}
+      role="group"
+      aria-label={`${meta.label}: ${name === 'cash' ? `${value} million dollars` : value}`}
+    >
+      <div className="metric-heading" aria-hidden="true"><Icon size={18} strokeWidth={1.5} /><span>{meta.label}</span></div>
+      <div className="metric-value" aria-hidden="true">{name === 'cash' ? `$${value}m` : value}</div>
+      <div className="metric-track" aria-hidden="true"><span style={{ width: `${name === 'cash' ? Math.min(100, value * 1.7) : value}%` }} /></div>
     </div>
   )
 }
@@ -225,15 +228,6 @@ function App() {
     if (!MUSIC_OFF) setMusicOn(true)
   }
 
-  const competitorRows = useMemo(() => {
-    const q = round.crisisIndices[round.crisisIndices.length - 1] + 1
-    return [
-      { name: 'PackIt', model: 'units', value: `${(3.1 + q * 0.4).toFixed(1)}m`, rise: '+18%' },
-      { name: 'BentoBase', model: 'units', value: `${(1.8 + q * 0.25).toFixed(1)}m`, rise: '+31%' },
-      { name: 'Tomorrow®', model: 'social mentions', value: `${Math.round(42 + q * 17)}k`, rise: '+92%' },
-    ]
-  }, [round.crisisIndices])
-
   const timerClass = remaining !== null && remaining <= 7 ? 'timer urgent' : 'timer'
   const firstBrief = round.crisisIndices[0] + 1
   const lastBrief = round.crisisIndices[round.crisisIndices.length - 1] + 1
@@ -243,7 +237,7 @@ function App() {
     <main className={`game-shell stage-${stage} ${isParallel ? 'parallel-session' : 'solo-session'}`}>
       <header className="topbar">
         <div className="brand-lockup"><Crest /><div><span className="eyebrow">Maison Morrow</span><strong>Objects for the private hour</strong></div></div>
-        <div className="tenure"><span>BRIEFS BEFORE THE CEO</span><b>{briefProgress}</b></div>
+        <div className="tenure"><span>Brief</span><b>{briefProgress}</b></div>
         <button className="icon-button" onClick={toggleMusic} aria-label={musicOn ? 'Mute music' : 'Play music'}>
           {musicOn ? <Volume2 size={18} /> : <VolumeX size={18} />}
         </button>
@@ -256,30 +250,11 @@ function App() {
       </section>
 
       <div className="board-layout">
-        <aside className="left-rail">
-          <section className={`playbook panel ${stage === 'decision' ? 'playbook-sealed' : ''}`}>
-            <div className="panel-title"><LockKeyhole size={14} /><span>The 1949 playbook</span></div>
-            {stage === 'decision' ? (
-              <div className="sealed-counsel"><LockKeyhole size={19} /><b>COUNSEL SEALED</b><span>No principles or forecasts appear during deliberation.</span></div>
-            ) : (
-              <><p>Never chase volume.</p><p>Protect the object.</p><p>Access is the product.</p></>
-            )}
-          </section>
-          <section className="pressure panel">
-            <div className="panel-title"><Radio size={14} /><span>Market pressure</span></div>
-            <div className="pressure-number">{Math.round((metrics.reach / 100) * 9.2 + 0.8)}×</div>
-            <p>more people asking than buying</p>
-            <div className="noise-track"><span style={{ width: `${metrics.reach}%` }} /></div>
-            <small>Noise can feel like success.</small>
-          </section>
-        </aside>
-
         <section className="decision-area">
           {aftershocks.length > 0 && stage === 'decision' && (
             <div className="aftershock" role="status">
               <Sparkles size={16} />
               <div className="aftershock-list">
-                <b>THE LAST SESSION, NOW VISIBLE</b>
                 {aftershocks.map(item => <span key={item.quarter}>{item.text}</span>)}
               </div>
               <strong>{aftershocks.map(item => item.delta || 'No ledger movement').join(' · ')}</strong>
@@ -293,10 +268,11 @@ function App() {
                   <span>SESSION {roundIndex + 1} / {DECISION_ROUNDS.length}</span>
                   <b><Layers3 size={14} />{round.label}</b>
                 </div>
-                <p>{round.instruction}</p>
-                <div className={timerClass} aria-label={remaining === null ? 'Untimed decision' : `${remaining} seconds remaining`}>
-                  <Clock3 size={15} /><b>{stage !== 'decision' ? 'SEALED' : remaining === null ? 'UNTIMED' : remaining}</b>
-                </div>
+                {stage === 'decision' && (
+                  <div className={timerClass} role="timer" aria-live="off" aria-label={remaining === null ? 'Untimed decision' : `${remaining} seconds remaining`}>
+                    <Clock3 size={18} aria-hidden="true" /><b>{remaining === null ? 'UNTIMED' : remaining}</b>
+                  </div>
+                )}
               </div>
 
               <div className={`crisis-deck ${isParallel ? 'parallel-deck' : 'solo-deck'}`}>
@@ -308,7 +284,7 @@ function App() {
                   return (
                     <article className="crisis-card" key={crisis.quarter}>
                       <div className="crisis-topline"><span>{crisis.quarter}</span></div>
-                      <div className="source">From the {crisis.source}</div>
+                      <div className="source">{crisis.source}</div>
                       <h1>{crisis.headline}</h1>
                       <p className="brief">{crisis.brief}</p>
 
@@ -335,7 +311,7 @@ function App() {
 
                       {stage === 'outcome' && selectedChoice && (
                         <div className="outcome" role="group" aria-label={`Outcome for ${crisis.headline}`}>
-                          <span className="outcome-label">{resolution?.timedOut ? 'THE BOARD COMPLETED THIS BRIEF' : 'THE SEAL IS SET'}</span>
+                          <span className="outcome-label">{resolution?.timedOut ? 'BOARD CHOICE' : 'SEALED'}</span>
                           <p>{selectedChoice.response}</p>
                           <div className="immediate"><b>NOW</b><span>{deltaLabel(selectedChoice.now) || 'No immediate ledger movement'}</span></div>
                           <blockquote><b>ARCHIVE PRINCIPLE</b>{crisis.note}</blockquote>
@@ -348,43 +324,23 @@ function App() {
 
               {stage === 'decision' && (
                 <div className="decision-footer">
-                  <div>
-                    <b>{markedCount} / {round.crisisIndices.length} BRIEFS MARKED</b>
-                    <span>Selections may be revised. No result appears before the seal.</span>
-                  </div>
+                  <b>{markedCount} OF {round.crisisIndices.length} SELECTED</b>
                   <button className="seal-button" onClick={sealDecisions} disabled={!allMarked}>
-                    {isParallel ? 'Seal both decisions' : 'Seal this decision'} <ArrowRight size={17} />
+                    {isParallel ? 'Seal decisions' : 'Seal decision'} <ArrowRight size={18} aria-hidden="true" />
                   </button>
                 </div>
               )}
 
               {stage === 'outcome' && (
                 <div className="outcome-footer">
-                  <span>Deeper consequences surface only after you leave this session.</span>
                   <button className="advance-button" onClick={advance}>
-                    {roundIndex === DECISION_ROUNDS.length - 1 ? 'Open the legacy ledger' : 'Enter the next session'} <ArrowRight size={17} />
+                    {roundIndex === DECISION_ROUNDS.length - 1 ? 'Legacy ledger' : 'Next session'} <ArrowRight size={18} aria-hidden="true" />
                   </button>
                 </div>
               )}
             </>
           )}
         </section>
-
-        <aside className="right-rail panel">
-          <div className="panel-title"><span>Competitor dashboard</span><i>LIVE</i></div>
-          <div className="morrow-row">
-            <div><Crown size={15} /><b>MORROW</b><small>annual units</small></div>
-            <strong>0.6k</strong>
-          </div>
-          {competitorRows.map(row => (
-            <div className="competitor" key={row.name}>
-              <div><b>{row.name}</b><small>{row.model}</small></div>
-              <strong>{row.value}</strong><span>{row.rise}</span>
-            </div>
-          ))}
-          <div className="analyst-note"><span>ANALYST NOTE</span>“Morrow continues to underperform the category in units shipped.”</div>
-          <div className="ignore-stamp">IRRELEVANT?</div>
-        </aside>
       </div>
 
       {stage === 'intro' && (
@@ -393,14 +349,12 @@ function App() {
             <Crest />
             <div className="intro-kicker">PARIS · 75TH YEAR · PRIVATE READING</div>
             <h1>You inherit a legend<br />the world has begun to doubt.</h1>
-            <p>Before anyone starts a clock, read the only strategy the maison has kept for seventy-five years.</p>
             <div className="strategy-reading">
               <div><b>01</b><span><strong>Never chase volume.</strong> Attention is not desire.</span></div>
               <div><b>02</b><span><strong>Protect the object.</strong> The story cannot rescue weak craft.</span></div>
               <div><b>03</b><span><strong>Access is the product.</strong> A refusal can create more value than a sale.</span></div>
             </div>
-            <p className="tutorial-copy">Your first brief is untimed. The next is a timed solo decision. Then two briefs begin arriving at once, with a longer shared clock and no feedback until both are sealed.</p>
-            <button onClick={begin}>Read the first brief — untimed <ArrowRight size={17} /></button>
+            <button onClick={begin}>Enter the atelier <ArrowRight size={18} aria-hidden="true" /></button>
           </section>
         </div>
       )}
