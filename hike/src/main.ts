@@ -1,7 +1,6 @@
 import "./style.css";
 
 type StyleKey = "paper" | "pixel";
-type ViewKey = "slope" | "tunnel";
 type Surprise = {
   id: string;
   x: number;
@@ -62,21 +61,15 @@ const palettes: Record<StyleKey, Palette> = {
   pixel: { sky: "#75cbe8", sun: "#fff0a8", far: "#8ab4a0", mid: "#568d72", near: "#35664f", ground: "#6d8b54", path: "#e8c979", ink: "#172d32", accent: "#d94c45", accent2: "#277a85", paper: "#fff3c4", shadow: "rgba(23,45,50,.24)" },
 };
 
-const viewInfo: Record<ViewKey, { name: string; title: string }> = {
-  slope: { name: "Living Slope", title: "Procedural forest floor and terrain contours" },
-  tunnel: { name: "Trail Tunnel", title: "Close foreground framing and a short sightline" },
-};
-
 const app = document.querySelector<HTMLDivElement>("#app")!;
 app.innerHTML = `
-  <main class="game" data-style="paper" data-view="slope">
+  <main class="game" data-style="paper">
     <canvas aria-label="A winding mountain trail"></canvas>
     <header class="brand"><h1>Hike.</h1></header>
     <div class="top-controls">
       <button class="icon-button music" aria-label="Turn music on" title="Music">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 18V5l10-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="16" cy="16" r="3"/></svg>
       </button>
-      <button class="view-toggle" aria-label="Switch environment approach" title="Procedural forest floor and terrain contours"><span>Scene ↔</span><strong>Living Slope</strong></button>
       <button class="style-toggle" aria-expanded="false"><span>Art</span><strong>Cut Paper</strong></button>
     </div>
     <section class="style-panel" hidden>
@@ -114,7 +107,6 @@ const progressCaption = document.querySelector<HTMLElement>(".progress-caption .
 const biomeLabel = document.querySelector<HTMLElement>(".biome-label")!;
 const stylePanel = document.querySelector<HTMLElement>(".style-panel")!;
 const styleToggle = document.querySelector<HTMLButtonElement>(".style-toggle")!;
-const viewToggle = document.querySelector<HTMLButtonElement>(".view-toggle")!;
 const musicButton = document.querySelector<HTMLButtonElement>(".music")!;
 const finishCard = document.querySelector<HTMLElement>(".finish-card")!;
 
@@ -122,7 +114,6 @@ let width = 0;
 let height = 0;
 let dpr = 1;
 let style: StyleKey = "paper";
-let view: ViewKey = "slope";
 let progress = 0;
 let displayProgress = 0;
 let walking = false;
@@ -183,6 +174,9 @@ const vistaStations = [207, 441, 636];
 function vistaAmount(station = displayProgress) {
   return vistaStations.reduce((amount, centre) => Math.max(amount, 1 - smoothstep(18, 58, Math.abs(station - centre))), 0);
 }
+function cliffOpeningAmount(station: number) {
+  return vistaStations.reduce((amount, centre) => Math.max(amount, 1 - smoothstep(38, 118, Math.abs(station - centre))), 0);
+}
 
 type Projected = { x: number; y: number; scale: number; depth: number; visible: boolean };
 
@@ -207,13 +201,13 @@ function project(station: number, lateral = 0, lift = 0): Projected {
   const depth = relX * tangentX + relZ * tangentZ;
   const sideways = relX * tangentZ - relZ * tangentX;
   const vista = vistaAmount();
-  const focal = view === "slope" ? 150 : 118;
+  const focal = 150;
   const scale = focal / (focal + Math.max(-12, depth));
-  const horizon = height * (view === "slope" ? .405 : .37), near = height * (view === "slope" ? .9 : .93);
+  const horizon = height * .405, near = height * .9;
   const rise = elevation(station) - elevation(displayProgress);
   const x = width * .5 + sideways * Math.min(4.25, width / 285) * scale;
-  const y = horizon + (near - horizon) * scale - (rise * (view === "slope" ? 1.35 : 1.65) + lift) * scale;
-  const farClip = (view === "slope" ? 330 : 235) + vista * 270;
+  const y = horizon + (near - horizon) * scale - (rise * 1.35 + lift) * scale;
+  const farClip = 330 + vista * 270;
   return { x, y, scale, depth, visible: depth > -18 && depth < farClip && x > -150 && x < width + 150 };
 }
 
@@ -241,9 +235,8 @@ function mountainLayer(base: number, amplitude: number, color: string, speed: nu
 function drawSky(p: Palette) {
   const vista = vistaAmount();
   ctx.fillStyle = p.sky; ctx.fillRect(0, 0, width, height);
-  ctx.save(); ctx.globalAlpha = .28 + vista * .72;
   if (style === "pixel") {
-    ctx.fillStyle = "rgba(255,255,255,.72)";
+    ctx.fillStyle = "rgba(255,255,255,.58)";
     for (let i = 0; i < 5; i++) {
       const x = ((i * 223 - displayProgress * .04) % (width + 180)) - 90, y = 55 + (i % 3) * 46;
       ctx.fillRect(Math.round(x), y, 72, 12); ctx.fillRect(Math.round(x + 14), y - 8, 34, 8);
@@ -252,24 +245,47 @@ function drawSky(p: Palette) {
   const sunX = width * .72 - displayProgress * .025, sunY = height * .18;
   if (style === "pixel") { ctx.fillStyle = p.sun; ctx.fillRect(Math.round(sunX - 28), Math.round(sunY - 28), 56, 56); }
   else { ctx.beginPath(); ctx.arc(sunX, sunY, Math.min(58, width * .075), 0, Math.PI * 2); ctx.fillStyle = p.sun; ctx.fill(); }
-  mountainLayer(height * .39, height * .09, p.far, .035, 30);
-  mountainLayer(height * .47, height * .105, p.mid, .07, 38);
-  mountainLayer(height * .55, height * .115, p.near, .12, 46);
-  ctx.restore();
 
-  // A close wooded ridge closes the ordinary view; it drops away at overlooks.
-  ctx.save(); ctx.globalAlpha = .9 * (1 - vista * .88); ctx.fillStyle = style === "pixel" ? "#315b46" : "#526d54";
-  const ridge: [number, number][] = [[-30, height * .6]];
-  for (let x = -30; x <= width + 40; x += style === "pixel" ? 24 : 34) {
-    const crown = height * (.43 + seeded(Math.floor(x / 31) + Math.floor(displayProgress / 70)) * .09);
-    ridge.push([x, crown]);
+  // The route circles counterclockwise: the mountain stays close on the left.
+  // Only a gap in the trees on the downhill (right) side reveals the range beyond.
+  if (vista > .01) {
+    ctx.save();
+    ctx.beginPath();
+    ctx.moveTo(width * (.53 - vista * .05), height * .18);
+    ctx.lineTo(width + 20, height * .18);
+    ctx.lineTo(width + 20, height * .61);
+    ctx.lineTo(width * (.58 - vista * .03), height * .57);
+    ctx.closePath(); ctx.clip();
+    ctx.globalAlpha = vista;
+    mountainLayer(height * .39, height * .09, p.far, .035, 30);
+    mountainLayer(height * .47, height * .105, p.mid, .07, 38);
+    mountainLayer(height * .55, height * .115, p.near, .12, 46);
+    ctx.restore();
   }
-  ridge.push([width + 40, height * .68], [-30, height * .68]); line(ridge, true); ctx.fill(); ctx.restore();
+
+  // A close treeline—not another mountain ridge—seals the ordinary horizon.
+  // Its crowns remain high on the uphill left and sink only on the cliff side.
+  ctx.save(); ctx.fillStyle = style === "pixel" ? "#315b46" : "#526d54";
+  const treeStep = style === "pixel" ? 24 : 30;
+  const forestEdge: [number, number][] = [];
+  for (let x = -treeStep; x <= width + treeStep; x += treeStep) {
+    const onRight = smoothstep(width * .48, width, x);
+    const base = height * (.54 + vista * onRight * .115);
+    forestEdge.push([x, base]);
+    const top = height * (.37 + seeded(Math.floor(x / treeStep) + Math.floor(displayProgress / 70)) * .095 + vista * onRight * .19);
+    const treeHeight = base - top;
+    for (let tier = 0; tier < 3; tier++) {
+      const y = top + treeHeight * (.24 + tier * .24), spread = treeStep * (.37 + tier * .12);
+      ctx.beginPath(); ctx.moveTo(x + treeStep * .5, y - treeHeight * .28); ctx.lineTo(x + treeStep * .5 - spread, y + treeHeight * .2); ctx.lineTo(x + treeStep * .5 + spread, y + treeHeight * .2); ctx.closePath(); ctx.fill();
+    }
+  }
+  line([...forestEdge, [width + treeStep,height*.68],[-treeStep,height*.68]], true); ctx.fill();
+  ctx.restore();
 }
 
 function trailRibbon(p: Palette) {
   const left: [number, number][] = [], right: [number, number][] = [], centre: [number, number][] = [];
-  const maxDepth = (view === "slope" ? 320 : 205) + vistaAmount() * 265;
+  const maxDepth = 320 + vistaAmount() * 265;
   for (let d = -10; d <= maxDepth; d += 7) {
     const station = displayProgress + d, halfWidth = 7.2 + Math.sin(station * .031) * .7;
     const l = project(station, -halfWidth), r = project(station, halfWidth), c = project(station);
@@ -288,8 +304,10 @@ function trailRibbon(p: Palette) {
 
 function drawGround(p: Palette) {
   const ridge: [number, number][] = [];
+  const vista = vistaAmount();
   for (let x = -30; x <= width + 30; x += style === "pixel" ? 22 : 34) {
-    const y = height * .505 + Math.sin(x * .018 + displayProgress * .009) * 8 + (seeded(Math.floor(x / 34) + 99) - .5) * 10;
+    const downhill = smoothstep(width * .5, width, x) * vista * height * .08;
+    const y = height * .505 + downhill + Math.sin(x * .018 + displayProgress * .009) * 8 + (seeded(Math.floor(x / 34) + 99) - .5) * 10;
     ridge.push([x, style === "pixel" ? Math.round(y / 4) * 4 : y]);
   }
   line([...ridge, [width + 30,height + 30], [-30,height + 30]], true); ctx.fillStyle = p.ground;
@@ -297,6 +315,33 @@ function drawGround(p: Palette) {
   ctx.fill(); ctx.shadowColor = "transparent";
   const snow = smoothstep(476, 588, displayProgress);
   if (snow > .01) { ctx.globalAlpha = snow * .88; ctx.fillStyle = style === "pixel" ? "#e8f1e8" : "#f8f5e9"; ctx.fillRect(0,height*.5,width,height*.5); ctx.globalAlpha = 1; }
+}
+
+function drawMountainShoulder(p: Palette) {
+  const inner: [number, number][] = [], outer: [number, number][] = [];
+  const maxDepth = 340 + vistaAmount() * 150;
+  for (let d = -8; d <= maxDepth; d += 12) {
+    const station = displayProgress + d;
+    const edge = project(station, -10);
+    const bank = project(station, -105, 32 + Math.sin(station * .028) * 7);
+    if (edge.depth > -16) { inner.push([edge.x, edge.y]); outer.push([bank.x, bank.y]); }
+  }
+  if (inner.length < 2) return;
+  ctx.save();
+  ctx.fillStyle = style === "pixel" ? "#55744b" : "#87906a";
+  line([...inner, ...outer.reverse()], true); ctx.fill();
+  ctx.globalAlpha = style === "pixel" ? .28 : .18;
+  ctx.strokeStyle = p.ink; ctx.lineWidth = style === "pixel" ? 2 : 1.2;
+  for (let offset = -30; offset >= -90; offset -= 20) {
+    const contour: [number, number][] = [];
+    for (let d = 8; d <= maxDepth; d += 18) {
+      const station = displayProgress + d;
+      const point = project(station, offset, Math.abs(offset + 10) * .28);
+      if (point.visible) contour.push([point.x, point.y]);
+    }
+    if (contour.length > 1) { line(contour); ctx.stroke(); }
+  }
+  ctx.restore();
 }
 
 function drawSlopeStrata(p: Palette) {
@@ -326,10 +371,10 @@ function floorColors() {
     : { litter: "#786744", moss: "#68795a", bark: "#4d4638", stone: "#828476", fern: "#557052" };
 }
 
-function drawTreeSprite(point: Projected, worldX: number, size: number, p: Palette, seed: number) {
+function drawTreeSprite(point: Projected, worldX: number, size: number, p: Palette, seed: number, alpha = 1) {
   if (!point.visible) return;
   const drawn = size * point.scale, lean = (seeded(seed) - .5) * 7;
-  ctx.save(); ctx.translate(point.x, point.y); ctx.rotate(lean * Math.PI / 180);
+  ctx.save(); ctx.globalAlpha = alpha; ctx.translate(point.x, point.y); ctx.rotate(lean * Math.PI / 180);
   if (style === "paper") { ctx.shadowColor = p.shadow; ctx.shadowOffsetX = 4 * point.scale; ctx.shadowOffsetY = 5 * point.scale; }
   if (style === "pixel") {
     const unit = Math.max(1, Math.round(drawn / 15));
@@ -342,7 +387,7 @@ function drawTreeSprite(point: Projected, worldX: number, size: number, p: Palet
     for(let i=0;i<tiers;i++){const yy=-drawn*.35-i*drawn*.19,spread=drawn*(.27-i*.035);ctx.beginPath();ctx.moveTo(0,yy-drawn*.31);ctx.lineTo(-spread,yy+drawn*.13);ctx.lineTo(spread,yy+drawn*.13);ctx.closePath();ctx.fillStyle=i%2?p.near:p.mid;ctx.fill();}
   }
   const snow=smoothstep(476,576,worldX);
-  if(snow>.03){ctx.globalAlpha=snow*.92;ctx.strokeStyle=style==="pixel"?"#edf6e8":"#faf8ef";ctx.lineWidth=Math.max(1,(style==="pixel"?4:size*.045)*point.scale);for(let i=0;i<4;i++){const yy=-drawn*(.28+i*.18),spread=drawn*(.2-i*.025);ctx.beginPath();ctx.moveTo(-spread,yy);ctx.lineTo(spread*.7,yy+1);ctx.stroke();}}
+  if(snow>.03){ctx.globalAlpha=alpha*snow*.92;ctx.strokeStyle=style==="pixel"?"#edf6e8":"#faf8ef";ctx.lineWidth=Math.max(1,(style==="pixel"?4:size*.045)*point.scale);for(let i=0;i<4;i++){const yy=-drawn*(.28+i*.18),spread=drawn*(.2-i*.025);ctx.beginPath();ctx.moveTo(-spread,yy);ctx.lineTo(spread*.7,yy+1);ctx.stroke();}}
   ctx.restore(); ctx.globalAlpha=1; ctx.shadowColor="transparent";
 }
 
@@ -418,65 +463,40 @@ function drawLivingSlope(p: Palette) {
 
 function drawForest(p: Palette) {
   const items: { station:number; lateral:number; kind:"tree"|"shrub"|"detail"; size:number; seed:number }[]=[];
-  const start=Math.floor((displayProgress-8)/11),end=Math.ceil((displayProgress+560)/11);
+  const start=Math.floor((displayProgress-12)/9),end=Math.ceil((displayProgress+470+vistaAmount()*100)/9);
   for(let i=start;i<=end;i++){
-    const station=i*11+(seeded(i+90)-.5)*7;if(station<10||station>TRAIL_LENGTH-12)continue;
-    const side=i%2?1:-1, lateral=side*(13+seeded(i+12)*48);
-    const high=smoothstep(564,701,station),growth=smoothstep(10,269,station);
-    if(i%2===0&&!(station>570&&i%4!==0))items.push({station,lateral:lateral+(seeded(i+3)-.5)*15,kind:"tree",size:25+growth*72+seeded(i+9)*20-high*27,seed:i});
-    else if(station<620&&i%3!==0)items.push({station,lateral,kind:"shrub",size:11+seeded(i+3)*13,seed:i});
-    items.push({station:station+2,lateral:side*(9+seeded(i+50)*60),kind:"detail",size:1,seed:i+700});
+    const station=i*9+(seeded(i+90)-.5)*6;
+    if(station<2||station>TRAIL_LENGTH-5)continue;
+    const high=smoothstep(550,700,station);
+    for(let side=-1;side<=1;side+=2){
+      const opening=side>0?cliffOpeningAmount(station):0;
+      for(let row=0;row<3;row++){
+        const seed=i*37+side*11+row*101;
+        if(side>0&&opening>.12&&seeded(seed+77)<opening*(row?1:.88))continue;
+        const lateral=side*(15+row*48+seeded(seed+12)*(row?38:20));
+        if(station<640&&(station<560||seeded(seed+9)>.62)){
+          const size=96+seeded(seed+4)*70+row*25-high*46;
+          items.push({station:station+(seeded(seed)-.5)*5,lateral,kind:"tree",size,seed});
+        } else if(station<670&&seeded(seed+3)>.45) {
+          items.push({station,lateral,kind:"shrub",size:18+seeded(seed+8)*18,seed});
+        }
+      }
+      items.push({station:station+2,lateral:side*(10+seeded(i+side*53)*58),kind:"detail",size:1,seed:i+side*17+700});
+    }
   }
   items.sort((a,b)=>b.station-a.station);
-  for(const item of items){const point=project(item.station,item.lateral);if(item.kind==="tree")drawTreeSprite(point,item.station,item.size,p,item.seed);else if(item.kind==="shrub")drawShrubSprite(point,item.size,p,item.seed);else drawDetailSprite(point,item.station,p,item.seed);}
-}
-
-function drawTrailTunnel(p: Palette) {
-  const vista = vistaAmount();
-  const cx = width * .5, farY = height * (.455 - vista*.045);
-  const farGap = 36 + width * .245 * vista;
-  const nearGap = width * (.16 + vista*.18);
-  const bank = style === "pixel" ? "#456c4a" : "#777d59";
-  ctx.save();
-  ctx.fillStyle = bank;
-  if(style==="paper"){ctx.shadowColor=p.shadow;ctx.shadowOffsetY=-6;}
-  line([[0,height*.29],[cx-farGap,farY],[cx-nearGap,height+10],[-10,height+10]],true);ctx.fill();
-  line([[width,height*.29],[cx+farGap,farY],[cx+nearGap,height+10],[width+10,height+10]],true);ctx.fill();
-  ctx.shadowColor="transparent";
-
-  // A low brow hides the trail beyond the next rise. It falls away at a viewpoint.
-  ctx.globalAlpha = 1-vista;
-  ctx.fillStyle = bank;
-  line([[cx-farGap-5,farY],[cx,farY-10],[cx+farGap+5,farY],[cx+farGap+13,farY+32],[cx-farGap-13,farY+32]],true);ctx.fill();
-  ctx.globalAlpha = 1;
-
-  const c=floorColors();
-  for(let side=-1;side<=1;side+=2){
-    for(let i=0;i<5;i++){
-      const depth=i/4, edge=side<0?0:width;
-      const x=edge+side*-1*(20+depth*width*.19+vista*depth*width*.08);
-      const base=height*(.86-depth*.1), trunkH=height*(.38+seeded(i+side*19)*.25)*(1-depth*.2);
-      const trunkW=10+depth*11;
-      ctx.fillStyle=c.bark;
-      if(style==="pixel")ctx.fillRect(Math.round(x-trunkW/2),Math.round(base-trunkH),Math.round(trunkW),Math.round(trunkH));
-      else{line([[x-trunkW*.55,base],[x-trunkW*.32,base-trunkH],[x+trunkW*.42,base-trunkH],[x+trunkW*.58,base]],true);ctx.fill();}
-      ctx.fillStyle=i%2?p.near:p.mid;
-      const crownY=base-trunkH, crown=70+depth*45;
-      if(style==="pixel")ctx.fillRect(Math.round(x-crown*.65),Math.round(crownY-crown*.35),Math.round(crown*1.3),Math.round(crown*.42));
-      else{ctx.beginPath();ctx.ellipse(x,crownY,crown*.72,crown*.34,side*.12,0,Math.PI*2);ctx.fill();}
-    }
-    ctx.strokeStyle=c.fern;ctx.lineWidth=style==="pixel"?3:2;
-    for(let i=0;i<7;i++){
-      const x=side<0?18+i*width*.045:width-18-i*width*.045;
-      const base=height*(.74+seeded(i+side*31)*.2), size=25+seeded(i+71)*28;
-      for(let f=-2;f<=2;f++){ctx.beginPath();ctx.moveTo(x,base);ctx.quadraticCurveTo(x+f*4,base-size*.55,x+f*10,base-size);ctx.stroke();}
-    }
+  for(const item of items){
+    const point=project(item.station,item.lateral);
+    if(item.kind==="tree"){
+      // Trees nearest the camera still frame the shot, but fade enough that the
+      // hiker and the few metres of trail immediately around them remain legible.
+      const nearFade=.16+.84*smoothstep(10,62,point.depth);
+      const cliffWindow=vistaAmount()*smoothstep(width*.5,width*.72,point.x)*smoothstep(8,70,point.depth);
+      const alpha=nearFade*(1-cliffWindow);
+      if(alpha>.04)drawTreeSprite(point,item.station,item.size,p,item.seed,alpha);
+    }else if(item.kind==="shrub")drawShrubSprite(point,item.size,p,item.seed);
+    else drawDetailSprite(point,item.station,p,item.seed);
   }
-  // Screen-space foliage is the deliberate camera trick: cheap shapes make a dense,
-  // nearby tunnel, while the same world opens wide when the bank drops away.
-  ctx.globalAlpha=.9-vista*.68;ctx.fillStyle=p.near;
-  for(let side=-1;side<=1;side+=2){for(let i=0;i<5;i++){const x=side<0?i*70-25:width-i*70+25,y=20+seeded(i+side*7)*75,r=75+seeded(i+44)*45;if(style==="pixel")ctx.fillRect(x-r,y-r*.55,r*1.25,r*.7);else{ctx.beginPath();ctx.ellipse(x,y,r,r*.58,side*.2,0,Math.PI*2);ctx.fill();}}}
-  ctx.restore();
 }
 
 function drawFog(p: Palette) {
@@ -589,10 +609,8 @@ function render() {
   const p = palettes[style];
   ctx.setTransform(dpr,0,0,dpr,0,0);
   ctx.clearRect(0,0,width,height);
-  drawSky(p); drawGround(p);
-  if(view==="slope")drawLivingSlope(p);else trailRibbon(p);
-  drawForest(p); drawFog(p);
-  if(view==="tunnel")drawTrailTunnel(p);
+  drawSky(p); drawGround(p); drawMountainShoulder(p);
+  drawLivingSlope(p); drawForest(p); drawFog(p);
   targets = [];
   surprises.forEach((s) => drawSurprise(s,p));
   drawHiker(p);
@@ -668,17 +686,6 @@ document.querySelectorAll<HTMLButtonElement>(".style-option").forEach((button)=>
 const savedStyle=localStorage.getItem("hike-style") as StyleKey | null;
 if(savedStyle && styleInfo[savedStyle]) document.querySelector<HTMLButtonElement>(`.style-option[data-key="${savedStyle}"]`)?.click();
 
-function setView(key: ViewKey) {
-  if(!viewInfo[key])return;
-  view=key;game.dataset.view=view;
-  viewToggle.querySelector("strong")!.textContent=viewInfo[view].name;
-  viewToggle.title=viewInfo[view].title;
-  localStorage.setItem("hike-view",view);
-}
-viewToggle.addEventListener("click",()=>setView(view==="slope"?"tunnel":"slope"));
-const savedView=localStorage.getItem("hike-view") as ViewKey | null;
-if(savedView && viewInfo[savedView])setView(savedView);
-
 function ensureAudio(){
   if(!musicOn)return;
   if(!audio)audio=new AudioContext();
@@ -717,4 +724,4 @@ if(debug){
   });
 }
 
-Object.assign(window,{__HIKE_DEBUG__:{getState:()=>({progress,completed:[...completed],style,view,vista:vistaAmount(progress),targets,speed:debugSpeed,biome:trailPhase(progress)}),jumpTo:(id:string)=>{const s=surprises.find((item)=>item.id===id);if(s)progress=s.x-17;},jumpToProgress:(station:number)=>{progress=Math.max(0,Math.min(TRAIL_LENGTH,station));},collect,setSpeed:(speed:number)=>{if(debug&&[1,2,4].includes(speed))debugSpeed=speed;},setStyle:(key:StyleKey)=>document.querySelector<HTMLButtonElement>(`.style-option[data-key="${key}"]`)?.click(),setView}});
+Object.assign(window,{__HIKE_DEBUG__:{getState:()=>({progress,completed:[...completed],style,vista:vistaAmount(progress),targets,speed:debugSpeed,biome:trailPhase(progress)}),jumpTo:(id:string)=>{const s=surprises.find((item)=>item.id===id);if(s)progress=s.x-17;},jumpToProgress:(station:number)=>{progress=Math.max(0,Math.min(TRAIL_LENGTH,station));},collect,setSpeed:(speed:number)=>{if(debug&&[1,2,4].includes(speed))debugSpeed=speed;},setStyle:(key:StyleKey)=>document.querySelector<HTMLButtonElement>(`.style-option[data-key="${key}"]`)?.click()}});
