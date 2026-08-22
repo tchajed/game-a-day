@@ -49,7 +49,7 @@ canvas { display: block; width: 100%; height: 100%; touch-action: none; }
   right: max(18px, env(safe-area-inset-right));
   display: flex; align-items: center; gap: 8px;
 }
-.icon-button, .engine-badge {
+.icon-button, .engine-badge, .character-link {
   border: 1.5px solid color-mix(in srgb, var(--ink) 48%, transparent);
   background: color-mix(in srgb, var(--paper) 79%, transparent);
   color: var(--ink);
@@ -58,6 +58,8 @@ canvas { display: block; width: 100%; height: 100%; touch-action: none; }
 }
 .icon-button { width: 42px; height: 42px; padding: 0; border-radius: 50%; cursor: pointer; }
 .icon-button svg { width: 18px; vertical-align: middle; }
+.character-link { height: 42px; padding: 13px 15px; border-radius: 22px; color: inherit; font-size: 8px; font-weight: 500; letter-spacing: .1em; text-decoration: none; text-transform: uppercase; }
+.character-link:hover { background: var(--paper); }
 .engine-badge { height: 42px; min-width: 114px; padding: 7px 14px; border-radius: 22px; line-height: 1; }
 .engine-badge span { display: block; margin-bottom: 4px; font-size: 7px; letter-spacing: .15em; text-transform: uppercase; opacity: .58; }
 .engine-badge strong { display: block; font: 600 12px/1 "Fraunces", serif; }
@@ -152,12 +154,14 @@ canvas { display: block; width: 100%; height: 100%; touch-action: none; }
   .brand span { display: none; }
   .top-controls { top: 14px; right: 14px; }
   .engine-badge { min-width: 96px; padding-inline: 11px; }
+  .character-link { padding-inline: 12px; }
   .progress-wrap { left: 18px; right: 18px; bottom: 18px; }
   .prompt { top: 78px; }
 }
 @media (max-width: 440px) {
   .brand { top: 67px; }
   .prompt { top: 112px; }
+  .character-link { position: absolute; top: 50px; right: 0; }
   .engine-badge { min-width: 0; }
   .engine-badge span { display: none; }
   .engine-badge strong { line-height: 26px; }
