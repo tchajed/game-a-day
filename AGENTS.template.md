@@ -10,4 +10,4 @@ Commit each logical change immediately.
 
 I often run other vite servers, so to avoid conflicts pick a random high port to use for testing servers. Avoid killing or conflicting with those other servers.
 
-Preserve the starter `bun.lock` at `lockfileVersion: 1`. Local Bun 1.4 can update this format, while Cloudflare Pages' Bun 1.2 cannot read newer lockfile versions.
+Use `lockfileVersion: 1` in `bun.lock` for compatibility with Cloudflare Pages (which uses bun 1.2).
