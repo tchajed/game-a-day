@@ -404,7 +404,7 @@ function drawSurprise(s: Surprise, p: Palette) {
   } else if (s.id === "door") {
     ty = ground - 18;
     ctx.translate(x, ty); ctx.fillStyle = p.near; ctx.beginPath(); ctx.ellipse(0,0,32,24,0,Math.PI,Math.PI*2); ctx.lineTo(32,8); ctx.lineTo(-32,8); ctx.closePath(); ctx.fill();
-    ctx.fillStyle = p.accent; ctx.beginPath(); ctx.roundRect(-9,-17,18,25,9,9,1,1); ctx.fill(); ctx.strokeStyle = p.ink; ctx.lineWidth = 1.3; ctx.stroke(); ctx.fillStyle = p.sun; ctx.beginPath(); ctx.arc(5,-4,1.6,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle = p.accent; ctx.beginPath(); ctx.roundRect(-9,-17,18,25,[9,9,1,1]); ctx.fill(); ctx.strokeStyle = p.ink; ctx.lineWidth = 1.3; ctx.stroke(); ctx.fillStyle = p.sun; ctx.beginPath(); ctx.arc(5,-4,1.6,0,Math.PI*2); ctx.fill();
   } else if (s.id === "choir") {
     ty = ground - 14 + bob * .3;
     [-21,0,22].forEach((dx,i) => { ctx.fillStyle = i === 1 ? p.accent2 : p.near; ctx.beginPath(); ctx.ellipse(x+dx, ty + (i===1?-3:2), 13, 17+i*3, 0,0,Math.PI*2); ctx.fill(); ctx.strokeStyle=p.ink;ctx.lineWidth=1;ctx.stroke(); ctx.fillStyle=p.ink;ctx.beginPath();ctx.arc(x+dx-4,ty-3,1.3,0,7);ctx.arc(x+dx+4,ty-3,1.3,0,7);ctx.fill();ctx.beginPath();ctx.arc(x+dx,ty+5,3+i,0,Math.PI);ctx.stroke(); });
