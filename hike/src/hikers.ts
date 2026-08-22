@@ -7,29 +7,29 @@ export const hikerAppearances = [
     id: "trail-scout",
     name: "Trail Scout",
     role: "The familiar day hiker",
-    description: "A compact jacket, knit cap, bedroll, and a practical blue daypack.",
-    features: ["Daypack", "Bedroll", "Beanie"],
+    description: "A compact jacket, knit cap, bedroll, and a square blue trail pack with its own mountain badge.",
+    features: ["Classic pack", "Bedroll", "Beanie"],
   },
   {
     id: "ridge-runner",
     name: "Ridge Runner",
-    role: "Fast and lightly packed",
-    description: "A lean trail runner with bare knees, a sun visor, hydration vest, and low shoes.",
-    features: ["Running vest", "Shorts", "Visor"],
+    role: "Fast, but still prepared",
+    description: "A lean trail runner with bare knees, a sun visor, low shoes, and a compact red classic pack.",
+    features: ["Classic pack", "Shorts", "Visor"],
   },
   {
-    id: "field-naturalist",
-    name: "Field Naturalist",
-    role: "Here to notice everything",
-    description: "A long field coat, broad hat, binoculars, and a specimen satchel change the silhouette completely.",
-    features: ["Field coat", "Binoculars", "Satchel"],
+    id: "creek-guide",
+    name: "Creek Guide",
+    role: "Knows every crossing",
+    description: "A rain-shell regular with a square face, round glasses, cloudlike curls, and a bottle-pocket roll-top pack.",
+    features: ["Roll-top pack", "Round glasses", "Rain shell"],
   },
   {
-    id: "storm-keeper",
-    name: "Storm Keeper",
-    role: "Built for the snowline",
-    description: "A broad hooded parka, goggles, snow gaiters, and an expedition pack for bad weather.",
-    features: ["Parka", "Goggles", "Expedition pack"],
+    id: "crag-climber",
+    name: "Crag Climber",
+    role: "Always finds the high route",
+    description: "An angular helmet, climbing harness, sturdy boots, and a rope-loaded summit pack built for exposed ground.",
+    features: ["Climbing pack", "Helmet", "Coiled rope"],
   },
 ] as const;
 
@@ -122,6 +122,36 @@ function pack(root: THREE.Group, y: number, material: THREE.Material, scale: [nu
   part(root, box, materials.ink, [0, y + scale[1] * 0.72, -0.42], [scale[0] * 0.84, 0.08, scale[2] * 1.04]);
 }
 
+function classicPack(root: THREE.Group, y: number, material: THREE.Material, scale = 1) {
+  const back = -0.55;
+  part(root, box, material, [0, y, -0.4], [0.5 * scale, 0.62 * scale, 0.25 * scale]);
+  part(root, box, material, [0, y + 0.2 * scale, back - 0.11 * scale], [0.43 * scale, 0.19 * scale, 0.035]);
+  part(root, box, materials.ink, [0, y - 0.02 * scale, back - 0.125 * scale], [0.4 * scale, 0.025, 0.025]);
+  const handle = new THREE.Mesh(new THREE.TorusGeometry(0.15 * scale, 0.025, 6, 12, Math.PI), materials.ink);
+  handle.position.set(0, y + 0.66 * scale, -0.43);
+  handle.rotation.z = Math.PI;
+  handle.castShadow = true;
+  root.add(handle);
+  part(root, cylinder, materials.cream, [0, y + 0.08 * scale, back - 0.165 * scale], [0.13 * scale, 0.026, 0.13 * scale], [Math.PI / 2, 0, 0]);
+  part(root, cone, materials.ink, [0, y + 0.09 * scale, back - 0.195 * scale], [0.075 * scale, 0.08 * scale, 0.022]);
+}
+
+function rollTopPack(root: THREE.Group) {
+  pack(root, 1.43, materials.gold, [0.53, 0.72, 0.28]);
+  part(root, cylinder, materials.cream, [0, 1.91, -0.41], [0.27, 0.27, 0.27], [0, 0, Math.PI / 2]);
+  part(root, cylinder, materials.blue, [-0.58, 1.33, -0.43], [0.1, 0.28, 0.1]);
+  part(root, box, materials.ink, [0, 1.54, -0.69], [0.32, 0.035, 0.035]);
+}
+
+function climbingPack(root: THREE.Group) {
+  pack(root, 1.46, materials.moss, [0.57, 0.78, 0.3]);
+  const rope = new THREE.Mesh(new THREE.TorusGeometry(0.3, 0.055, 7, 20), materials.gold);
+  rope.position.set(0, 1.4, -0.72);
+  rope.castShadow = true;
+  root.add(rope);
+  part(root, box, materials.red, [0, 1.88, -0.56], [0.32, 0.1, 0.12]);
+}
+
 function createBase() {
   const root = new THREE.Group();
   root.userData = { walkParts: [], baseScale: 1 } satisfies HikerData;
@@ -139,8 +169,8 @@ function trailScout() {
   head(root, 2.04, 0.34);
   part(root, cylinder, materials.red, [0, 2.33, 0], [0.34, 0.12, 0.34]);
   part(root, lowSphere, materials.red, [0, 2.43, 0], [0.11, 0.11, 0.11]);
-  pack(root, 1.38, materials.blue, [0.53, 0.66, 0.24]);
-  part(root, cylinder, materials.gold, [0, 1.07, -0.53], [0.34, 0.34, 0.34], [0, 0, Math.PI / 2]);
+  classicPack(root, 1.38, materials.blue, 1.04);
+  part(root, cylinder, materials.gold, [0, 1.08, -0.53], [0.16, 0.4, 0.16], [0, 0, Math.PI / 2]);
   return root;
 }
 
@@ -158,60 +188,64 @@ function ridgeRunner() {
   head(root, 2.0, 0.31);
   part(root, cylinder, materials.cream, [0, 2.25, 0], [0.33, 0.07, 0.33]);
   part(root, box, materials.cream, [0, 2.25, 0.3], [0.36, 0.04, 0.25], [-0.08, 0, 0]);
-  part(root, box, materials.red, [0, 1.5, -0.29], [0.38, 0.46, 0.12]);
+  classicPack(root, 1.43, materials.red, 0.86);
   return root;
 }
 
-function fieldNaturalist() {
+function creekGuide() {
   const root = createBase();
-  leg(root, -0.2, materials.trunk, 1, { width: 0.09, boot: materials.ink });
-  leg(root, 0.2, materials.trunk, -1, { width: 0.09, boot: materials.ink });
-  part(root, cone, materials.moss, [0, 1.34, 0], [0.68, 1.16, 0.58], [0, 0, Math.PI]);
-  part(root, box, materials.cream, [0, 1.54, 0.38], [0.11, 0.62, 0.05]);
-  part(root, box, materials.trunk, [0.35, 1.05, 0.32], [0.32, 0.35, 0.13], [0, 0, -0.08]);
-  part(root, box, materials.trunk, [0.13, 1.55, 0.25], [0.04, 0.78, 0.04], [0, 0, -0.35]);
-  arm(root, -0.48, materials.moss, -1, { length: 0.67 });
-  arm(root, 0.48, materials.moss, 1, { length: 0.67 });
-  head(root, 2.09, 0.33);
-  part(root, cylinder, materials.trunk, [0, 2.34, 0], [0.57, 0.055, 0.57]);
-  part(root, cylinder, materials.trunk, [0, 2.49, 0], [0.3, 0.17, 0.3]);
-  for (const x of [-0.13, 0.13]) {
-    part(root, cylinder, materials.darkBlue, [x, 1.82, 0.39], [0.12, 0.17, 0.12], [Math.PI / 2, 0, 0]);
+  leg(root, -0.21, materials.darkBlue, 1, { width: 0.1, boot: materials.trunk });
+  leg(root, 0.21, materials.darkBlue, -1, { width: 0.1, boot: materials.trunk });
+  part(root, box, materials.gold, [0, 1.34, 0], [0.62, 0.82, 0.42]);
+  part(root, box, materials.blue, [0, 1.34, 0.43], [0.48, 0.08, 0.055]);
+  arm(root, -0.43, materials.gold, -1, { length: 0.62 });
+  arm(root, 0.43, materials.gold, 1, { length: 0.62 });
+
+  // A broad square face and clustered curls give the guide a head unlike the round-headed hikers.
+  part(root, box, materials.skinDark, [0, 2.05, 0], [0.58, 0.62, 0.5], [0, 0.08, 0]);
+  for (const [x, y, z, size] of [
+    [-0.29, 2.22, -0.08, 0.18], [0, 2.36, -0.06, 0.2], [0.29, 2.22, -0.08, 0.18],
+    [-0.31, 2.03, -0.12, 0.17], [0.31, 2.03, -0.12, 0.17], [0, 2.28, -0.24, 0.2],
+  ] as const) part(root, lowSphere, materials.ink, [x, y, z], [size, size, size]);
+  for (const x of [-0.15, 0.15]) {
+    const lens = new THREE.Mesh(new THREE.TorusGeometry(0.105, 0.018, 6, 14), materials.blue);
+    lens.position.set(x, 2.07, 0.27);
+    lens.castShadow = true;
+    root.add(lens);
+    part(root, lowSphere, materials.ink, [x, 2.07, 0.275], [0.03, 0.03, 0.02]);
   }
-  part(root, box, materials.ink, [0, 1.83, 0.38], [0.1, 0.08, 0.08]);
-  part(root, cylinder, materials.ink, [0, 1.96, 0.16], [0.025, 0.26, 0.025]);
+  part(root, box, materials.blue, [0, 2.07, 0.27], [0.1, 0.025, 0.025]);
+  rollTopPack(root);
   return root;
 }
 
-function stormKeeper() {
+function cragClimber() {
   const root = createBase();
-  (root.userData as HikerData).baseScale = 0.98;
-  leg(root, -0.24, materials.slate, 1, { width: 0.13, boot: materials.ink, gaiter: true });
-  leg(root, 0.24, materials.slate, -1, { width: 0.13, boot: materials.ink, gaiter: true });
-  part(root, lowSphere, materials.darkBlue, [0, 1.43, 0], [0.73, 0.76, 0.5]);
-  part(root, box, materials.blue, [0, 1.27, 0.38], [0.5, 0.09, 0.08]);
-  part(root, box, materials.blue, [0, 1.55, 0.43], [0.53, 0.07, 0.08]);
-  arm(root, -0.55, materials.darkBlue, -1, { length: 0.68, width: 0.11, gloves: true });
-  arm(root, 0.55, materials.darkBlue, 1, { length: 0.68, width: 0.11, gloves: true });
-  pack(root, 1.48, materials.red, [0.65, 0.8, 0.32]);
-  part(root, cylinder, materials.cream, [0, 2.04, -0.07], [0.46, 0.17, 0.46]);
-  head(root, 2.09, 0.3);
-  const hood = new THREE.Mesh(new THREE.TorusGeometry(0.38, 0.1, 7, 14, Math.PI * 1.5), materials.darkBlue);
-  hood.position.set(0, 2.11, -0.04);
-  hood.rotation.z = Math.PI * 0.25;
-  hood.castShadow = true;
-  root.add(hood);
-  part(root, box, materials.gold, [0, 2.13, 0.3], [0.3, 0.09, 0.055]);
-  part(root, box, materials.ink, [0, 2.13, 0.34], [0.035, 0.1, 0.025]);
-  part(root, cylinder, materials.cream, [0, 0.84, -0.48], [0.4, 0.4, 0.4], [0, 0, Math.PI / 2]);
+  (root.userData as HikerData).baseScale = 1.01;
+  leg(root, -0.22, materials.slate, 1, { width: 0.12, boot: materials.ink, gaiter: true });
+  leg(root, 0.22, materials.slate, -1, { width: 0.12, boot: materials.ink, gaiter: true });
+  part(root, box, materials.cream, [0, 1.36, 0], [0.62, 0.82, 0.4]);
+  part(root, box, materials.red, [0, 1.08, 0.43], [0.54, 0.12, 0.07]);
+  for (const x of [-0.24, 0.24]) part(root, cylinder, materials.red, [x, 1.04, 0.39], [0.045, 0.2, 0.045], [0, 0, x > 0 ? -0.35 : 0.35]);
+  arm(root, -0.44, materials.cream, -1, { length: 0.65, width: 0.09, gloves: true });
+  arm(root, 0.44, materials.cream, 1, { length: 0.65, width: 0.09, gloves: true });
+
+  // The climber has an elongated, faceted face under a geometric hard shell.
+  part(root, lowSphere, materials.skinDark, [0, 2.06, 0], [0.29, 0.39, 0.3]);
+  part(root, lowSphere, materials.red, [0, 2.23, -0.015], [0.38, 0.29, 0.37]);
+  part(root, box, materials.red, [0, 2.2, 0.29], [0.38, 0.07, 0.19], [-0.08, 0, 0]);
+  for (const x of [-0.12, 0.12]) part(root, lowSphere, materials.ink, [x, 2.04, 0.28], [0.034, 0.034, 0.022]);
+  part(root, box, materials.ink, [-0.3, 1.98, 0.02], [0.025, 0.33, 0.025], [0, 0, -0.18]);
+  part(root, box, materials.ink, [0.3, 1.98, 0.02], [0.025, 0.33, 0.025], [0, 0, 0.18]);
+  climbingPack(root);
   return root;
 }
 
 const builders: Record<HikerId, () => THREE.Group> = {
   "trail-scout": trailScout,
   "ridge-runner": ridgeRunner,
-  "field-naturalist": fieldNaturalist,
-  "storm-keeper": stormKeeper,
+  "creek-guide": creekGuide,
+  "crag-climber": cragClimber,
 };
 
 export function isHikerId(value: string | null): value is HikerId {

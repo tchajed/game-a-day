@@ -4,7 +4,7 @@ In this game you'll hike up a mountain. The hiking is simple: just move along th
 
 The trail is rendered as a procedural low-poly diorama in Three.js: real perspective, moving light, long tree shadows, ground fog, faceted terrain, and a camera that follows each switchback from the young woods to the snowline. No downloaded 3D models or textures are used.
 
-Open the **Hiker** model viewer from the top-right control to orbit and inspect four fully procedural character designs: the original Trail Scout (now hiking without a walking stick), Ridge Runner, Field Naturalist, and Storm Keeper. Choosing **Use this hiker** saves that distinct model for the trail. The viewer is also available directly at `/hike/character.html`.
+Open the **Hiker** model viewer from the top-right control to orbit and inspect four fully procedural character designs: Trail Scout, Ridge Runner, Creek Guide, and Crag Climber. Every hiker carries a modeled backpack; the Scout and Runner have classic square packs with a small mountain badge, while the Guide and Climber carry distinct roll-top and rope-loaded designs. Choosing **Use this hiker** saves that model for the trail. The viewer is also available directly at `/hike/character.html`.
 
 ## Play
 
