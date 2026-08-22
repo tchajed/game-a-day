@@ -1,6 +1,6 @@
 import "./style.css";
 
-type StyleKey = "paper" | "ink" | "neon" | "pixel";
+type StyleKey = "paper" | "pixel";
 type Surprise = {
   id: string;
   x: number;
@@ -39,15 +39,11 @@ const surprises: Surprise[] = [
 
 const styleInfo: Record<StyleKey, { name: string; subtitle: string; swatch: string }> = {
   paper: { name: "Cut Paper", subtitle: "warm layers & soft shadows", swatch: "linear-gradient(145deg,#e9b65f 0 42%,#698761 43% 67%,#fff3d4 68%)" },
-  ink: { name: "Ink Wash", subtitle: "wet brush & rice paper", swatch: "radial-gradient(ellipse at 35% 55%,#31332c 0 19%,transparent 21%),linear-gradient(145deg,#eee9da 0 58%,#929b8d 59%)" },
-  neon: { name: "Neon Summit", subtitle: "laser lines after dark", swatch: "linear-gradient(155deg,#080b24 0 42%,#f34bc7 44% 48%,#16e6dc 50% 55%,#111536 57%)" },
   pixel: { name: "Pocket Hike", subtitle: "bright 16-bit wilderness", swatch: "linear-gradient(135deg,#75cbe8 0 40%,#397657 41% 62%,#f5d67b 63%); image-rendering:pixelated" },
 };
 
 const palettes: Record<StyleKey, Palette> = {
   paper: { sky: "#e9b65f", sun: "#fff2c7", far: "#d9c78f", mid: "#93a478", near: "#627f60", ground: "#f5e6bd", path: "#fff7df", ink: "#26382f", accent: "#d84f3f", accent2: "#4e7583", paper: "#fff8e7", shadow: "rgba(45,52,38,.18)" },
-  ink: { sky: "#eee9da", sun: "rgba(180,64,47,.76)", far: "rgba(81,89,79,.16)", mid: "rgba(54,65,57,.28)", near: "rgba(32,42,36,.48)", ground: "#d9d7ca", path: "rgba(248,246,236,.8)", ink: "#252922", accent: "#a74332", accent2: "#64746b", paper: "#f4f0e4", shadow: "rgba(30,35,29,.09)" },
-  neon: { sky: "#080b24", sun: "#f34bc7", far: "#151842", mid: "#20205a", near: "#112f4e", ground: "#090d26", path: "#16e6dc", ink: "#c9fff6", accent: "#ff4dc4", accent2: "#16e6dc", paper: "#101532", shadow: "rgba(22,230,220,.45)" },
   pixel: { sky: "#75cbe8", sun: "#fff0a8", far: "#8ab4a0", mid: "#568d72", near: "#35664f", ground: "#6d9b58", path: "#f5d67b", ink: "#172d32", accent: "#d94c45", accent2: "#277a85", paper: "#fff3c4", shadow: "rgba(23,45,50,.24)" },
 };
 
@@ -181,42 +177,15 @@ function mountainLayer(base: number, amplitude: number, color: string, speed: nu
   line(points, true);
   ctx.fillStyle = color;
   if (style === "paper") { ctx.shadowColor = palettes[style].shadow; ctx.shadowOffsetY = -7; }
-  if (style === "neon") { ctx.shadowColor = color; ctx.shadowBlur = 10; }
   ctx.fill();
-  ctx.shadowColor = "transparent"; ctx.shadowBlur = 0;
-  if (style === "ink") {
-    ctx.strokeStyle = "rgba(27,34,29,.32)"; ctx.lineWidth = 1.2; ctx.stroke();
-    ctx.save(); ctx.translate(2, -2); ctx.globalAlpha = .18; ctx.stroke(); ctx.restore();
-  } else if (style === "neon") {
-    ctx.strokeStyle = color === palettes.neon.far ? "#684dc8" : color === palettes.neon.mid ? "#f34bc7" : "#16e6dc";
-    ctx.lineWidth = 1.5; ctx.shadowColor = ctx.strokeStyle; ctx.shadowBlur = 8; ctx.stroke(); ctx.shadowBlur = 0;
-  }
+  ctx.shadowColor = "transparent";
 }
 
 function drawSky(p: Palette) {
-  if (style === "neon") {
-    const grad = ctx.createLinearGradient(0, 0, 0, height);
-    grad.addColorStop(0, "#050718"); grad.addColorStop(.58, "#11143b"); grad.addColorStop(1, "#28123c"); ctx.fillStyle = grad;
-  } else ctx.fillStyle = p.sky;
+  ctx.fillStyle = p.sky;
   ctx.fillRect(0, 0, width, height);
 
-  if (style === "ink") {
-    ctx.strokeStyle = "rgba(40,45,38,.045)"; ctx.lineWidth = 1;
-    for (let i = 0; i < 90; i++) {
-      const y = seeded(i + 71) * height, x = seeded(i + 19) * width;
-      ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + 20 + seeded(i) * 90, y + (seeded(i + 2) - .5) * 3); ctx.stroke();
-    }
-  } else if (style === "neon") {
-    ctx.fillStyle = "#b9fff7";
-    for (let i = 0; i < Math.min(70, width / 9); i++) {
-      ctx.globalAlpha = .25 + seeded(i + 260) * .75;
-      ctx.fillRect(seeded(i + 60) * width, seeded(i + 160) * height * .48, i % 7 ? 1 : 2, i % 7 ? 1 : 2);
-    }
-    ctx.globalAlpha = 1;
-    ctx.strokeStyle = "rgba(22,230,220,.12)"; ctx.lineWidth = 1;
-    for (let x = -width; x < width * 2; x += 54) { ctx.beginPath(); ctx.moveTo(width / 2, height * .54); ctx.lineTo(x, height); ctx.stroke(); }
-    for (let y = height * .58; y < height; y += Math.max(12, (y - height * .5) * .18)) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(width, y); ctx.stroke(); }
-  } else if (style === "pixel") {
+  if (style === "pixel") {
     ctx.fillStyle = "rgba(255,255,255,.72)";
     for (let i = 0; i < 5; i++) {
       const x = ((i * 223 - displayProgress * .04) % (width + 180)) - 90, y = 55 + (i % 3) * 46;
@@ -229,9 +198,7 @@ function drawSky(p: Palette) {
   if (style === "pixel") {
     ctx.fillStyle = p.sun; ctx.fillRect(Math.round(sunX - 28), Math.round(sunY - 28), 56, 56);
   } else {
-    ctx.beginPath(); ctx.arc(sunX, sunY, Math.min(58, width * .075), 0, Math.PI * 2); ctx.fillStyle = p.sun;
-    if (style === "neon") { ctx.shadowColor = p.sun; ctx.shadowBlur = 22; } ctx.fill(); ctx.shadowBlur = 0;
-    if (style === "ink") { ctx.strokeStyle = "rgba(107,42,34,.5)"; ctx.lineWidth = 1; ctx.stroke(); }
+    ctx.beginPath(); ctx.arc(sunX, sunY, Math.min(58, width * .075), 0, Math.PI * 2); ctx.fillStyle = p.sun; ctx.fill();
   }
 
   mountainLayer(height * .49, height * .1, p.far, .035, 30);
@@ -250,7 +217,6 @@ function drawGround(p: Palette) {
   line(shape, true); ctx.fillStyle = p.ground;
   if (style === "paper") { ctx.shadowColor = p.shadow; ctx.shadowOffsetY = -8; }
   ctx.fill(); ctx.shadowColor = "transparent";
-  if (style === "ink" || style === "neon") { ctx.strokeStyle = style === "neon" ? p.accent2 : "rgba(37,41,34,.42)"; ctx.lineWidth = style === "neon" ? 1.5 : 1.2; line(top); ctx.stroke(); }
 
   const snowy = top.filter(([x]) => {
     const world = displayProgress + (x - width * .34) / scaleX();
@@ -258,25 +224,20 @@ function drawGround(p: Palette) {
   });
   if (snowy.length > 1) {
     line([...snowy, [snowy[snowy.length - 1][0], height + 30], [snowy[0][0], height + 30]], true);
-    ctx.fillStyle = style === "neon" ? "#d5faff" : style === "pixel" ? "#e8f1e8" : style === "ink" ? "#f7f5ed" : "#f8f5e9";
+    ctx.fillStyle = style === "pixel" ? "#e8f1e8" : "#f8f5e9";
     if (style === "paper") { ctx.shadowColor = p.shadow; ctx.shadowOffsetY = -5; }
     ctx.fill(); ctx.shadowColor = "transparent";
-    if (style === "neon") { ctx.strokeStyle = "#bfffff"; ctx.lineWidth = 1; ctx.stroke(); }
   }
 
-  ctx.strokeStyle = p.path; ctx.lineWidth = style === "neon" ? 2.5 : style === "pixel" ? 8 : Math.max(9, height * .018); ctx.lineCap = style === "pixel" ? "butt" : "round";
-  if (style === "neon") { ctx.shadowColor = p.path; ctx.shadowBlur = 9; }
+  ctx.strokeStyle = p.path; ctx.lineWidth = style === "pixel" ? 8 : Math.max(9, height * .018); ctx.lineCap = style === "pixel" ? "butt" : "round";
   ctx.beginPath();
   for (let x = -20; x <= width + 30; x += 18) {
     const world = displayProgress + (x - width * .34) / scaleX();
     const y = gy(world) + 11 + Math.sin(world * .11) * 2;
     x === -20 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
   }
-  ctx.stroke(); ctx.shadowBlur = 0; ctx.shadowColor = "transparent";
-  if (style === "ink") {
-    ctx.strokeStyle = "rgba(37,41,34,.12)"; ctx.lineWidth = 1;
-    for (let y = height * .76; y < height; y += 13) { ctx.beginPath(); ctx.moveTo(0, y); ctx.bezierCurveTo(width*.3, y-5, width*.7, y+7, width, y); ctx.stroke(); }
-  } else if (style === "pixel") {
+  ctx.stroke(); ctx.shadowColor = "transparent";
+  if (style === "pixel") {
     ctx.fillStyle = "rgba(26,77,55,.28)";
     for (let i = 0; i < width / 12; i++) ctx.fillRect(i * 17 + (i % 3) * 3, height - 18 - (i % 5) * 7, 5, 3);
   }
@@ -290,21 +251,7 @@ function drawTree(worldX: number, size: number, p: Palette, identicalSeed?: numb
   ctx.save(); ctx.translate(x, y); ctx.rotate(lean * Math.PI / 180);
   if (style === "paper") { ctx.shadowColor = p.shadow; ctx.shadowOffsetX = 4; ctx.shadowOffsetY = 5; }
 
-  if (style === "ink") {
-    ctx.strokeStyle = "rgba(29,36,30,.72)"; ctx.lineCap = "round"; ctx.lineWidth = Math.max(1.2, size * .045);
-    ctx.beginPath(); ctx.moveTo(0, 2); ctx.quadraticCurveTo(lean, -size * .48, -lean * .4, -size * .9); ctx.stroke();
-    ctx.globalAlpha = .68;
-    for (let i = 0; i < 7; i++) {
-      const yy = -size * (.42 + seeded(seed + i * 4) * .5), xx = (seeded(seed + i * 7) - .5) * size * .34;
-      ctx.fillStyle = i % 3 ? p.near : p.mid; ctx.beginPath(); ctx.ellipse(xx, yy, size * (.15 + seeded(seed+i)*.09), size * .12, seeded(seed+i+9), 0, Math.PI*2); ctx.fill();
-    }
-    ctx.globalAlpha = 1;
-  } else if (style === "neon") {
-    ctx.strokeStyle = seed % 2 ? p.accent2 : "#7758d4"; ctx.lineWidth = 1.25; ctx.shadowColor = ctx.strokeStyle; ctx.shadowBlur = 6;
-    ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(0, -size); ctx.moveTo(0, -size * .86);
-    for (let i = 0; i < 4; i++) { const yy = -size * (.18 + i * .19), spread = size * (.3 - i * .045); ctx.moveTo(0, yy - size * .19); ctx.lineTo(-spread, yy + size*.1); ctx.lineTo(0, yy); ctx.lineTo(spread, yy + size*.1); }
-    ctx.stroke(); ctx.shadowBlur = 0;
-  } else if (style === "pixel") {
+  if (style === "pixel") {
     const unit = Math.max(2, Math.round(size / 15));
     ctx.fillStyle = "#5a4432"; ctx.fillRect(-unit, -size * .55, unit * 2, size * .58);
     ctx.fillStyle = seed % 2 ? p.near : p.mid;
@@ -320,8 +267,8 @@ function drawTree(worldX: number, size: number, p: Palette, identicalSeed?: numb
   }
   const snow = smoothstep(760, 920, worldX);
   if (snow > .03) {
-    ctx.globalAlpha = snow * (style === "ink" ? .72 : .92);
-    ctx.strokeStyle = style === "neon" ? "#d5faff" : style === "pixel" ? "#edf6e8" : "#faf8ef";
+    ctx.globalAlpha = snow * .92;
+    ctx.strokeStyle = style === "pixel" ? "#edf6e8" : "#faf8ef";
     ctx.lineWidth = style === "pixel" ? 4 : Math.max(2, size * .045); ctx.lineCap = style === "pixel" ? "butt" : "round";
     for (let i = 0; i < 4; i++) { const yy = -size * (.28 + i * .18), spread = size * (.2 - i * .025); ctx.beginPath(); ctx.moveTo(-spread, yy); ctx.lineTo(spread * .7, yy + 1); ctx.stroke(); }
     ctx.globalAlpha = 1;
@@ -334,7 +281,6 @@ function drawShrub(worldX: number, size: number, p: Palette, seed: number) {
   if (x < -40 || x > width + 40 || worldX > 950) return;
   ctx.save(); ctx.translate(x, y);
   if (style === "paper") { ctx.shadowColor = p.shadow; ctx.shadowOffsetX = 2; ctx.shadowOffsetY = 3; }
-  if (style === "neon") { ctx.strokeStyle = seed % 2 ? p.accent2 : "#7758d4"; ctx.shadowColor = ctx.strokeStyle; ctx.shadowBlur = 5; ctx.lineWidth = 1; }
   const leaves = 3 + Math.floor(seeded(seed + 4) * 4);
   for (let i = 0; i < leaves; i++) {
     const angle = -Math.PI + (i / Math.max(1, leaves - 1)) * Math.PI;
@@ -343,7 +289,7 @@ function drawShrub(worldX: number, size: number, p: Palette, seed: number) {
       ctx.fillStyle = i % 2 ? p.near : p.mid; ctx.fillRect(Math.round(lx - size*.18), Math.round(ly - size*.14), Math.round(size*.36), Math.round(size*.24));
     } else {
       ctx.beginPath(); ctx.ellipse(lx, ly, size * .24, size * .15, angle * .25, 0, Math.PI * 2);
-      if (style === "neon") ctx.stroke(); else { ctx.fillStyle = i % 2 ? p.near : p.mid; ctx.globalAlpha = style === "ink" ? .55 : 1; ctx.fill(); }
+      ctx.fillStyle = i % 2 ? p.near : p.mid; ctx.fill();
     }
   }
   ctx.globalAlpha = 1; ctx.restore(); ctx.shadowColor = "transparent"; ctx.shadowBlur = 0;
@@ -355,11 +301,11 @@ function drawGroundDetail(worldX: number, p: Palette, seed: number) {
   const snow = smoothstep(790, 930, worldX);
   ctx.save(); ctx.translate(x, y); ctx.lineCap = "round";
   if (seed % 7 === 0) {
-    ctx.fillStyle = snow > .35 ? (style === "neon" ? "#8cebea" : "#d7ddd5") : p.near;
+    ctx.fillStyle = snow > .35 ? "#d7ddd5" : p.near;
     if (style === "pixel") ctx.fillRect(-7, -4, 14, 5);
     else { ctx.beginPath(); ctx.ellipse(0, -3, 7 + seeded(seed) * 5, 4 + seeded(seed+2) * 3, -.1, Math.PI, Math.PI*2); ctx.fill(); }
   } else {
-    ctx.strokeStyle = style === "neon" ? p.accent2 : p.near; ctx.lineWidth = style === "pixel" ? 2 : 1.2;
+    ctx.strokeStyle = p.near; ctx.lineWidth = style === "pixel" ? 2 : 1.2;
     const blades = snow > .45 ? 2 : 3 + seed % 4;
     for (let i = 0; i < blades; i++) { const dx = (i - blades / 2) * 3; ctx.beginPath(); ctx.moveTo(dx, 0); ctx.lineTo(dx + (seeded(seed+i)-.5)*7, -(5 + seeded(seed+i+8)*11) * (1-snow*.55)); ctx.stroke(); }
     if (snow < .18 && seed % 11 === 2) { ctx.fillStyle = p.accent; ctx.beginPath(); ctx.arc(0, -10, style === "pixel" ? 2.5 : 1.8, 0, Math.PI*2); ctx.fill(); }
@@ -371,7 +317,7 @@ function drawForest(p: Palette) {
   const worldSpan = width / scaleX();
   const minWorld = displayProgress - worldSpan * .45 - 70;
   const maxWorld = displayProgress + worldSpan * .8 + 70;
-  ctx.save(); ctx.globalAlpha = style === "ink" ? .48 : .65;
+  ctx.save(); ctx.globalAlpha = .65;
   const backStart = Math.floor(minWorld / 29);
   for (let i = backStart; i * 29 < maxWorld; i++) {
     const wx = i * 29 + (seeded(i + 400) - .5) * 17;
@@ -405,8 +351,8 @@ function drawForest(p: Palette) {
 function drawFog(p: Palette) {
   const fog = smoothstep(500, 650, displayProgress) * (1 - smoothstep(850, 990, displayProgress));
   if (fog < .01) return;
-  ctx.save(); ctx.globalAlpha = fog * (style === "neon" ? .18 : .24);
-  ctx.fillStyle = style === "neon" ? "#75e6df" : style === "pixel" ? "#e6f1e8" : style === "ink" ? "#f5f3eb" : "#f5f1df";
+  ctx.save(); ctx.globalAlpha = fog * .24;
+  ctx.fillStyle = style === "pixel" ? "#e6f1e8" : "#f5f1df";
   const drift = (elapsed * 9) % 180;
   if (style === "pixel") {
     for (let i = -1; i < 6; i++) ctx.fillRect(i * 190 - drift, height * (.45 + (i%3)*.07), 160, 18 + (i%2)*12);

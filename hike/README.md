@@ -14,6 +14,6 @@ The hiking itself should be simple. I was imagining that it's a 2D side scroller
 bun run dev
 ```
 
-Hold the round boot button, <kbd>→</kbd>, <kbd>D</kbd>, or <kbd>Space</kbd> to hike. The eight-minute trail climbs from young woods through old growth and mountain fog to the snowline, pausing at every curiosity until you find and click it. Use **Look** to switch between four distinct treatments: Cut Paper, Ink Wash, Neon Summit, and the pixel-art Pocket Hike.
+Hold the round boot button, <kbd>→</kbd>, <kbd>D</kbd>, or <kbd>Space</kbd> to hike. The eight-minute trail climbs from young woods through old growth and mountain fog to the snowline, pausing at every curiosity until you find and click it. Use **Look** to switch between the default Cut Paper treatment and the pixel-art Pocket Hike.
 
 Add `?debug=true&music=off` for 1×/2×/4× walk-speed controls, surprise jumps, and silent automated testing. The game also exposes `window.__HIKE_DEBUG__` for programmatic playtesting.
