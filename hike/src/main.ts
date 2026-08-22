@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { createHiker, getSavedHiker, poseHiker } from "./hikers";
+import { createHiker, poseHiker } from "./hikers";
 import "./style.css";
 
 type Tone = "trail" | "odd";
@@ -282,8 +282,7 @@ function makeDiscovery(s:Surprise){
 }
 const discoveryGroups=new Map<string,THREE.Group>();
 
-const selectedHiker = getSavedHiker();
-const hiker = createHiker(selectedHiker);
+const hiker = createHiker();
 scene.add(hiker);
 
 buildTerrain();buildMountainsAndSky();buildForest();surprises.forEach(makeDiscovery);
@@ -356,4 +355,4 @@ document.querySelector<HTMLButtonElement>(".again")!.addEventListener("click",()
 
 if(debug){const panel=document.createElement("div");panel.className="debug-panel";panel.innerHTML='<span>walk speed</span><button class="active" data-speed="1">1×</button><button data-speed="2">2×</button><button data-speed="4">4×</button><i></i><button data-action="next">Next event</button><button data-action="all">Summit</button><button data-action="reset">Reset</button>';game.append(panel);panel.addEventListener("click",event=>{const button=(event.target as HTMLElement).closest<HTMLButtonElement>("button");if(!button)return;const speed=Number(button.dataset.speed),action=button.dataset.action;if(speed){debugSpeed=speed;panel.querySelectorAll("[data-speed]").forEach(item=>item.classList.toggle("active",item===button));}if(action==="next"){const next=surprises.find(s=>!completed.has(s.id)&&s.x>progress+2);if(next)progress=next.x-15;}if(action==="all")progress=TRAIL_LENGTH;if(action==="reset")document.querySelector<HTMLButtonElement>(".again")!.click();});}
 
-Object.assign(window,{__HIKE_DEBUG__:{getState:()=>({progress,completed:[...completed],engine:"three.js",hiker:selectedHiker,vista:vistaAmount(progress),speed:debugSpeed,biome:trailPhase(progress),hovered:hoveredId}),jumpTo:(id:string)=>{const s=surprises.find(item=>item.id===id);if(s)progress=s.x-15;},jumpToProgress:(station:number)=>{progress=THREE.MathUtils.clamp(station,0,TRAIL_LENGTH);},screenPosition:(id:string)=>{const g=discoveryGroups.get(id);if(!g)return null;const p=g.position.clone().add(new THREE.Vector3(0,1.2,0)).project(camera);return{x:(p.x+1)*canvas.clientWidth/2,y:(1-p.y)*canvas.clientHeight/2,visible:g.visible&&p.z<1};},collect,setSpeed:(speed:number)=>{if(debug&&[1,2,4].includes(speed))debugSpeed=speed;}}});
+Object.assign(window,{__HIKE_DEBUG__:{getState:()=>({progress,completed:[...completed],engine:"three.js",hiker:"trail-scout",vista:vistaAmount(progress),speed:debugSpeed,biome:trailPhase(progress),hovered:hoveredId}),jumpTo:(id:string)=>{const s=surprises.find(item=>item.id===id);if(s)progress=s.x-15;},jumpToProgress:(station:number)=>{progress=THREE.MathUtils.clamp(station,0,TRAIL_LENGTH);},screenPosition:(id:string)=>{const g=discoveryGroups.get(id);if(!g)return null;const p=g.position.clone().add(new THREE.Vector3(0,1.2,0)).project(camera);return{x:(p.x+1)*canvas.clientWidth/2,y:(1-p.y)*canvas.clientHeight/2,visible:g.visible&&p.z<1};},collect,setSpeed:(speed:number)=>{if(debug&&[1,2,4].includes(speed))debugSpeed=speed;}}});
