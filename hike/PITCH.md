@@ -1,6 +1,6 @@
 # Hike
 
-**A mountain of small mysteries.** Follow a climbing ribbon of switchbacks through moss, deadfall, ferns, old growth, drifting mountain fog, and finally the snowline. The woods keep the next bend close until the trees suddenly fall away into one of three mountain overlooks—then close around you again. Along the way, ordinary trail details turn strange: two trees match exactly, a cloud forgets what shape it should be, and the stones begin to sing. Hold to hike and log eight unmissable curiosities in warm cut paper or bright pocket-sized pixel art.
+**Take the long way up.** Follow a climbing ribbon of switchbacks through moss, deadfall, ferns, old growth, drifting mountain fog, and finally the snowline. The woods keep the next bend close until the trees suddenly fall away into a mountain overlook—then close around you again. Hold to hike through a warm cut-paper landscape or a bright pocket-sized pixel world.
 
 ![Living Slope fills the uphill forest floor with simple procedural detail](screenshots/hike-living-slope.png)
 

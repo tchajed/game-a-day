@@ -6,10 +6,7 @@ type Surprise = {
   id: string;
   x: number;
   title: string;
-  clue: string;
   note: string;
-  mark: string;
-  sky?: boolean;
 };
 
 type Palette = {
@@ -28,14 +25,14 @@ type Palette = {
 };
 
 const surprises: Surprise[] = [
-  { id: "trash", x: 118, title: "Trail Custodian", clue: "Something shiny is crinkling by the path.", note: "You packed out what someone else packed in.", mark: "01" },
-  { id: "bird", x: 252, title: "A Party of One", clue: "That branch seems to be watching you.", note: "One very small bird. One extremely large opinion.", mark: "02" },
-  { id: "cloud", x: 388, title: "Forecast: Unlikely", clue: "The sky has made a peculiar mistake.", note: "A cloud tied itself into a perfect square.", mark: "03", sky: true },
-  { id: "twins", x: 522, title: "Copy / Paste", clue: "The trees here are never the same. Except…", note: "Two identical trees, right down to the last needle.", mark: "04" },
-  { id: "door", x: 654, title: "Unreasonably Small Door", clue: "There is a little color in the cliff face.", note: "You knocked. Something much smaller knocked back.", mark: "05" },
-  { id: "choir", x: 784, title: "The Stone Choir", clue: "Those rocks are humming in three-part harmony.", note: "Their encore may take several geological eras.", mark: "06" },
-  { id: "waterfall", x: 916, title: "Uphill Waterfall", clue: "The stream appears to have forgotten gravity.", note: "Every drop is determined to see the summit.", mark: "07" },
-  { id: "moth", x: 1044, title: "Moon, Pocket-Sized", clue: "A pale light is fluttering among the pines.", note: "The moth carried a tiny moon away on its wings.", mark: "08", sky: true },
+  { id: "trash", x: 118, title: "Trail Custodian", note: "You packed out what someone else packed in." },
+  { id: "bird", x: 252, title: "A Party of One", note: "One very small bird. One extremely large opinion." },
+  { id: "cloud", x: 388, title: "Forecast: Unlikely", note: "A cloud tied itself into a perfect square." },
+  { id: "twins", x: 522, title: "Copy / Paste", note: "Two identical trees, right down to the last needle." },
+  { id: "door", x: 654, title: "Unreasonably Small Door", note: "You knocked. Something much smaller knocked back." },
+  { id: "choir", x: 784, title: "The Stone Choir", note: "Their encore may take several geological eras." },
+  { id: "waterfall", x: 916, title: "Uphill Waterfall", note: "Every drop is determined to see the summit." },
+  { id: "moth", x: 1044, title: "Moon, Pocket-Sized", note: "The moth carried a tiny moon away on its wings." },
 ];
 
 const styleInfo: Record<StyleKey, { name: string; subtitle: string; swatch: string }> = {
@@ -57,7 +54,7 @@ const app = document.querySelector<HTMLDivElement>("#app")!;
 app.innerHTML = `
   <main class="game" data-style="paper" data-view="slope">
     <canvas aria-label="A winding mountain trail"></canvas>
-    <header class="brand"><h1>Hike.</h1><p>a mountain of small mysteries</p></header>
+    <header class="brand"><h1>Hike.</h1></header>
     <div class="top-controls">
       <button class="icon-button music" aria-label="Turn music on" title="Music">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 18V5l10-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="16" cy="16" r="3"/></svg>
@@ -70,20 +67,19 @@ app.innerHTML = `
       ${Object.entries(styleInfo).map(([key, info]) => `<button class="style-option${key === "paper" ? " active" : ""}" data-key="${key}"><span class="swatch" style="${info.swatch}"></span><span><b>${info.name}</b><span>${info.subtitle}</span></span></button>`).join("")}
     </section>
     <div class="progress-wrap" aria-label="Hike progress">
-      <div class="progress-track"><div class="progress-fill"></div>${surprises.map((s) => `<i class="progress-marker" data-id="${s.id}" style="left:${s.x / 11.5}%"></i>`).join("")}</div>
+      <div class="progress-track"><div class="progress-fill"></div></div>
       <div class="progress-caption"><span class="biome-label">young woods</span> · <span class="percent">0%</span></div>
     </div>
     <button class="walk-button" aria-label="Hold to hike">
       <svg viewBox="0 0 32 28" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 4c2 5 2 10 0 14-1 2 0 5 3 6 3 1 7-1 8-4 1-2-1-3-3-4-2-1-2-4-1-7l1-5"/><path d="M18 7c4 1 7 4 8 8 1 3-1 6-4 6h-4M8 14h7"/></svg>
       <span>hold</span>
     </button>
-    <div class="prompt"><strong>Hold to hike.</strong> Keep an eye out.</div>
-    <aside class="toast"><div class="toast-icon">01</div><small>Trail curiosity found</small><b>Trail Custodian</b><p></p></aside>
+    <div class="prompt"><strong>Hold to hike.</strong></div>
+    <aside class="toast" aria-hidden="true"><div class="toast-icon">✦</div><small>Noticed</small><b></b><p></p></aside>
     <section class="finish-card" hidden>
-      <div class="eyebrow">Summit log · all curiosities found</div>
-      <h2>The mountain<br>noticed you, too.</h2>
-      <p>You walked 1,150 very suspicious metres and left with eight stories.</p>
-      <div class="finish-stamps">${surprises.map((s, i) => `<span style="--r:${i % 2 ? 8 : -7}deg">${s.mark}</span>`).join("")}</div>
+      <div class="eyebrow">Summit log</div>
+      <h2>You made it.</h2>
+      <p>You walked 1,150 metres from the young woods to the snowline.</p>
       <button class="again">Hike it again</button>
     </section>
   </main>`;
@@ -475,13 +471,6 @@ function drawFog(p: Palette) {
 function eventTarget(id: string, x: number, y: number, r = 30) { targets.push({ id, x, y, r }); }
 function isFound(id: string) { return completed.has(id); }
 
-function drawSpark(x: number, y: number, p: Palette, scale = 1) {
-  const pulse = 1 + Math.sin(elapsed * 4) * .12;
-  ctx.save(); ctx.translate(x, y); ctx.scale(scale * pulse, scale * pulse); ctx.rotate(elapsed * .2);
-  ctx.strokeStyle = p.accent; ctx.lineWidth = 1.5;
-  ctx.beginPath(); ctx.moveTo(-8, 0); ctx.lineTo(8, 0); ctx.moveTo(0, -8); ctx.lineTo(0, 8); ctx.stroke(); ctx.restore();
-}
-
 const surpriseSides: Record<string, number> = { trash: 10, bird: -14, cloud: 0, twins: 16, door: -15, choir: 11, waterfall: -14, moth: 3 };
 function drawSurprise(s: Surprise, p: Palette) {
   if(isFound(s.id))return;
@@ -516,7 +505,6 @@ function drawSurprise(s: Surprise, p: Palette) {
     ctx.restore();ctx.shadowColor="transparent";
   }
   eventTarget(s.id,tx,ty,Math.max(22,(s.id==="cloud"?43:35)*sc));
-  if(Math.abs(progress-s.x)<70)drawSpark(tx+31*sc,ty-25*sc,p,.7*sc);
 }
 
 function drawHiker(p: Palette) {
@@ -531,25 +519,16 @@ function drawHiker(p: Palette) {
 }
 
 function update(dt: number) {
-  if (walking && !finished) {
-    const next = surprises.find((s) => !isFound(s.id) && s.x >= progress - 1);
-    const barrier = next ? next.x - 17 : 1150;
-    progress = Math.min(barrier, progress + dt * WALK_SPEED * debugSpeed);
-    if (progress >= barrier - .01) walking = false;
-  }
+  if (walking && !finished) progress = Math.min(TRAIL_LENGTH, progress + dt * WALK_SPEED * debugSpeed);
   displayProgress += (progress - displayProgress) * Math.min(1, dt * 5.5);
   const percent = Math.min(100, Math.round(progress / 11.5));
   progressFill.style.width = `${percent}%`;
   progressCaption.textContent = `${percent}%`;
   biomeLabel.textContent = vistaAmount(progress) > .62 ? "mountain overlook" : trailPhase(progress);
 
-  const next = surprises.find((s) => !isFound(s.id) && Math.abs(progress - (s.x - 17)) < 1);
-  if (next) {
-    prompt.innerHTML = `<strong>Something is odd.</strong> ${next.clue}`;
-    prompt.classList.remove("hidden");
-  } else if (progress > 12) prompt.classList.add("hidden");
+  if (progress > 12) prompt.classList.add("hidden");
 
-  if (progress >= 1149.5 && completed.size === surprises.length && !finished) {
+  if (progress >= TRAIL_LENGTH - .5 && !finished) {
     finished = true; walking = false;
     setTimeout(() => finishCard.hidden = false, 450);
   }
@@ -587,14 +566,14 @@ function collect(id: string) {
   const surprise = surprises.find((s) => s.id === id);
   if (!surprise || completed.has(id) || Math.abs(progress - surprise.x) > 80) return;
   completed.add(id);
-  document.querySelector(`.progress-marker[data-id="${id}"]`)?.classList.add("done");
-  toast.querySelector<HTMLElement>(".toast-icon")!.textContent = surprise.mark;
   toast.querySelector<HTMLElement>("b")!.textContent = surprise.title;
   toast.querySelector<HTMLElement>("p")!.textContent = surprise.note;
   toast.classList.add("show");
+  toast.setAttribute("aria-hidden", "false");
   prompt.classList.add("hidden");
   clearTimeout(toastTimer); toastTimer = window.setTimeout(() => {
     toast.classList.remove("show");
+    toast.setAttribute("aria-hidden", "true");
     prompt.innerHTML = `<strong>Curiosity logged.</strong> Hold to keep hiking.`;
     prompt.classList.remove("hidden");
   }, 3300);
@@ -669,19 +648,19 @@ musicButton.addEventListener("click",()=>{musicOn=!musicOn;updateMusicButton();i
 
 document.querySelector<HTMLButtonElement>(".again")!.addEventListener("click",()=>{
   progress=0;displayProgress=0;completed=new Set();finished=false;finishCard.hidden=true;
-  document.querySelectorAll(".progress-marker").forEach((m)=>m.classList.remove("done"));
-  prompt.innerHTML="<strong>Hold to hike.</strong> Keep an eye out.";prompt.classList.remove("hidden");
+  clearTimeout(toastTimer);toast.classList.remove("show");toast.setAttribute("aria-hidden","true");
+  prompt.innerHTML="<strong>Hold to hike.</strong>";prompt.classList.remove("hidden");
 });
 
 if(debug){
   const panel=document.createElement("div"); panel.className="debug-panel";
-  panel.innerHTML='<span>walk speed</span><button class="active" data-speed="1">1×</button><button data-speed="2">2×</button><button data-speed="4">4×</button><i></i><button data-action="next">Next surprise</button><button data-action="all">Summit</button><button data-action="reset">Reset</button>'; game.append(panel);
+  panel.innerHTML='<span>walk speed</span><button class="active" data-speed="1">1×</button><button data-speed="2">2×</button><button data-speed="4">4×</button><i></i><button data-action="next">Next event</button><button data-action="all">Summit</button><button data-action="reset">Reset</button>'; game.append(panel);
   panel.addEventListener("click",(event)=>{
     const button=(event.target as HTMLElement).closest<HTMLButtonElement>("button"); if(!button)return;
     const speed=Number(button.dataset.speed); const action=button.dataset.action;
     if(speed){debugSpeed=speed;panel.querySelectorAll("[data-speed]").forEach((item)=>item.classList.toggle("active",item===button));}
     if(action==="next"){const next=surprises.find((s)=>!completed.has(s.id));if(next)progress=next.x-17;}
-    if(action==="all"){surprises.forEach((s)=>completed.add(s.id));progress=TRAIL_LENGTH;document.querySelectorAll(".progress-marker").forEach((m)=>m.classList.add("done"));}
+    if(action==="all"){surprises.forEach((s)=>completed.add(s.id));progress=TRAIL_LENGTH;}
     if(action==="reset")document.querySelector<HTMLButtonElement>(".again")!.click();
   });
 }
