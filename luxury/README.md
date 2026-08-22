@@ -9,3 +9,16 @@ This is inspired by the story of Rolex, but I don't want it to be a watch compan
 ## Luxury lunchboxes
 
 You make luxury lunchboxes. These are the height of performance and fashion, and the craze for them is akin to watches or handbags. People want to be seen carrying them around. There's essentially no competition in the luxury market, but you're competing with a bunch of companies that make highly functional products at reasonable price points. The company's been in this business for 75 years before the game starts, and you take over as a new CEO in a time of crisis.
+
+## Play
+
+```bash
+bun install
+bun run dev
+```
+
+Make eight timed decisions while balancing aura, craft, and cash. Immediate ledger movements appear at once; deeper consequences arrive one quarter later. Music is procedural and changes as the tenure progresses.
+
+- `?music=off` disables music for testing.
+- `?debug=true` extends decision timers and reveals one-click counsel/board choices.
+- `bun test` runs the exhaustive balance simulation over all 6,561 strategies.
