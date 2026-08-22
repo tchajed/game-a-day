@@ -1,5 +1,34 @@
 import { describe, expect, test } from 'bun:test'
-import { CRISES, INITIAL_METRICS, playStrategy } from './game'
+import { applyDecisionPhase, CRISES, DECISION_ROUNDS, INITIAL_METRICS, playStrategy } from './game'
+
+describe('Maison Morrow decision tutorial', () => {
+  test('progresses from a generous untimed brief to timed simultaneous sessions', () => {
+    expect(DECISION_ROUNDS.flatMap(round => round.crisisIndices)).toEqual(CRISES.map((_, index) => index))
+    expect(DECISION_ROUNDS[0].crisisIndices).toHaveLength(1)
+    expect(DECISION_ROUNDS[0].seconds).toBeNull()
+    expect(DECISION_ROUNDS[1].crisisIndices).toHaveLength(1)
+
+    const soloSeconds = DECISION_ROUNDS[1].seconds ?? 0
+    for (const round of DECISION_ROUNDS.slice(2)) {
+      expect(round.crisisIndices).toHaveLength(2)
+      expect(round.seconds).toBeGreaterThan(soloSeconds)
+    }
+  })
+
+  test('keeps the timed portion comfortably inside the five-minute prototype', () => {
+    const totalTimedSeconds = DECISION_ROUNDS.reduce((total, round) => total + (round.seconds ?? 0), 0)
+    expect(totalTimedSeconds).toBe(150)
+    expect(totalTimedSeconds).toBeLessThan(180)
+  })
+
+  test('applies parallel decisions as one atomic ledger movement', () => {
+    const metrics = applyDecisionPhase(INITIAL_METRICS, [
+      { crisisIndex: 2, choiceIndex: 0 },
+      { crisisIndex: 3, choiceIndex: 1 },
+    ], 'now')
+    expect(metrics).toEqual({ aura: 62, craft: 64, cash: 33, reach: 46 })
+  })
+})
 
 describe('Maison Morrow balance', () => {
   test('the opening crisis threatens trust without threatening solvency', () => {

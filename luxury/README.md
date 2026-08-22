@@ -17,8 +17,11 @@ bun install
 bun run dev
 ```
 
-Make eight timed decisions while balancing aura, craft, and cash. Immediate ledger movements appear at once; deeper consequences arrive one quarter later. Music is procedural and changes as the tenure progresses.
+Make eight decisions across a five-session tutorial while balancing aura, craft, and cash. The opening strategy reading and first brief are untimed. A timed solo brief follows; then the remaining decisions arrive in simultaneous pairs with a longer shared clock. Choices can be revised before sealing, and no principles, forecasts, or results appear during deliberation. Immediate ledger movements appear only after the whole session is sealed; deeper consequences arrive in the next session.
+
+The default timed portion is 150 seconds, leaving the complete prototype comfortably within its five-minute target.
 
 - `?music=off` disables music for testing.
-- `?debug=true` extends decision timers and reveals one-click counsel/board choices.
-- `bun test` runs the exhaustive balance simulation over all 6,561 strategies.
+- `?debug=true` quadruples timed sessions and provides neutral resolve/skip controls without identifying strong choices.
+- Programmatic playtesting can use `window.__MORROW__.resolve([choiceIndex, ...])`, `skip()`, and `getState()`.
+- `bun test` validates the tutorial cadence and runs the exhaustive balance simulation over all 6,561 strategies.

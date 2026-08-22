@@ -30,6 +30,55 @@ export type Crisis = {
 
 export const INITIAL_METRICS: Metrics = { aura: 62, craft: 64, cash: 48, reach: 18 }
 
+export type DecisionRound = {
+  id: string
+  label: string
+  instruction: string
+  crisisIndices: readonly number[]
+  seconds: number | null
+}
+
+// Five sessions teach the cadence before increasing the cognitive load. The
+// first decision is deliberately untimed; parallel sessions share one longer
+// clock and reveal nothing until every decision is sealed together.
+export const DECISION_ROUNDS: readonly DecisionRound[] = [
+  {
+    id: 'private-rehearsal',
+    label: 'Private rehearsal',
+    instruction: 'One brief. No clock. Learn the weight of the seal.',
+    crisisIndices: [0],
+    seconds: null,
+  },
+  {
+    id: 'solo-session',
+    label: 'Solo session',
+    instruction: 'One brief. The clock begins, but the room is still yours alone.',
+    crisisIndices: [1],
+    seconds: 24,
+  },
+  {
+    id: 'divided-table-i',
+    label: 'Divided table I',
+    instruction: 'Two briefs share one clock. Mark both before either result is revealed.',
+    crisisIndices: [2, 3],
+    seconds: 42,
+  },
+  {
+    id: 'divided-table-ii',
+    label: 'Divided table II',
+    instruction: 'Two more briefs arrive together. Revisions remain possible until the seal.',
+    crisisIndices: [4, 5],
+    seconds: 42,
+  },
+  {
+    id: 'succession-session',
+    label: 'Succession session',
+    instruction: 'The final two decisions are simultaneous. One seal determines the legacy.',
+    crisisIndices: [6, 7],
+    seconds: 42,
+  },
+]
+
 export const CRISES: Crisis[] = [
   {
     quarter: 'I · THE DOUBT',
@@ -246,14 +295,37 @@ function clamp(value: number) {
   return Math.max(0, Math.min(100, value))
 }
 
+export type Decision = { crisisIndex: number; choiceIndex: number }
+
+export function combineDeltas(deltas: Delta[]): Delta {
+  return deltas.reduce<Delta>((total, delta) => {
+    for (const key of Object.keys(delta) as (keyof Metrics)[]) {
+      total[key] = (total[key] ?? 0) + (delta[key] ?? 0)
+    }
+    return total
+  }, {})
+}
+
+export function applyDecisionPhase(metrics: Metrics, decisions: Decision[], phase: 'now' | 'later') {
+  return addDelta(metrics, combineDeltas(decisions.map(({ crisisIndex, choiceIndex }) => (
+    CRISES[crisisIndex].choices[choiceIndex][phase]
+  ))))
+}
+
 export function playStrategy(choiceIndices: number[]) {
   let metrics = { ...INITIAL_METRICS }
   let luxury = 0
-  CRISES.forEach((crisis, index) => {
-    const choice = crisis.choices[choiceIndices[index] ?? crisis.timeoutChoice]
-    metrics = addDelta(addDelta(metrics, choice.now), choice.later)
-    luxury += choice.luxury
+
+  DECISION_ROUNDS.forEach(round => {
+    const decisions = round.crisisIndices.map(crisisIndex => ({
+      crisisIndex,
+      choiceIndex: choiceIndices[crisisIndex] ?? CRISES[crisisIndex].timeoutChoice,
+    }))
+    metrics = applyDecisionPhase(metrics, decisions, 'now')
+    luxury += decisions.reduce((score, { crisisIndex, choiceIndex }) => score + CRISES[crisisIndex].choices[choiceIndex].luxury, 0)
+    metrics = applyDecisionPhase(metrics, decisions, 'later')
   })
+
   return { metrics, luxury, result: evaluate(metrics, luxury) }
 }
 
