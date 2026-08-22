@@ -68,7 +68,7 @@ app.innerHTML = `
     </section>
     <div class="progress-wrap" aria-label="Hike progress">
       <div class="progress-track"><div class="progress-fill"></div>${surprises.map((s) => `<i class="progress-marker" data-id="${s.id}" style="left:${s.x / 11.5}%"></i>`).join("")}</div>
-      <div class="progress-caption">trailhead · <span>0%</span></div>
+      <div class="progress-caption"><span class="biome-label">young woods</span> · <span class="percent">0%</span></div>
     </div>
     <button class="walk-button" aria-label="Hold to hike">
       <svg viewBox="0 0 32 28" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 4c2 5 2 10 0 14-1 2 0 5 3 6 3 1 7-1 8-4 1-2-1-3-3-4-2-1-2-4-1-7l1-5"/><path d="M18 7c4 1 7 4 8 8 1 3-1 6-4 6h-4M8 14h7"/></svg>
@@ -94,7 +94,8 @@ const walkButton = document.querySelector<HTMLButtonElement>(".walk-button")!;
 const prompt = document.querySelector<HTMLElement>(".prompt")!;
 const toast = document.querySelector<HTMLElement>(".toast")!;
 const progressFill = document.querySelector<HTMLElement>(".progress-fill")!;
-const progressCaption = document.querySelector<HTMLElement>(".progress-caption span")!;
+const progressCaption = document.querySelector<HTMLElement>(".progress-caption .percent")!;
+const biomeLabel = document.querySelector<HTMLElement>(".biome-label")!;
 const stylePanel = document.querySelector<HTMLElement>(".style-panel")!;
 const styleToggle = document.querySelector<HTMLButtonElement>(".style-toggle")!;
 const musicButton = document.querySelector<HTMLButtonElement>(".music")!;
@@ -117,6 +118,7 @@ let audio: AudioContext | null = null;
 let musicTimer = 0;
 let noteIndex = 0;
 let finished = false;
+let debugSpeed = 1;
 let pointerX = -100;
 let pointerY = -100;
 const debug = new URLSearchParams(location.search).get("debug") === "true";
@@ -142,7 +144,21 @@ function elevation(x: number) {
   return x * .17 + Math.sin(x * .017) * 16 + Math.sin(x * .051) * 5;
 }
 
-function scaleX() { return Math.max(1.1, Math.min(2.55, width / 500)); }
+const TRAIL_LENGTH = 1150;
+const WALK_SPEED = TRAIL_LENGTH / (8 * 60);
+function smoothstep(from: number, to: number, value: number) {
+  const t = Math.max(0, Math.min(1, (value - from) / (to - from)));
+  return t * t * (3 - 2 * t);
+}
+function trailPhase(worldX: number) {
+  const t = Math.max(0, Math.min(1, worldX / TRAIL_LENGTH));
+  if (t < .24) return "young woods";
+  if (t < .5) return "old-growth forest";
+  if (t < .74) return "cloud forest";
+  return "snowline";
+}
+
+function scaleX() { return Math.max(2.4, Math.min(6, width / 210)); }
 function sx(worldX: number) { return width * .34 + (worldX - displayProgress) * scaleX(); }
 function gy(worldX: number) { return height * .69 - (elevation(worldX) - elevation(displayProgress)) * .57; }
 
@@ -236,6 +252,18 @@ function drawGround(p: Palette) {
   ctx.fill(); ctx.shadowColor = "transparent";
   if (style === "ink" || style === "neon") { ctx.strokeStyle = style === "neon" ? p.accent2 : "rgba(37,41,34,.42)"; ctx.lineWidth = style === "neon" ? 1.5 : 1.2; line(top); ctx.stroke(); }
 
+  const snowy = top.filter(([x]) => {
+    const world = displayProgress + (x - width * .34) / scaleX();
+    return world > 790 + Math.sin(world * .035) * 28;
+  });
+  if (snowy.length > 1) {
+    line([...snowy, [snowy[snowy.length - 1][0], height + 30], [snowy[0][0], height + 30]], true);
+    ctx.fillStyle = style === "neon" ? "#d5faff" : style === "pixel" ? "#e8f1e8" : style === "ink" ? "#f7f5ed" : "#f8f5e9";
+    if (style === "paper") { ctx.shadowColor = p.shadow; ctx.shadowOffsetY = -5; }
+    ctx.fill(); ctx.shadowColor = "transparent";
+    if (style === "neon") { ctx.strokeStyle = "#bfffff"; ctx.lineWidth = 1; ctx.stroke(); }
+  }
+
   ctx.strokeStyle = p.path; ctx.lineWidth = style === "neon" ? 2.5 : style === "pixel" ? 8 : Math.max(9, height * .018); ctx.lineCap = style === "pixel" ? "butt" : "round";
   if (style === "neon") { ctx.shadowColor = p.path; ctx.shadowBlur = 9; }
   ctx.beginPath();
@@ -290,17 +318,105 @@ function drawTree(worldX: number, size: number, p: Palette, identicalSeed?: numb
       ctx.fillStyle = i % 2 ? p.near : p.mid; ctx.fill();
     }
   }
+  const snow = smoothstep(760, 920, worldX);
+  if (snow > .03) {
+    ctx.globalAlpha = snow * (style === "ink" ? .72 : .92);
+    ctx.strokeStyle = style === "neon" ? "#d5faff" : style === "pixel" ? "#edf6e8" : "#faf8ef";
+    ctx.lineWidth = style === "pixel" ? 4 : Math.max(2, size * .045); ctx.lineCap = style === "pixel" ? "butt" : "round";
+    for (let i = 0; i < 4; i++) { const yy = -size * (.28 + i * .18), spread = size * (.2 - i * .025); ctx.beginPath(); ctx.moveTo(-spread, yy); ctx.lineTo(spread * .7, yy + 1); ctx.stroke(); }
+    ctx.globalAlpha = 1;
+  }
   ctx.restore(); ctx.shadowColor = "transparent";
 }
 
-function drawForest(p: Palette) {
-  const start = Math.floor((displayProgress - width / scaleX()) / 72) * 72;
-  for (let wx = start; wx < displayProgress + width / scaleX(); wx += 72) {
-    if (wx < 30 || wx > 1120) continue;
-    if (surprises.some((s) => Math.abs(s.x - wx) < 42)) continue;
-    const jitter = (seeded(wx) - .5) * 28;
-    drawTree(wx + jitter, 35 + seeded(wx + 9) * 25, p);
+function drawShrub(worldX: number, size: number, p: Palette, seed: number) {
+  const x = sx(worldX), y = gy(worldX);
+  if (x < -40 || x > width + 40 || worldX > 950) return;
+  ctx.save(); ctx.translate(x, y);
+  if (style === "paper") { ctx.shadowColor = p.shadow; ctx.shadowOffsetX = 2; ctx.shadowOffsetY = 3; }
+  if (style === "neon") { ctx.strokeStyle = seed % 2 ? p.accent2 : "#7758d4"; ctx.shadowColor = ctx.strokeStyle; ctx.shadowBlur = 5; ctx.lineWidth = 1; }
+  const leaves = 3 + Math.floor(seeded(seed + 4) * 4);
+  for (let i = 0; i < leaves; i++) {
+    const angle = -Math.PI + (i / Math.max(1, leaves - 1)) * Math.PI;
+    const lx = Math.cos(angle) * size * .42, ly = -Math.sin(angle) * size * .28 - size * .18;
+    if (style === "pixel") {
+      ctx.fillStyle = i % 2 ? p.near : p.mid; ctx.fillRect(Math.round(lx - size*.18), Math.round(ly - size*.14), Math.round(size*.36), Math.round(size*.24));
+    } else {
+      ctx.beginPath(); ctx.ellipse(lx, ly, size * .24, size * .15, angle * .25, 0, Math.PI * 2);
+      if (style === "neon") ctx.stroke(); else { ctx.fillStyle = i % 2 ? p.near : p.mid; ctx.globalAlpha = style === "ink" ? .55 : 1; ctx.fill(); }
+    }
   }
+  ctx.globalAlpha = 1; ctx.restore(); ctx.shadowColor = "transparent"; ctx.shadowBlur = 0;
+}
+
+function drawGroundDetail(worldX: number, p: Palette, seed: number) {
+  const x = sx(worldX), y = gy(worldX) + 1;
+  if (x < -30 || x > width + 30) return;
+  const snow = smoothstep(790, 930, worldX);
+  ctx.save(); ctx.translate(x, y); ctx.lineCap = "round";
+  if (seed % 7 === 0) {
+    ctx.fillStyle = snow > .35 ? (style === "neon" ? "#8cebea" : "#d7ddd5") : p.near;
+    if (style === "pixel") ctx.fillRect(-7, -4, 14, 5);
+    else { ctx.beginPath(); ctx.ellipse(0, -3, 7 + seeded(seed) * 5, 4 + seeded(seed+2) * 3, -.1, Math.PI, Math.PI*2); ctx.fill(); }
+  } else {
+    ctx.strokeStyle = style === "neon" ? p.accent2 : p.near; ctx.lineWidth = style === "pixel" ? 2 : 1.2;
+    const blades = snow > .45 ? 2 : 3 + seed % 4;
+    for (let i = 0; i < blades; i++) { const dx = (i - blades / 2) * 3; ctx.beginPath(); ctx.moveTo(dx, 0); ctx.lineTo(dx + (seeded(seed+i)-.5)*7, -(5 + seeded(seed+i+8)*11) * (1-snow*.55)); ctx.stroke(); }
+    if (snow < .18 && seed % 11 === 2) { ctx.fillStyle = p.accent; ctx.beginPath(); ctx.arc(0, -10, style === "pixel" ? 2.5 : 1.8, 0, Math.PI*2); ctx.fill(); }
+  }
+  ctx.restore();
+}
+
+function drawForest(p: Palette) {
+  const worldSpan = width / scaleX();
+  const minWorld = displayProgress - worldSpan * .45 - 70;
+  const maxWorld = displayProgress + worldSpan * .8 + 70;
+  ctx.save(); ctx.globalAlpha = style === "ink" ? .48 : .65;
+  const backStart = Math.floor(minWorld / 29);
+  for (let i = backStart; i * 29 < maxWorld; i++) {
+    const wx = i * 29 + (seeded(i + 400) - .5) * 17;
+    if (wx < 12 || wx > 1125 || (wx > 930 && i % 3 !== 0)) continue;
+    const growth = smoothstep(20, 470, wx), size = 18 + growth * 66 + seeded(i+81) * 18;
+    drawTree(wx, size * .72, p);
+  }
+  ctx.restore();
+
+  const treeStart = Math.floor(minWorld / 23);
+  for (let i = treeStart; i * 23 < maxWorld; i++) {
+    const wx = i * 23 + (seeded(i + 90) - .5) * 13;
+    if (wx < 18 || wx > 1125 || (wx > 900 && i % 2 === 0)) continue;
+    const growth = smoothstep(15, 455, wx), highAlpine = smoothstep(900, 1120, wx);
+    const size = 22 + growth * 76 + seeded(i + 9) * 19 - highAlpine * 24;
+    drawTree(wx, size, p);
+  }
+
+  const shrubStart = Math.floor(minWorld / 16);
+  for (let i = shrubStart; i * 16 < maxWorld; i++) {
+    const wx = i * 16 + (seeded(i + 170) - .5) * 8;
+    if (wx > 15 && wx < 980 && i % 5 !== 0) drawShrub(wx, 10 + seeded(i+3) * 12, p, i);
+  }
+  const detailStart = Math.floor(minWorld / 9);
+  for (let i = detailStart; i * 9 < maxWorld; i++) {
+    const wx = i * 9 + (seeded(i + 710) - .5) * 5;
+    if (wx > 10 && wx < 1135 && !surprises.some((s) => Math.abs(s.x - wx) < 8)) drawGroundDetail(wx, p, i);
+  }
+}
+
+function drawFog(p: Palette) {
+  const fog = smoothstep(500, 650, displayProgress) * (1 - smoothstep(850, 990, displayProgress));
+  if (fog < .01) return;
+  ctx.save(); ctx.globalAlpha = fog * (style === "neon" ? .18 : .24);
+  ctx.fillStyle = style === "neon" ? "#75e6df" : style === "pixel" ? "#e6f1e8" : style === "ink" ? "#f5f3eb" : "#f5f1df";
+  const drift = (elapsed * 9) % 180;
+  if (style === "pixel") {
+    for (let i = -1; i < 6; i++) ctx.fillRect(i * 190 - drift, height * (.45 + (i%3)*.07), 160, 18 + (i%2)*12);
+  } else {
+    for (let i = -1; i < 7; i++) {
+      const x = i * 190 - drift, y = height * (.42 + (i % 3) * .08);
+      ctx.beginPath(); ctx.ellipse(x, y, 160, 25 + (i%2)*11, 0, 0, Math.PI*2); ctx.fill();
+    }
+  }
+  ctx.restore();
 }
 
 function eventTarget(id: string, x: number, y: number, r = 30) { targets.push({ id, x, y, r }); }
@@ -378,13 +494,14 @@ function update(dt: number) {
   if (walking && !finished) {
     const next = surprises.find((s) => !isFound(s.id) && s.x >= progress - 1);
     const barrier = next ? next.x - 17 : 1150;
-    progress = Math.min(barrier, progress + dt * (debug ? 55 : 22));
+    progress = Math.min(barrier, progress + dt * WALK_SPEED * debugSpeed);
     if (progress >= barrier - .01) walking = false;
   }
   displayProgress += (progress - displayProgress) * Math.min(1, dt * 5.5);
   const percent = Math.min(100, Math.round(progress / 11.5));
   progressFill.style.width = `${percent}%`;
   progressCaption.textContent = `${percent}%`;
+  biomeLabel.textContent = trailPhase(progress);
 
   const next = surprises.find((s) => !isFound(s.id) && Math.abs(progress - (s.x - 17)) < 1);
   if (next) {
@@ -402,7 +519,7 @@ function render() {
   const p = palettes[style];
   ctx.setTransform(dpr,0,0,dpr,0,0);
   ctx.clearRect(0,0,width,height);
-  drawSky(p); drawGround(p); drawForest(p);
+  drawSky(p); drawGround(p); drawForest(p); drawFog(p);
   targets = [];
   surprises.forEach((s) => drawSurprise(s,p));
   drawHiker(p);
@@ -500,8 +617,16 @@ document.querySelector<HTMLButtonElement>(".again")!.addEventListener("click",()
 });
 
 if(debug){
-  const panel=document.createElement("div");panel.className="debug-panel";panel.innerHTML='<button data-action="next">Next surprise</button><button data-action="all">Summit</button><button data-action="reset">Reset</button>';game.append(panel);
-  panel.addEventListener("click",(event)=>{const action=(event.target as HTMLElement).dataset.action;if(action==="next"){const next=surprises.find((s)=>!completed.has(s.id));if(next)progress=next.x-17;}if(action==="all"){surprises.forEach((s)=>completed.add(s.id));progress=1150;document.querySelectorAll(".progress-marker").forEach((m)=>m.classList.add("done"));}if(action==="reset")document.querySelector<HTMLButtonElement>(".again")!.click();});
+  const panel=document.createElement("div"); panel.className="debug-panel";
+  panel.innerHTML='<span>walk speed</span><button class="active" data-speed="1">1×</button><button data-speed="2">2×</button><button data-speed="4">4×</button><i></i><button data-action="next">Next surprise</button><button data-action="all">Summit</button><button data-action="reset">Reset</button>'; game.append(panel);
+  panel.addEventListener("click",(event)=>{
+    const button=(event.target as HTMLElement).closest<HTMLButtonElement>("button"); if(!button)return;
+    const speed=Number(button.dataset.speed); const action=button.dataset.action;
+    if(speed){debugSpeed=speed;panel.querySelectorAll("[data-speed]").forEach((item)=>item.classList.toggle("active",item===button));}
+    if(action==="next"){const next=surprises.find((s)=>!completed.has(s.id));if(next)progress=next.x-17;}
+    if(action==="all"){surprises.forEach((s)=>completed.add(s.id));progress=TRAIL_LENGTH;document.querySelectorAll(".progress-marker").forEach((m)=>m.classList.add("done"));}
+    if(action==="reset")document.querySelector<HTMLButtonElement>(".again")!.click();
+  });
 }
 
-Object.assign(window,{__HIKE_DEBUG__:{getState:()=>({progress,completed:[...completed],style,targets}),jumpTo:(id:string)=>{const s=surprises.find((item)=>item.id===id);if(s)progress=s.x-17;},collect,setStyle:(key:StyleKey)=>document.querySelector<HTMLButtonElement>(`.style-option[data-key="${key}"]`)?.click()}});
+Object.assign(window,{__HIKE_DEBUG__:{getState:()=>({progress,completed:[...completed],style,targets,speed:debugSpeed,biome:trailPhase(progress)}),jumpTo:(id:string)=>{const s=surprises.find((item)=>item.id===id);if(s)progress=s.x-17;},collect,setSpeed:(speed:number)=>{if(debug&&[1,2,4].includes(speed))debugSpeed=speed;},setStyle:(key:StyleKey)=>document.querySelector<HTMLButtonElement>(`.style-option[data-key="${key}"]`)?.click()}});
