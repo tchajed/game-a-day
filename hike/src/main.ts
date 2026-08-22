@@ -154,9 +154,32 @@ function trailPhase(worldX: number) {
   return "snowline";
 }
 
-function scaleX() { return Math.max(2.4, Math.min(6, width / 210)); }
-function sx(worldX: number) { return width * .34 + (worldX - displayProgress) * scaleX(); }
-function gy(worldX: number) { return height * .69 - (elevation(worldX) - elevation(displayProgress)) * .57; }
+type Projected = { x: number; y: number; scale: number; depth: number; visible: boolean };
+
+// A broad, hand-authored centreline makes each stretch of trail feel composed,
+// while Catmull-Rom interpolation keeps the switchbacks from looking mechanical.
+const routeTurns = [0, -18, 36, 78, 24, -64, -88, -6, 76, 98, 18, -82, -58, 42, 82, 12, -24];
+function routeCenter(station: number) {
+  const position = Math.max(0, Math.min(routeTurns.length - 1, station / TRAIL_LENGTH * (routeTurns.length - 1)));
+  const i = Math.floor(position), t = position - i;
+  const a = routeTurns[Math.max(0, i - 1)], b = routeTurns[i];
+  const c = routeTurns[Math.min(routeTurns.length - 1, i + 1)], d = routeTurns[Math.min(routeTurns.length - 1, i + 2)];
+  return .5 * ((2 * b) + (-a + c) * t + (2*a - 5*b + 4*c - d) * t*t + (-a + 3*b - 3*c + d) * t*t*t);
+}
+function routeSlope(station: number) { return (routeCenter(station + 1) - routeCenter(station - 1)) * .5; }
+function project(station: number, lateral = 0, lift = 0): Projected {
+  const cameraX = routeCenter(displayProgress), slope = routeSlope(displayProgress);
+  const invLength = 1 / Math.hypot(slope, 1), tangentX = slope * invLength, tangentZ = invLength;
+  const relX = routeCenter(station) + lateral - cameraX, relZ = station - displayProgress;
+  const depth = relX * tangentX + relZ * tangentZ;
+  const sideways = relX * tangentZ - relZ * tangentX;
+  const scale = 185 / (185 + Math.max(-12, depth));
+  const horizon = height * .505, near = height * .84;
+  const rise = elevation(station) - elevation(displayProgress);
+  const x = width * .5 + sideways * Math.min(4, width / 300) * scale;
+  const y = horizon + (near - horizon) * scale - (rise * .72 + lift) * scale;
+  return { x, y, scale, depth, visible: depth > -18 && depth < 620 && x > -140 && x < width + 140 };
+}
 
 function line(points: [number, number][], close = false) {
   ctx.beginPath();
@@ -174,17 +197,13 @@ function mountainLayer(base: number, amplitude: number, color: string, speed: nu
     points.push([x, style === "pixel" ? Math.round(rawY / 5) * 5 : rawY]);
   }
   points.push([width + 20, height + 20]);
-  line(points, true);
-  ctx.fillStyle = color;
+  line(points, true); ctx.fillStyle = color;
   if (style === "paper") { ctx.shadowColor = palettes[style].shadow; ctx.shadowOffsetY = -7; }
-  ctx.fill();
-  ctx.shadowColor = "transparent";
+  ctx.fill(); ctx.shadowColor = "transparent";
 }
 
 function drawSky(p: Palette) {
-  ctx.fillStyle = p.sky;
-  ctx.fillRect(0, 0, width, height);
-
+  ctx.fillStyle = p.sky; ctx.fillRect(0, 0, width, height);
   if (style === "pixel") {
     ctx.fillStyle = "rgba(255,255,255,.72)";
     for (let i = 0; i < 5; i++) {
@@ -192,176 +211,101 @@ function drawSky(p: Palette) {
       ctx.fillRect(Math.round(x), y, 72, 12); ctx.fillRect(Math.round(x + 14), y - 8, 34, 8);
     }
   }
+  const sunX = width * .72 - displayProgress * .025, sunY = height * .2;
+  if (style === "pixel") { ctx.fillStyle = p.sun; ctx.fillRect(Math.round(sunX - 28), Math.round(sunY - 28), 56, 56); }
+  else { ctx.beginPath(); ctx.arc(sunX, sunY, Math.min(58, width * .075), 0, Math.PI * 2); ctx.fillStyle = p.sun; ctx.fill(); }
+  mountainLayer(height * .43, height * .09, p.far, .035, 30);
+  mountainLayer(height * .51, height * .105, p.mid, .07, 38);
+  mountainLayer(height * .59, height * .115, p.near, .12, 46);
+}
 
-  const sunX = width * .72 - displayProgress * .025;
-  const sunY = height * .2;
-  if (style === "pixel") {
-    ctx.fillStyle = p.sun; ctx.fillRect(Math.round(sunX - 28), Math.round(sunY - 28), 56, 56);
-  } else {
-    ctx.beginPath(); ctx.arc(sunX, sunY, Math.min(58, width * .075), 0, Math.PI * 2); ctx.fillStyle = p.sun; ctx.fill();
+function trailRibbon(p: Palette) {
+  const left: [number, number][] = [], right: [number, number][] = [], centre: [number, number][] = [];
+  for (let d = -10; d <= 580; d += 7) {
+    const station = displayProgress + d, halfWidth = 7.2 + Math.sin(station * .031) * .7;
+    const l = project(station, -halfWidth), r = project(station, halfWidth), c = project(station);
+    if (l.depth > -16) { left.push([l.x,l.y]); right.push([r.x,r.y]); centre.push([c.x,c.y]); }
   }
-
-  mountainLayer(height * .49, height * .1, p.far, .035, 30);
-  mountainLayer(height * .58, height * .115, p.mid, .07, 38);
-  mountainLayer(height * .68, height * .13, p.near, .12, 46);
+  if (left.length < 2) return;
+  const ribbon = [...left, ...right.reverse()];
+  line(ribbon, true);
+  if (style === "paper") { ctx.shadowColor = p.shadow; ctx.shadowOffsetX = 5; ctx.shadowOffsetY = 7; }
+  ctx.fillStyle = p.path; ctx.fill(); ctx.shadowColor = "transparent";
+  ctx.strokeStyle = style === "pixel" ? "rgba(23,45,50,.28)" : "rgba(38,56,47,.18)";
+  ctx.lineWidth = style === "pixel" ? 2 : 1.2; line(left); ctx.stroke(); line(right.reverse()); ctx.stroke();
+  ctx.setLineDash(style === "pixel" ? [5,8] : [2,10]); ctx.lineWidth = 1; ctx.globalAlpha = .24; line(centre); ctx.stroke();
+  ctx.setLineDash([]); ctx.globalAlpha = 1;
 }
 
 function drawGround(p: Palette) {
-  const top: [number, number][] = [];
-  for (let x = -60; x <= width + 60; x += style === "pixel" ? 10 : 24) {
-    const world = displayProgress + (x - width * .34) / scaleX();
-    const y = gy(world);
-    top.push([x, style === "pixel" ? Math.round(y / 4) * 4 : y]);
+  const ridge: [number, number][] = [];
+  for (let x = -30; x <= width + 30; x += style === "pixel" ? 22 : 34) {
+    const y = height * .505 + Math.sin(x * .018 + displayProgress * .009) * 8 + (seeded(Math.floor(x / 34) + 99) - .5) * 10;
+    ridge.push([x, style === "pixel" ? Math.round(y / 4) * 4 : y]);
   }
-  const shape = [...top, [width + 60, height + 30] as [number, number], [-60, height + 30] as [number, number]];
-  line(shape, true); ctx.fillStyle = p.ground;
-  if (style === "paper") { ctx.shadowColor = p.shadow; ctx.shadowOffsetY = -8; }
+  line([...ridge, [width + 30,height + 30], [-30,height + 30]], true); ctx.fillStyle = p.ground;
+  if (style === "paper") { ctx.shadowColor = p.shadow; ctx.shadowOffsetY = -7; }
   ctx.fill(); ctx.shadowColor = "transparent";
-
-  const snowy = top.filter(([x]) => {
-    const world = displayProgress + (x - width * .34) / scaleX();
-    return world > 790 + Math.sin(world * .035) * 28;
-  });
-  if (snowy.length > 1) {
-    line([...snowy, [snowy[snowy.length - 1][0], height + 30], [snowy[0][0], height + 30]], true);
-    ctx.fillStyle = style === "pixel" ? "#e8f1e8" : "#f8f5e9";
-    if (style === "paper") { ctx.shadowColor = p.shadow; ctx.shadowOffsetY = -5; }
-    ctx.fill(); ctx.shadowColor = "transparent";
-  }
-
-  ctx.strokeStyle = p.path; ctx.lineWidth = style === "pixel" ? 8 : Math.max(9, height * .018); ctx.lineCap = style === "pixel" ? "butt" : "round";
-  ctx.beginPath();
-  for (let x = -20; x <= width + 30; x += 18) {
-    const world = displayProgress + (x - width * .34) / scaleX();
-    const y = gy(world) + 11 + Math.sin(world * .11) * 2;
-    x === -20 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
-  }
-  ctx.stroke(); ctx.shadowColor = "transparent";
-  if (style === "pixel") {
-    ctx.fillStyle = "rgba(26,77,55,.28)";
-    for (let i = 0; i < width / 12; i++) ctx.fillRect(i * 17 + (i % 3) * 3, height - 18 - (i % 5) * 7, 5, 3);
-  }
+  const snow = smoothstep(760, 940, displayProgress);
+  if (snow > .01) { ctx.globalAlpha = snow * .88; ctx.fillStyle = style === "pixel" ? "#e8f1e8" : "#f8f5e9"; ctx.fillRect(0,height*.5,width,height*.5); ctx.globalAlpha = 1; }
+  trailRibbon(p);
 }
 
-function drawTree(worldX: number, size: number, p: Palette, identicalSeed?: number) {
-  const x = sx(worldX), y = gy(worldX) + 1;
-  if (x < -90 || x > width + 90) return;
-  const seed = identicalSeed ?? Math.floor(worldX * 3);
-  const lean = (seeded(seed) - .5) * 7;
-  ctx.save(); ctx.translate(x, y); ctx.rotate(lean * Math.PI / 180);
-  if (style === "paper") { ctx.shadowColor = p.shadow; ctx.shadowOffsetX = 4; ctx.shadowOffsetY = 5; }
-
+function drawTreeSprite(point: Projected, worldX: number, size: number, p: Palette, seed: number) {
+  if (!point.visible) return;
+  const drawn = size * point.scale, lean = (seeded(seed) - .5) * 7;
+  ctx.save(); ctx.translate(point.x, point.y); ctx.rotate(lean * Math.PI / 180);
+  if (style === "paper") { ctx.shadowColor = p.shadow; ctx.shadowOffsetX = 4 * point.scale; ctx.shadowOffsetY = 5 * point.scale; }
   if (style === "pixel") {
-    const unit = Math.max(2, Math.round(size / 15));
-    ctx.fillStyle = "#5a4432"; ctx.fillRect(-unit, -size * .55, unit * 2, size * .58);
+    const unit = Math.max(1, Math.round(drawn / 15));
+    ctx.fillStyle = "#5a4432"; ctx.fillRect(-unit, -drawn * .55, unit * 2, drawn * .58);
     ctx.fillStyle = seed % 2 ? p.near : p.mid;
-    for (let i = 0; i < 4; i++) { const yy = -size * (.35 + i * .18), spread = Math.round(size * (.28 - i * .04)); ctx.fillRect(-spread, Math.round(yy), spread * 2, unit * 3); }
+    for (let i=0;i<4;i++){const yy=-drawn*(.35+i*.18),spread=Math.round(drawn*(.28-i*.04));ctx.fillRect(-spread,Math.round(yy),spread*2,unit*3);}
   } else {
-    ctx.fillStyle = p.ink; ctx.fillRect(-1.5, -size * .42, 3, size * .45);
-    const tiers = 3 + Math.floor(seeded(seed + 2) * 2);
-    for (let i = 0; i < tiers; i++) {
-      const yy = -size * .35 - i * size * .19, spread = size * (.27 - i * .035);
-      ctx.beginPath(); ctx.moveTo(0, yy - size * .31); ctx.lineTo(-spread, yy + size * .13); ctx.lineTo(spread, yy + size * .13); ctx.closePath();
-      ctx.fillStyle = i % 2 ? p.near : p.mid; ctx.fill();
-    }
+    ctx.fillStyle = p.ink; ctx.fillRect(-1.5*point.scale,-drawn*.42,3*point.scale,drawn*.45);
+    const tiers=3+Math.floor(seeded(seed+2)*2);
+    for(let i=0;i<tiers;i++){const yy=-drawn*.35-i*drawn*.19,spread=drawn*(.27-i*.035);ctx.beginPath();ctx.moveTo(0,yy-drawn*.31);ctx.lineTo(-spread,yy+drawn*.13);ctx.lineTo(spread,yy+drawn*.13);ctx.closePath();ctx.fillStyle=i%2?p.near:p.mid;ctx.fill();}
   }
-  const snow = smoothstep(760, 920, worldX);
-  if (snow > .03) {
-    ctx.globalAlpha = snow * .92;
-    ctx.strokeStyle = style === "pixel" ? "#edf6e8" : "#faf8ef";
-    ctx.lineWidth = style === "pixel" ? 4 : Math.max(2, size * .045); ctx.lineCap = style === "pixel" ? "butt" : "round";
-    for (let i = 0; i < 4; i++) { const yy = -size * (.28 + i * .18), spread = size * (.2 - i * .025); ctx.beginPath(); ctx.moveTo(-spread, yy); ctx.lineTo(spread * .7, yy + 1); ctx.stroke(); }
-    ctx.globalAlpha = 1;
-  }
-  ctx.restore(); ctx.shadowColor = "transparent";
+  const snow=smoothstep(760,920,worldX);
+  if(snow>.03){ctx.globalAlpha=snow*.92;ctx.strokeStyle=style==="pixel"?"#edf6e8":"#faf8ef";ctx.lineWidth=Math.max(1,(style==="pixel"?4:size*.045)*point.scale);for(let i=0;i<4;i++){const yy=-drawn*(.28+i*.18),spread=drawn*(.2-i*.025);ctx.beginPath();ctx.moveTo(-spread,yy);ctx.lineTo(spread*.7,yy+1);ctx.stroke();}}
+  ctx.restore(); ctx.globalAlpha=1; ctx.shadowColor="transparent";
 }
 
-function drawShrub(worldX: number, size: number, p: Palette, seed: number) {
-  const x = sx(worldX), y = gy(worldX);
-  if (x < -40 || x > width + 40 || worldX > 950) return;
-  ctx.save(); ctx.translate(x, y);
-  if (style === "paper") { ctx.shadowColor = p.shadow; ctx.shadowOffsetX = 2; ctx.shadowOffsetY = 3; }
-  const leaves = 3 + Math.floor(seeded(seed + 4) * 4);
-  for (let i = 0; i < leaves; i++) {
-    const angle = -Math.PI + (i / Math.max(1, leaves - 1)) * Math.PI;
-    const lx = Math.cos(angle) * size * .42, ly = -Math.sin(angle) * size * .28 - size * .18;
-    if (style === "pixel") {
-      ctx.fillStyle = i % 2 ? p.near : p.mid; ctx.fillRect(Math.round(lx - size*.18), Math.round(ly - size*.14), Math.round(size*.36), Math.round(size*.24));
-    } else {
-      ctx.beginPath(); ctx.ellipse(lx, ly, size * .24, size * .15, angle * .25, 0, Math.PI * 2);
-      ctx.fillStyle = i % 2 ? p.near : p.mid; ctx.fill();
-    }
-  }
-  ctx.globalAlpha = 1; ctx.restore(); ctx.shadowColor = "transparent"; ctx.shadowBlur = 0;
+function drawShrubSprite(point: Projected, size: number, p: Palette, seed: number) {
+  if(!point.visible)return; const drawn=size*point.scale;
+  ctx.save();ctx.translate(point.x,point.y);if(style==="paper"){ctx.shadowColor=p.shadow;ctx.shadowOffsetX=2*point.scale;ctx.shadowOffsetY=3*point.scale;}
+  const leaves=3+Math.floor(seeded(seed+4)*4);
+  for(let i=0;i<leaves;i++){const angle=-Math.PI+(i/Math.max(1,leaves-1))*Math.PI,lx=Math.cos(angle)*drawn*.42,ly=-Math.sin(angle)*drawn*.28-drawn*.18;ctx.fillStyle=i%2?p.near:p.mid;if(style==="pixel")ctx.fillRect(Math.round(lx-drawn*.18),Math.round(ly-drawn*.14),Math.max(1,Math.round(drawn*.36)),Math.max(1,Math.round(drawn*.24)));else{ctx.beginPath();ctx.ellipse(lx,ly,drawn*.24,drawn*.15,angle*.25,0,Math.PI*2);ctx.fill();}}
+  ctx.restore();ctx.shadowColor="transparent";
 }
 
-function drawGroundDetail(worldX: number, p: Palette, seed: number) {
-  const x = sx(worldX), y = gy(worldX) + 1;
-  if (x < -30 || x > width + 30) return;
-  const snow = smoothstep(790, 930, worldX);
-  ctx.save(); ctx.translate(x, y); ctx.lineCap = "round";
-  if (seed % 7 === 0) {
-    ctx.fillStyle = snow > .35 ? "#d7ddd5" : p.near;
-    if (style === "pixel") ctx.fillRect(-7, -4, 14, 5);
-    else { ctx.beginPath(); ctx.ellipse(0, -3, 7 + seeded(seed) * 5, 4 + seeded(seed+2) * 3, -.1, Math.PI, Math.PI*2); ctx.fill(); }
-  } else {
-    ctx.strokeStyle = p.near; ctx.lineWidth = style === "pixel" ? 2 : 1.2;
-    const blades = snow > .45 ? 2 : 3 + seed % 4;
-    for (let i = 0; i < blades; i++) { const dx = (i - blades / 2) * 3; ctx.beginPath(); ctx.moveTo(dx, 0); ctx.lineTo(dx + (seeded(seed+i)-.5)*7, -(5 + seeded(seed+i+8)*11) * (1-snow*.55)); ctx.stroke(); }
-    if (snow < .18 && seed % 11 === 2) { ctx.fillStyle = p.accent; ctx.beginPath(); ctx.arc(0, -10, style === "pixel" ? 2.5 : 1.8, 0, Math.PI*2); ctx.fill(); }
-  }
+function drawDetailSprite(point: Projected, worldX: number, p: Palette, seed: number) {
+  if(!point.visible||point.scale<.24)return;const s=point.scale,snow=smoothstep(790,930,worldX);
+  ctx.save();ctx.translate(point.x,point.y);ctx.scale(s,s);ctx.lineCap="round";
+  if(seed%7===0){ctx.fillStyle=snow>.35?"#d7ddd5":p.near;if(style==="pixel")ctx.fillRect(-7,-4,14,5);else{ctx.beginPath();ctx.ellipse(0,-3,7+seeded(seed)*5,4+seeded(seed+2)*3,-.1,Math.PI,Math.PI*2);ctx.fill();}}
+  else{ctx.strokeStyle=p.near;ctx.lineWidth=style==="pixel"?2:1.2;const blades=snow>.45?2:3+Math.abs(seed)%4;for(let i=0;i<blades;i++){const dx=(i-blades/2)*3;ctx.beginPath();ctx.moveTo(dx,0);ctx.lineTo(dx+(seeded(seed+i)-.5)*7,-(5+seeded(seed+i+8)*11)*(1-snow*.55));ctx.stroke();}if(snow<.18&&Math.abs(seed)%11===2){ctx.fillStyle=p.accent;ctx.beginPath();ctx.arc(0,-10,style==="pixel"?2.5:1.8,0,Math.PI*2);ctx.fill();}}
   ctx.restore();
 }
 
 function drawForest(p: Palette) {
-  const worldSpan = width / scaleX();
-  const minWorld = displayProgress - worldSpan * .45 - 70;
-  const maxWorld = displayProgress + worldSpan * .8 + 70;
-  ctx.save(); ctx.globalAlpha = .65;
-  const backStart = Math.floor(minWorld / 29);
-  for (let i = backStart; i * 29 < maxWorld; i++) {
-    const wx = i * 29 + (seeded(i + 400) - .5) * 17;
-    if (wx < 12 || wx > 1125 || (wx > 930 && i % 3 !== 0)) continue;
-    const growth = smoothstep(20, 470, wx), size = 18 + growth * 66 + seeded(i+81) * 18;
-    drawTree(wx, size * .72, p);
+  const items: { station:number; lateral:number; kind:"tree"|"shrub"|"detail"; size:number; seed:number }[]=[];
+  const start=Math.floor((displayProgress-8)/11),end=Math.ceil((displayProgress+560)/11);
+  for(let i=start;i<=end;i++){
+    const station=i*11+(seeded(i+90)-.5)*7;if(station<10||station>1138)continue;
+    const side=i%2?1:-1, lateral=side*(13+seeded(i+12)*48);
+    const high=smoothstep(900,1120,station),growth=smoothstep(10,430,station);
+    if(i%2===0&&!(station>910&&i%4!==0))items.push({station,lateral:lateral+(seeded(i+3)-.5)*15,kind:"tree",size:25+growth*72+seeded(i+9)*20-high*27,seed:i});
+    else if(station<990&&i%3!==0)items.push({station,lateral,kind:"shrub",size:11+seeded(i+3)*13,seed:i});
+    items.push({station:station+2,lateral:side*(9+seeded(i+50)*60),kind:"detail",size:1,seed:i+700});
   }
-  ctx.restore();
-
-  const treeStart = Math.floor(minWorld / 23);
-  for (let i = treeStart; i * 23 < maxWorld; i++) {
-    const wx = i * 23 + (seeded(i + 90) - .5) * 13;
-    if (wx < 18 || wx > 1125 || (wx > 900 && i % 2 === 0)) continue;
-    const growth = smoothstep(15, 455, wx), highAlpine = smoothstep(900, 1120, wx);
-    const size = 22 + growth * 76 + seeded(i + 9) * 19 - highAlpine * 24;
-    drawTree(wx, size, p);
-  }
-
-  const shrubStart = Math.floor(minWorld / 16);
-  for (let i = shrubStart; i * 16 < maxWorld; i++) {
-    const wx = i * 16 + (seeded(i + 170) - .5) * 8;
-    if (wx > 15 && wx < 980 && i % 5 !== 0) drawShrub(wx, 10 + seeded(i+3) * 12, p, i);
-  }
-  const detailStart = Math.floor(minWorld / 9);
-  for (let i = detailStart; i * 9 < maxWorld; i++) {
-    const wx = i * 9 + (seeded(i + 710) - .5) * 5;
-    if (wx > 10 && wx < 1135 && !surprises.some((s) => Math.abs(s.x - wx) < 8)) drawGroundDetail(wx, p, i);
-  }
+  items.sort((a,b)=>b.station-a.station);
+  for(const item of items){const point=project(item.station,item.lateral);if(item.kind==="tree")drawTreeSprite(point,item.station,item.size,p,item.seed);else if(item.kind==="shrub")drawShrubSprite(point,item.size,p,item.seed);else drawDetailSprite(point,item.station,p,item.seed);}
 }
 
 function drawFog(p: Palette) {
-  const fog = smoothstep(500, 650, displayProgress) * (1 - smoothstep(850, 990, displayProgress));
-  if (fog < .01) return;
-  ctx.save(); ctx.globalAlpha = fog * .24;
-  ctx.fillStyle = style === "pixel" ? "#e6f1e8" : "#f5f1df";
-  const drift = (elapsed * 9) % 180;
-  if (style === "pixel") {
-    for (let i = -1; i < 6; i++) ctx.fillRect(i * 190 - drift, height * (.45 + (i%3)*.07), 160, 18 + (i%2)*12);
-  } else {
-    for (let i = -1; i < 7; i++) {
-      const x = i * 190 - drift, y = height * (.42 + (i % 3) * .08);
-      ctx.beginPath(); ctx.ellipse(x, y, 160, 25 + (i%2)*11, 0, 0, Math.PI*2); ctx.fill();
-    }
-  }
+  const fog=smoothstep(500,650,displayProgress)*(1-smoothstep(850,990,displayProgress));if(fog<.01)return;
+  ctx.save();ctx.globalAlpha=fog*.24;ctx.fillStyle=style==="pixel"?"#e6f1e8":"#f5f1df";const drift=(elapsed*9)%180;
+  if(style==="pixel"){for(let i=-1;i<6;i++)ctx.fillRect(i*190-drift,height*(.45+(i%3)*.07),160,18+(i%2)*12);}else{for(let i=-1;i<7;i++){const x=i*190-drift,y=height*(.42+(i%3)*.08);ctx.beginPath();ctx.ellipse(x,y,160,25+(i%2)*11,0,0,Math.PI*2);ctx.fill();}}
   ctx.restore();
 }
 
@@ -375,64 +319,51 @@ function drawSpark(x: number, y: number, p: Palette, scale = 1) {
   ctx.beginPath(); ctx.moveTo(-8, 0); ctx.lineTo(8, 0); ctx.moveTo(0, -8); ctx.lineTo(0, 8); ctx.stroke(); ctx.restore();
 }
 
+const surpriseSides: Record<string, number> = { trash: 10, bird: -14, cloud: 0, twins: 16, door: -15, choir: 11, waterfall: -14, moth: 3 };
 function drawSurprise(s: Surprise, p: Palette) {
-  const x = sx(s.x), ground = gy(s.x);
-  if (x < -110 || x > width + 110 || isFound(s.id)) return;
-  const bob = Math.sin(elapsed * 2.3 + s.x) * 2;
-  ctx.save(); ctx.lineJoin = "round"; ctx.lineCap = "round";
-  if (style === "paper") { ctx.shadowColor = p.shadow; ctx.shadowOffsetX = 4; ctx.shadowOffsetY = 5; }
-  let tx = x, ty = ground - 20;
+  if(isFound(s.id))return;
+  const lift=s.id==="cloud"?132:s.id==="moth"?94:0;
+  const point=project(s.x,surpriseSides[s.id]??0,lift);
+  if(!point.visible||point.scale<.28)return;
+  const bob=Math.sin(elapsed*2.3+s.x)*2, sc=point.scale;
+  let tx=point.x,ty=point.y-(s.id==="bird"?68*sc:0);
 
-  if (s.id === "trash") {
-    ty = ground - 5;
-    ctx.translate(x, ty); ctx.rotate(-.12);
-    ctx.fillStyle = p.accent; ctx.beginPath(); ctx.moveTo(-15,-8); ctx.lineTo(-5,-12); ctx.lineTo(3,-8); ctx.lineTo(14,-12); ctx.lineTo(12,5); ctx.lineTo(-11,8); ctx.closePath(); ctx.fill();
-    ctx.strokeStyle = p.ink; ctx.lineWidth = 1.3; ctx.stroke(); ctx.beginPath(); ctx.moveTo(-5,-8); ctx.lineTo(-1,4); ctx.lineTo(7,-7); ctx.stroke();
-  } else if (s.id === "bird") {
-    ty = ground - 71 + bob;
-    ctx.strokeStyle = p.ink; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(x-30, ground-47); ctx.lineTo(x+28, ground-58); ctx.stroke();
-    ctx.translate(x, ty); ctx.fillStyle = p.accent2; ctx.beginPath(); ctx.ellipse(0, 0, 14, 10, -.12, 0, Math.PI*2); ctx.fill();
-    ctx.beginPath(); ctx.arc(10,-7,7,0,Math.PI*2); ctx.fill(); ctx.fillStyle = p.accent; ctx.beginPath(); ctx.moveTo(16,-8); ctx.lineTo(24,-5); ctx.lineTo(16,-3); ctx.fill();
-    ctx.fillStyle = p.ink; ctx.beginPath(); ctx.arc(11,-9,1.5,0,Math.PI*2); ctx.fill();
-  } else if (s.id === "cloud") {
-    ty = Math.max(120, ground - 185) + bob;
-    ctx.translate(x, ty); ctx.fillStyle = p.paper; ctx.strokeStyle = p.ink; ctx.lineWidth = style === "paper" ? 0 : 1.5;
-    ctx.beginPath(); ctx.roundRect(-32,-26,64,52,10); ctx.fill(); if (style !== "paper") ctx.stroke();
-    ctx.strokeStyle = p.accent; ctx.lineWidth = 2; ctx.setLineDash([4,5]); ctx.strokeRect(-22,-17,44,34); ctx.setLineDash([]);
-  } else if (s.id === "twins") {
-    drawTree(s.x + 2, 51, p, 4242); drawTree(s.x + 28, 51, p, 4242); tx = sx(s.x + 15); ty = ground - 49;
-  } else if (s.id === "door") {
-    ty = ground - 18;
-    ctx.translate(x, ty); ctx.fillStyle = p.near; ctx.beginPath(); ctx.ellipse(0,0,32,24,0,Math.PI,Math.PI*2); ctx.lineTo(32,8); ctx.lineTo(-32,8); ctx.closePath(); ctx.fill();
-    ctx.fillStyle = p.accent; ctx.beginPath(); ctx.roundRect(-9,-17,18,25,[9,9,1,1]); ctx.fill(); ctx.strokeStyle = p.ink; ctx.lineWidth = 1.3; ctx.stroke(); ctx.fillStyle = p.sun; ctx.beginPath(); ctx.arc(5,-4,1.6,0,Math.PI*2); ctx.fill();
-  } else if (s.id === "choir") {
-    ty = ground - 14 + bob * .3;
-    [-21,0,22].forEach((dx,i) => { ctx.fillStyle = i === 1 ? p.accent2 : p.near; ctx.beginPath(); ctx.ellipse(x+dx, ty + (i===1?-3:2), 13, 17+i*3, 0,0,Math.PI*2); ctx.fill(); ctx.strokeStyle=p.ink;ctx.lineWidth=1;ctx.stroke(); ctx.fillStyle=p.ink;ctx.beginPath();ctx.arc(x+dx-4,ty-3,1.3,0,7);ctx.arc(x+dx+4,ty-3,1.3,0,7);ctx.fill();ctx.beginPath();ctx.arc(x+dx,ty+5,3+i,0,Math.PI);ctx.stroke(); });
-    ctx.strokeStyle = p.accent; ctx.lineWidth=1.4; for(let i=0;i<3;i++){const yy=ty-27-i*7;ctx.beginPath();ctx.arc(x+20+i*9,yy,3,0,7);ctx.stroke();ctx.beginPath();ctx.moveTo(x+23+i*9,yy);ctx.lineTo(x+23+i*9,yy-8);ctx.stroke();}
-  } else if (s.id === "waterfall") {
-    ty = ground - 60;
-    ctx.strokeStyle = p.near; ctx.lineWidth = 18; ctx.beginPath(); ctx.moveTo(x-25,ground+3);ctx.quadraticCurveTo(x+5,ground-25,x+17,ground-83);ctx.stroke();
-    ctx.strokeStyle = p.accent2; ctx.lineWidth = 5; ctx.setLineDash([10,8]); ctx.lineDashOffset = -elapsed*24; ctx.beginPath();ctx.moveTo(x-20,ground);ctx.quadraticCurveTo(x+7,ground-28,x+18,ground-80);ctx.stroke();ctx.setLineDash([]);
-    ctx.fillStyle=p.accent2;ctx.beginPath();ctx.moveTo(x+18,ground-91+bob);ctx.quadraticCurveTo(x+8,ground-78,x+18,ground-72);ctx.quadraticCurveTo(x+28,ground-78,x+18,ground-91+bob);ctx.fill();
-  } else if (s.id === "moth") {
-    ty = Math.max(145, ground - 135) + bob * 2;
-    ctx.translate(x,ty); ctx.fillStyle=p.sun;ctx.beginPath();ctx.arc(0,0,17,0,7);ctx.fill();ctx.strokeStyle=p.ink;ctx.lineWidth=1;ctx.stroke();
-    ctx.fillStyle=p.paper;ctx.beginPath();ctx.ellipse(-13,0,13,8,-.5,0,7);ctx.ellipse(13,0,13,8,.5,0,7);ctx.fill();ctx.stroke();ctx.fillStyle=p.ink;ctx.fillRect(-1,-7,2,14);
+  if(s.id==="twins"){
+    const first=project(s.x,13),second=project(s.x+3,21);
+    drawTreeSprite(first,s.x,58,p,4242);drawTreeSprite(second,s.x+3,58,p,4242);
+    tx=(first.x+second.x)/2;ty=Math.min(first.y,second.y)-44*sc;
+  }else{
+    ctx.save();ctx.translate(point.x,point.y);ctx.scale(sc,sc);ctx.lineJoin="round";ctx.lineCap="round";
+    if(style==="paper"){ctx.shadowColor=p.shadow;ctx.shadowOffsetX=4;ctx.shadowOffsetY=5;}
+    if(s.id==="trash"){
+      ctx.translate(0,-5);ctx.rotate(-.12);ctx.fillStyle=p.accent;ctx.beginPath();ctx.moveTo(-15,-8);ctx.lineTo(-5,-12);ctx.lineTo(3,-8);ctx.lineTo(14,-12);ctx.lineTo(12,5);ctx.lineTo(-11,8);ctx.closePath();ctx.fill();ctx.strokeStyle=p.ink;ctx.lineWidth=1.3;ctx.stroke();ctx.beginPath();ctx.moveTo(-5,-8);ctx.lineTo(-1,4);ctx.lineTo(7,-7);ctx.stroke();ty=point.y-5*sc;
+    }else if(s.id==="bird"){
+      ctx.strokeStyle=p.ink;ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(-30,-47);ctx.lineTo(28,-58);ctx.stroke();ctx.translate(0,-68+bob);ctx.fillStyle=p.accent2;ctx.beginPath();ctx.ellipse(0,0,14,10,-.12,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.arc(10,-7,7,0,Math.PI*2);ctx.fill();ctx.fillStyle=p.accent;ctx.beginPath();ctx.moveTo(16,-8);ctx.lineTo(24,-5);ctx.lineTo(16,-3);ctx.fill();ctx.fillStyle=p.ink;ctx.beginPath();ctx.arc(11,-9,1.5,0,Math.PI*2);ctx.fill();ty=point.y+(-68+bob)*sc;
+    }else if(s.id==="cloud"){
+      ctx.translate(0,bob);ctx.fillStyle=p.paper;ctx.strokeStyle=p.ink;ctx.lineWidth=style==="paper"?0:1.5;ctx.beginPath();ctx.roundRect(-32,-26,64,52,10);ctx.fill();if(style!=="paper")ctx.stroke();ctx.strokeStyle=p.accent;ctx.lineWidth=2;ctx.setLineDash([4,5]);ctx.strokeRect(-22,-17,44,34);ctx.setLineDash([]);ty=point.y+bob*sc;
+    }else if(s.id==="door"){
+      ctx.translate(0,-18);ctx.fillStyle=p.near;ctx.beginPath();ctx.ellipse(0,0,32,24,0,Math.PI,Math.PI*2);ctx.lineTo(32,8);ctx.lineTo(-32,8);ctx.closePath();ctx.fill();ctx.fillStyle=p.accent;ctx.beginPath();ctx.roundRect(-9,-17,18,25,[9,9,1,1]);ctx.fill();ctx.strokeStyle=p.ink;ctx.lineWidth=1.3;ctx.stroke();ctx.fillStyle=p.sun;ctx.beginPath();ctx.arc(5,-4,1.6,0,Math.PI*2);ctx.fill();ty=point.y-18*sc;
+    }else if(s.id==="choir"){
+      ctx.translate(0,-14+bob*.3);[-21,0,22].forEach((dx,i)=>{ctx.fillStyle=i===1?p.accent2:p.near;ctx.beginPath();ctx.ellipse(dx,i===1?-3:2,13,17+i*3,0,0,Math.PI*2);ctx.fill();ctx.strokeStyle=p.ink;ctx.lineWidth=1;ctx.stroke();ctx.fillStyle=p.ink;ctx.beginPath();ctx.arc(dx-4,-3,1.3,0,7);ctx.arc(dx+4,-3,1.3,0,7);ctx.fill();ctx.beginPath();ctx.arc(dx,5,3+i,0,Math.PI);ctx.stroke();});ctx.strokeStyle=p.accent;ctx.lineWidth=1.4;for(let i=0;i<3;i++){const yy=-27-i*7;ctx.beginPath();ctx.arc(20+i*9,yy,3,0,7);ctx.stroke();ctx.beginPath();ctx.moveTo(23+i*9,yy);ctx.lineTo(23+i*9,yy-8);ctx.stroke();}ty=point.y-14*sc;
+    }else if(s.id==="waterfall"){
+      ctx.strokeStyle=p.near;ctx.lineWidth=18;ctx.beginPath();ctx.moveTo(-25,3);ctx.quadraticCurveTo(5,-25,17,-83);ctx.stroke();ctx.strokeStyle=p.accent2;ctx.lineWidth=5;ctx.setLineDash([10,8]);ctx.lineDashOffset=-elapsed*24;ctx.beginPath();ctx.moveTo(-20,0);ctx.quadraticCurveTo(7,-28,18,-80);ctx.stroke();ctx.setLineDash([]);ctx.fillStyle=p.accent2;ctx.beginPath();ctx.moveTo(18,-91+bob);ctx.quadraticCurveTo(8,-78,18,-72);ctx.quadraticCurveTo(28,-78,18,-91+bob);ctx.fill();ty=point.y-60*sc;
+    }else if(s.id==="moth"){
+      ctx.translate(0,bob*2);ctx.fillStyle=p.sun;ctx.beginPath();ctx.arc(0,0,17,0,7);ctx.fill();ctx.strokeStyle=p.ink;ctx.lineWidth=1;ctx.stroke();ctx.fillStyle=p.paper;ctx.beginPath();ctx.ellipse(-13,0,13,8,-.5,0,7);ctx.ellipse(13,0,13,8,.5,0,7);ctx.fill();ctx.stroke();ctx.fillStyle=p.ink;ctx.fillRect(-1,-7,2,14);ty=point.y+bob*2*sc;
+    }
+    ctx.restore();ctx.shadowColor="transparent";
   }
-  ctx.restore(); ctx.shadowColor = "transparent";
-  eventTarget(s.id, tx, ty, s.id === "cloud" ? 43 : 34);
-  if (Math.abs(progress - s.x) < 70) drawSpark(tx + 31, ty - 25, p, .7);
+  eventTarget(s.id,tx,ty,Math.max(22,(s.id==="cloud"?43:35)*sc));
+  if(Math.abs(progress-s.x)<70)drawSpark(tx+31*sc,ty-25*sc,p,.7*sc);
 }
 
 function drawHiker(p: Palette) {
-  const x = width * .34, y = gy(displayProgress) - 1;
-  const stride = walking ? Math.sin(elapsed * 11) : 0;
-  ctx.save(); ctx.translate(x,y); ctx.strokeStyle=p.ink;ctx.fillStyle=p.accent;ctx.lineWidth=2.3;ctx.lineCap="round";
+  const point=project(displayProgress),x=width*.5,y=point.y-1,stride=walking?Math.sin(elapsed*11):0;
+  ctx.save();ctx.translate(x,y);ctx.strokeStyle=p.ink;ctx.fillStyle=p.accent;ctx.lineWidth=2.3;ctx.lineCap="round";
   if(style==="paper"){ctx.shadowColor=p.shadow;ctx.shadowOffsetX=4;ctx.shadowOffsetY=4;}
   ctx.beginPath();ctx.arc(0,-44,8,0,7);ctx.fill();ctx.stroke();
-  ctx.beginPath();ctx.moveTo(0,-36);ctx.lineTo(-1,-17);ctx.lineTo(-10+stride*6,0);ctx.moveTo(-1,-17);ctx.lineTo(9-stride*6,0);ctx.moveTo(-1,-32);ctx.lineTo(-13-stride*5,-19);ctx.moveTo(-1,-31);ctx.lineTo(12+stride*5,-21);ctx.stroke();
-  ctx.fillStyle=p.accent2;ctx.beginPath();ctx.roundRect(-11,-37,8,17,3);ctx.fill();ctx.stroke();
-  ctx.strokeStyle=p.ink;ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(12+stride*5,-21);ctx.lineTo(15+stride*5,1);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(0,-35);ctx.lineTo(0,-17);ctx.lineTo(-8+stride*5,0);ctx.moveTo(0,-17);ctx.lineTo(8-stride*5,0);ctx.moveTo(-1,-31);ctx.lineTo(-12-stride*3,-20);ctx.moveTo(1,-31);ctx.lineTo(12+stride*3,-20);ctx.stroke();
+  ctx.fillStyle=p.accent2;ctx.beginPath();ctx.roundRect(-9,-37,18,19,4);ctx.fill();ctx.stroke();ctx.fillStyle=p.paper;ctx.fillRect(-1,-34,2,12);
+  ctx.strokeStyle=p.ink;ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(12+stride*3,-20);ctx.lineTo(15+stride*3,1);ctx.stroke();
   ctx.restore();ctx.shadowColor="transparent";
 }
 
@@ -495,9 +426,12 @@ function collect(id: string) {
   toast.querySelector<HTMLElement>("b")!.textContent = surprise.title;
   toast.querySelector<HTMLElement>("p")!.textContent = surprise.note;
   toast.classList.add("show");
-  clearTimeout(toastTimer); toastTimer = window.setTimeout(() => toast.classList.remove("show"), 3300);
-  prompt.innerHTML = `<strong>Curiosity logged.</strong> Hold to keep hiking.`;
-  prompt.classList.remove("hidden");
+  prompt.classList.add("hidden");
+  clearTimeout(toastTimer); toastTimer = window.setTimeout(() => {
+    toast.classList.remove("show");
+    prompt.innerHTML = `<strong>Curiosity logged.</strong> Hold to keep hiking.`;
+    prompt.classList.remove("hidden");
+  }, 3300);
   ping(7 + completed.size);
 }
 
@@ -519,8 +453,8 @@ function setWalking(value: boolean) {
 walkButton.addEventListener("pointerdown",(event)=>{walkButton.setPointerCapture(event.pointerId);setWalking(true);});
 walkButton.addEventListener("pointerup",()=>setWalking(false));
 walkButton.addEventListener("pointercancel",()=>setWalking(false));
-window.addEventListener("keydown",(event)=>{if(["ArrowRight","d","D"," "].includes(event.key)){event.preventDefault();setWalking(true);}});
-window.addEventListener("keyup",(event)=>{if(["ArrowRight","d","D"," "].includes(event.key))setWalking(false);});
+window.addEventListener("keydown",(event)=>{if(["ArrowUp","w","W"," "].includes(event.key)){event.preventDefault();setWalking(true);}});
+window.addEventListener("keyup",(event)=>{if(["ArrowUp","w","W"," "].includes(event.key))setWalking(false);});
 
 styleToggle.addEventListener("click",()=>{
   const open=stylePanel.hasAttribute("hidden");

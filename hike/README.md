@@ -6,7 +6,7 @@ Some of the things I want are trash on the ground, a lone bird, a strange cloud,
 
 I want a 2D look resembling many overlapping sheets of paper - geometric, simple, and beautiful.
 
-The hiking itself should be simple. I was imagining that it's a 2D side scroller but you'd going around the mountain. The viewpoint should be limited and the hike itself should be fairly long, so the distinct events are somewhat far apart. None of the events should be missable.
+The hiking itself stays simple while the trail winds through a lightweight 2.5D perspective. Hand-shaped switchbacks turn toward the horizon, while the hiker, trees, and curiosities remain procedural 2D cutouts. The hike is deliberately long enough for its distinct events to breathe, and none of them are missable.
 
 ## Play
 
@@ -14,6 +14,6 @@ The hiking itself should be simple. I was imagining that it's a 2D side scroller
 bun run dev
 ```
 
-Hold the round boot button, <kbd>→</kbd>, <kbd>D</kbd>, or <kbd>Space</kbd> to hike. The eight-minute trail climbs from young woods through old growth and mountain fog to the snowline, pausing at every curiosity until you find and click it. Use **Look** to switch between the default Cut Paper treatment and the pixel-art Pocket Hike.
+Hold the round boot button, <kbd>↑</kbd>, <kbd>W</kbd>, or <kbd>Space</kbd> to follow the switchbacks. The eight-minute trail climbs from young woods through old growth and mountain fog to the snowline, pausing at every curiosity until you find and click it. Use **Look** to switch between the default Cut Paper treatment and the pixel-art Pocket Hike.
 
 Add `?debug=true&music=off` for 1×/2×/4× walk-speed controls, surprise jumps, and silent automated testing. The game also exposes `window.__HIKE_DEBUG__` for programmatic playtesting.
