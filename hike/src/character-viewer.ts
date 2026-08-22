@@ -74,8 +74,23 @@ controls.minDistance = 3.2;
 controls.maxDistance = 8;
 controls.minPolarAngle = Math.PI * 0.19;
 controls.maxPolarAngle = Math.PI * 0.52;
-controls.autoRotate = true;
+controls.autoRotate = new URLSearchParams(location.search).get("spin") !== "off";
 controls.autoRotateSpeed = 1.25;
+spinButton.classList.toggle("active", controls.autoRotate);
+spinButton.setAttribute("aria-pressed", String(controls.autoRotate));
+
+function setViewerAzimuth(azimuth: number) {
+  controls.autoRotate = false;
+  spinButton.classList.remove("active");
+  spinButton.setAttribute("aria-pressed", "false");
+  const orbit = new THREE.Spherical(camera.position.distanceTo(controls.target), controls.getPolarAngle(), azimuth);
+  camera.position.copy(controls.target).add(new THREE.Vector3().setFromSpherical(orbit));
+  controls.update();
+}
+
+const initialView = new URLSearchParams(location.search).get("view");
+if (initialView === "back") setViewerAzimuth(Math.PI);
+if (initialView === "side") setViewerAzimuth(Math.PI / 2);
 
 scene.add(new THREE.HemisphereLight(0xffedc5, 0x445342, 2.6));
 const key = new THREE.DirectionalLight(0xfff0cf, 4.2);
@@ -197,5 +212,6 @@ Object.assign(window, {
     show: (id: string) => {
       if (hikerAppearances.some((item) => item.id === id)) showModel(id as HikerId);
     },
+    setView: setViewerAzimuth,
   },
 });

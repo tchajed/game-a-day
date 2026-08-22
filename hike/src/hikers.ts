@@ -7,8 +7,8 @@ export const hikerAppearances = [
     id: "trail-scout",
     name: "Trail Scout",
     role: "The familiar day hiker",
-    description: "A compact jacket, knit cap, bedroll, and a square blue trail pack with its own mountain badge.",
-    features: ["Classic pack", "Bedroll", "Beanie"],
+    description: "A compact jacket, knit cap, and a square blue trail pack with its own mountain badge.",
+    features: ["Classic pack", "Mountain badge", "Beanie"],
   },
   {
     id: "ridge-runner",
@@ -123,17 +123,29 @@ function pack(root: THREE.Group, y: number, material: THREE.Material, scale: [nu
 }
 
 function classicPack(root: THREE.Group, y: number, material: THREE.Material, scale = 1) {
-  const back = -0.55;
-  part(root, box, material, [0, y, -0.4], [0.5 * scale, 0.62 * scale, 0.25 * scale]);
-  part(root, box, material, [0, y + 0.2 * scale, back - 0.11 * scale], [0.43 * scale, 0.19 * scale, 0.035]);
-  part(root, box, materials.ink, [0, y - 0.02 * scale, back - 0.125 * scale], [0.4 * scale, 0.025, 0.025]);
-  const handle = new THREE.Mesh(new THREE.TorusGeometry(0.15 * scale, 0.025, 6, 12, Math.PI), materials.ink);
-  handle.position.set(0, y + 0.66 * scale, -0.43);
-  handle.rotation.z = Math.PI;
+  const bag = new THREE.Group();
+  bag.position.set(0, y, -0.35);
+  bag.scale.setScalar(scale);
+  root.add(bag);
+
+  // Every piece overlaps the main bag so the pack reads as one connected object from every angle.
+  part(bag, box, material, [0, 0, 0], [0.56, 0.7, 0.28]);
+  part(bag, box, material, [0, -0.08, -0.17], [0.46, 0.34, 0.1]);
+  part(bag, box, material, [0, 0.24, -0.16], [0.5, 0.16, 0.12]);
+  part(bag, box, materials.ink, [0, 0.17, -0.225], [0.39, 0.025, 0.025]);
+
+  const handle = new THREE.Mesh(new THREE.TorusGeometry(0.14, 0.025, 6, 12, Math.PI), materials.ink);
+  handle.position.set(0, 0.35, 0);
   handle.castShadow = true;
-  root.add(handle);
-  part(root, cylinder, materials.cream, [0, y + 0.08 * scale, back - 0.165 * scale], [0.13 * scale, 0.026, 0.13 * scale], [Math.PI / 2, 0, 0]);
-  part(root, cone, materials.ink, [0, y + 0.09 * scale, back - 0.195 * scale], [0.075 * scale, 0.08 * scale, 0.022]);
+  bag.add(handle);
+
+  // Shoulder straps hug the hiker-facing side instead of floating behind the shell.
+  part(bag, box, materials.ink, [-0.17, -0.02, 0.16], [0.07, 0.54, 0.035], [0, 0, -0.08]);
+  part(bag, box, materials.ink, [0.17, -0.02, 0.16], [0.07, 0.54, 0.035], [0, 0, 0.08]);
+
+  // A shallow badge and inset mountain mark sit directly on the front pocket.
+  part(bag, cylinder, materials.cream, [0, -0.06, -0.235], [0.12, 0.025, 0.12], [Math.PI / 2, 0, 0]);
+  part(bag, cone, materials.ink, [0, -0.045, -0.263], [0.07, 0.075, 0.02]);
 }
 
 function rollTopPack(root: THREE.Group) {
@@ -170,7 +182,6 @@ function trailScout() {
   part(root, cylinder, materials.red, [0, 2.33, 0], [0.34, 0.12, 0.34]);
   part(root, lowSphere, materials.red, [0, 2.43, 0], [0.11, 0.11, 0.11]);
   classicPack(root, 1.38, materials.blue, 1.04);
-  part(root, cylinder, materials.gold, [0, 1.08, -0.53], [0.16, 0.4, 0.16], [0, 0, Math.PI / 2]);
   return root;
 }
 
