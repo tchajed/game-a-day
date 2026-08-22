@@ -28,31 +28,31 @@ export type Crisis = {
   timeoutChoice: number
 }
 
-export const INITIAL_METRICS: Metrics = { aura: 62, craft: 64, cash: 24, reach: 18 }
+export const INITIAL_METRICS: Metrics = { aura: 62, craft: 64, cash: 48, reach: 18 }
 
 export const CRISES: Crisis[] = [
   {
-    quarter: 'I · THE LEDGER',
-    source: 'Finance director',
-    headline: 'The empty order book',
-    brief: 'Our bank wants reassurance by Friday. HyperMart offers cash now for 40,000 lunchboxes bearing our crest.',
-    note: 'VOLUME IS NOT DEMAND.',
+    quarter: 'I · THE DOUBT',
+    source: 'Heritage director',
+    headline: 'The hand-finished myth',
+    brief: 'A former apprentice claims our signature clasp has been machine-made for decades. Collectors are asking whether anything about Morrow is still true.',
+    note: 'TRUST CANNOT BE BOUGHT AT SCALE.',
     timeoutChoice: 0,
     choices: [
       {
-        id: 'hypermart', title: 'License the crest', detail: 'Take the 40,000-unit order.', luxury: 0,
-        response: 'The board applauds the first large order in years.', consequence: 'Within weeks, the crest is seen in every clearance aisle.',
-        now: { cash: 24, reach: 22 }, later: { aura: -20, craft: -5 },
+        id: 'broadcast', title: 'Broadcast the workshop', detail: 'Put every artisan live for 72 hours.', luxury: 0,
+        response: 'Cameras arrive before the morning shift.', consequence: 'The clips prove the work is real—and make the once-private atelier feel like content.',
+        now: { cash: -4, reach: 22 }, later: { aura: -16, craft: -3, reach: 4 },
       },
       {
-        id: 'salon', title: 'Open a private salon', detail: 'Invite 80 collectors to place deposits.', luxury: 2,
-        response: 'Seventy-three handwritten invitations leave the atelier.', consequence: 'A waiting list appears before a single box does.',
-        now: { cash: 7 }, later: { aura: 10, craft: 2, cash: 4 },
+        id: 'witnesses', title: 'Invite three witnesses', detail: 'Let respected restorers inspect every bench and ledger.', luxury: 2,
+        response: 'Three conservators enter after closing. No phones, no press team.', consequence: 'Their terse signed report becomes the only answer collectors need.',
+        now: { cash: -3 }, later: { aura: 11, craft: 5, reach: 2 },
       },
       {
-        id: 'bridge', title: 'Take the bridge loan', detail: 'Keep production unchanged and borrow.', luxury: 1,
-        response: 'The bank buys you a season. No one outside this room knows.', consequence: 'Interest bites, but the maison remains unobserved.',
-        now: { cash: 13 }, later: { cash: -7, aura: 1 },
+        id: 'makers-note', title: 'Answer once, in print', detail: 'Publish the clasp process and every maker’s mark.', luxury: 1,
+        response: 'The maison releases its first technical note in 75 years.', consequence: 'Experts are satisfied. The accusation travels farther than the correction.',
+        now: { cash: -1 }, later: { aura: 5, craft: 2, reach: 5 },
       },
     ],
   },

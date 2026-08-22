@@ -269,9 +269,9 @@ function App() {
         <div className="modal-backdrop">
           <section className="intro-modal">
             <Crest />
-            <div className="intro-kicker">PARIS · 75TH YEAR · EMERGENCY SESSION</div>
-            <h1>You inherit a legend<br />that cannot pay Friday.</h1>
-            <p>Eight quarters. Protect what makes a Morrow impossible to replace. The market will reward every shortcut—at first.</p>
+            <div className="intro-kicker">PARIS · 75TH YEAR · SPECIAL SESSION</div>
+            <h1>You inherit a legend<br />the world has begun to doubt.</h1>
+            <p>The reserve is strong. Faith in the maison is not. Over eight quarters, protect what makes a Morrow impossible to replace.</p>
             <div className="intro-rule"><span>READ THE ROOM</span><span>TRUST THE PLAYBOOK</span><span>WATCH THE DELAY</span></div>
             <button onClick={begin}>Assume the seal <ArrowRight size={17} /></button>
           </section>

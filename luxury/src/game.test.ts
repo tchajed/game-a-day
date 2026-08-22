@@ -1,7 +1,14 @@
 import { describe, expect, test } from 'bun:test'
-import { CRISES, playStrategy } from './game'
+import { CRISES, INITIAL_METRICS, playStrategy } from './game'
 
 describe('Maison Morrow balance', () => {
+  test('the opening crisis threatens trust without threatening solvency', () => {
+    expect(INITIAL_METRICS.cash).toBeGreaterThanOrEqual(40)
+    for (const choice of CRISES[0].choices) {
+      expect(INITIAL_METRICS.cash + (choice.now.cash ?? 0)).toBeGreaterThanOrEqual(40)
+    }
+  })
+
   test('the luxury playbook produces an iconic maison', () => {
     const best = CRISES.map(crisis => crisis.choices.findIndex(choice => choice.luxury === 2))
     const run = playStrategy(best)
