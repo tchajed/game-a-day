@@ -1,6 +1,6 @@
 # Hike
 
-**Take the long way up.** Follow a climbing ribbon of switchbacks through moss, deadfall, ferns, old growth, drifting mountain fog, and finally the snowline. The woods keep the next bend close until the trees suddenly fall away into a mountain overlook—then close around you again. Hold to hike through a warm cut-paper landscape or a bright pocket-sized pixel world.
+**Take the strange way up.** Follow five minutes of climbing switchbacks through moss, wildlife, cold creeks, old growth, drifting mountain fog, and finally the snowline. There is always something new around the next bend—sometimes a deer, cairn, or alpine tarn, sometimes a square cloud, an uphill waterfall, or a warm cup of tea set for nobody. Look closely, log what you find, and keep hiking through a warm cut-paper landscape or a bright pocket-sized pixel world.
 
 ![Living Slope fills the uphill forest floor with simple procedural detail](screenshots/hike-living-slope.png)
 

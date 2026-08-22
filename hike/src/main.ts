@@ -7,6 +7,7 @@ type Surprise = {
   x: number;
   title: string;
   note: string;
+  tone: "trail" | "odd";
 };
 
 type Palette = {
@@ -24,15 +25,31 @@ type Palette = {
   shadow: string;
 };
 
+// A new trail moment arrives roughly every 13 seconds at the natural walking pace.
+// Familiar sightings establish a believable hike; odd ones keep the player watching.
 const surprises: Surprise[] = [
-  { id: "trash", x: 118, title: "Trail Custodian", note: "You packed out what someone else packed in." },
-  { id: "bird", x: 252, title: "A Party of One", note: "One very small bird. One extremely large opinion." },
-  { id: "cloud", x: 388, title: "Forecast: Unlikely", note: "A cloud tied itself into a perfect square." },
-  { id: "twins", x: 522, title: "Copy / Paste", note: "Two identical trees, right down to the last needle." },
-  { id: "door", x: 654, title: "Unreasonably Small Door", note: "You knocked. Something much smaller knocked back." },
-  { id: "choir", x: 784, title: "The Stone Choir", note: "Their encore may take several geological eras." },
-  { id: "waterfall", x: 916, title: "Uphill Waterfall", note: "Every drop is determined to see the summit." },
-  { id: "moth", x: 1044, title: "Moon, Pocket-Sized", note: "The moth carried a tiny moon away on its wings." },
+  { id: "marker", x: 38, title: "Blue Blaze", note: "Still on the trail. Always nice to know.", tone: "trail" },
+  { id: "mushrooms", x: 70, title: "After-Rain Mushrooms", note: "A small red village under the ferns.", tone: "trail" },
+  { id: "cloud", x: 102, title: "Forecast: Unlikely", note: "A cloud tied itself into a perfect square.", tone: "odd" },
+  { id: "squirrel", x: 134, title: "Red Squirrel", note: "It objects to your route, loudly and at length.", tone: "trail" },
+  { id: "bird", x: 166, title: "A Party of One", note: "One very small bird. One extremely large opinion.", tone: "odd" },
+  { id: "creek", x: 198, title: "Cold Creek", note: "Snowmelt running clear over dark stones.", tone: "trail" },
+  { id: "trash", x: 230, title: "Trail Custodian", note: "You packed out what someone else packed in.", tone: "trail" },
+  { id: "deer", x: 262, title: "Between the Trees", note: "A deer watches until you remember to stand still.", tone: "trail" },
+  { id: "twins", x: 294, title: "Copy / Paste", note: "Two identical trees, right down to the last needle.", tone: "odd" },
+  { id: "cairn", x: 326, title: "Cairn", note: "Five patient stones point toward the next bend.", tone: "trail" },
+  { id: "door", x: 358, title: "Unreasonably Small Door", note: "You knocked. Something much smaller knocked back.", tone: "odd" },
+  { id: "flowers", x: 390, title: "Paintbrush Patch", note: "A pocket of red survives beneath the old growth.", tone: "trail" },
+  { id: "choir", x: 422, title: "The Stone Choir", note: "Their encore may take several geological eras.", tone: "odd" },
+  { id: "fox", x: 454, title: "Fox at Dusk", note: "A copper tail slips quietly into the fog.", tone: "trail" },
+  { id: "waterfall", x: 486, title: "Uphill Waterfall", note: "Every drop is determined to see the summit.", tone: "odd" },
+  { id: "bridge", x: 518, title: "Log Crossing", note: "Three careful steps over a very determined stream.", tone: "trail" },
+  { id: "moth", x: 550, title: "Moon, Pocket-Sized", note: "The moth carried a tiny moon away on its wings.", tone: "odd" },
+  { id: "marmot", x: 582, title: "Marmot Lookout", note: "The mountain's roundest ranger checks your permit.", tone: "trail" },
+  { id: "teatable", x: 614, title: "Tea for Nobody", note: "The cup is warm. The chair is still pulling itself out.", tone: "odd" },
+  { id: "lake", x: 646, title: "Alpine Tarn", note: "A piece of sky resting between the rocks.", tone: "trail" },
+  { id: "boot", x: 678, title: "The Other Hiker", note: "A lone boot continues upward without complaint.", tone: "odd" },
+  { id: "flag", x: 706, title: "Summit Marker", note: "Wind, snow, and one last bright scrap of red.", tone: "trail" },
 ];
 
 const styleInfo: Record<StyleKey, { name: string; subtitle: string; swatch: string }> = {
@@ -79,7 +96,7 @@ app.innerHTML = `
     <section class="finish-card" hidden>
       <div class="eyebrow">Summit log</div>
       <h2>You made it.</h2>
-      <p>You walked 1,150 metres from the young woods to the snowline.</p>
+      <p>You walked 720 metres from the young woods to the snowline.</p>
       <button class="again">Hike it again</button>
     </section>
   </main>`;
@@ -145,8 +162,9 @@ function elevation(x: number) {
   return x * .17 + Math.sin(x * .017) * 16 + Math.sin(x * .051) * 5;
 }
 
-const TRAIL_LENGTH = 1150;
-const WALK_SPEED = TRAIL_LENGTH / (8 * 60);
+const TRAIL_LENGTH = 720;
+// Keep the original grounded walking pace; the shorter route makes one hike five minutes.
+const WALK_SPEED = 1150 / (8 * 60);
 function smoothstep(from: number, to: number, value: number) {
   const t = Math.max(0, Math.min(1, (value - from) / (to - from)));
   return t * t * (3 - 2 * t);
@@ -161,7 +179,7 @@ function trailPhase(worldX: number) {
 
 // Three brief openings turn the distant mountain from wallpaper into a reward.
 // Everywhere else, the next rise and the trees keep the hiker's sightline short.
-const vistaStations = [330, 705, 1015];
+const vistaStations = [207, 441, 636];
 function vistaAmount(station = displayProgress) {
   return vistaStations.reduce((amount, centre) => Math.max(amount, 1 - smoothstep(18, 58, Math.abs(station - centre))), 0);
 }
@@ -277,7 +295,7 @@ function drawGround(p: Palette) {
   line([...ridge, [width + 30,height + 30], [-30,height + 30]], true); ctx.fillStyle = p.ground;
   if (style === "paper") { ctx.shadowColor = p.shadow; ctx.shadowOffsetY = -7; }
   ctx.fill(); ctx.shadowColor = "transparent";
-  const snow = smoothstep(760, 940, displayProgress);
+  const snow = smoothstep(476, 588, displayProgress);
   if (snow > .01) { ctx.globalAlpha = snow * .88; ctx.fillStyle = style === "pixel" ? "#e8f1e8" : "#f8f5e9"; ctx.fillRect(0,height*.5,width,height*.5); ctx.globalAlpha = 1; }
 }
 
@@ -323,7 +341,7 @@ function drawTreeSprite(point: Projected, worldX: number, size: number, p: Palet
     const tiers=3+Math.floor(seeded(seed+2)*2);
     for(let i=0;i<tiers;i++){const yy=-drawn*.35-i*drawn*.19,spread=drawn*(.27-i*.035);ctx.beginPath();ctx.moveTo(0,yy-drawn*.31);ctx.lineTo(-spread,yy+drawn*.13);ctx.lineTo(spread,yy+drawn*.13);ctx.closePath();ctx.fillStyle=i%2?p.near:p.mid;ctx.fill();}
   }
-  const snow=smoothstep(760,920,worldX);
+  const snow=smoothstep(476,576,worldX);
   if(snow>.03){ctx.globalAlpha=snow*.92;ctx.strokeStyle=style==="pixel"?"#edf6e8":"#faf8ef";ctx.lineWidth=Math.max(1,(style==="pixel"?4:size*.045)*point.scale);for(let i=0;i<4;i++){const yy=-drawn*(.28+i*.18),spread=drawn*(.2-i*.025);ctx.beginPath();ctx.moveTo(-spread,yy);ctx.lineTo(spread*.7,yy+1);ctx.stroke();}}
   ctx.restore(); ctx.globalAlpha=1; ctx.shadowColor="transparent";
 }
@@ -337,7 +355,7 @@ function drawShrubSprite(point: Projected, size: number, p: Palette, seed: numbe
 }
 
 function drawDetailSprite(point: Projected, worldX: number, p: Palette, seed: number) {
-  if(!point.visible||point.scale<.24)return;const s=point.scale,snow=smoothstep(790,930,worldX);
+  if(!point.visible||point.scale<.24)return;const s=point.scale,snow=smoothstep(495,582,worldX);
   ctx.save();ctx.translate(point.x,point.y);ctx.scale(s,s);ctx.lineCap="round";
   if(seed%7===0){ctx.fillStyle=snow>.35?"#d7ddd5":p.near;if(style==="pixel")ctx.fillRect(-7,-4,14,5);else{ctx.beginPath();ctx.ellipse(0,-3,7+seeded(seed)*5,4+seeded(seed+2)*3,-.1,Math.PI,Math.PI*2);ctx.fill();}}
   else{ctx.strokeStyle=p.near;ctx.lineWidth=style==="pixel"?2:1.2;const blades=snow>.45?2:3+Math.abs(seed)%4;for(let i=0;i<blades;i++){const dx=(i-blades/2)*3;ctx.beginPath();ctx.moveTo(dx,0);ctx.lineTo(dx+(seeded(seed+i)-.5)*7,-(5+seeded(seed+i+8)*11)*(1-snow*.55));ctx.stroke();}if(snow<.18&&Math.abs(seed)%11===2){ctx.fillStyle=p.accent;ctx.beginPath();ctx.arc(0,-10,style==="pixel"?2.5:1.8,0,Math.PI*2);ctx.fill();}}
@@ -374,7 +392,7 @@ function drawForestFloorSprite(point: Projected, worldX: number, seed: number, p
       if(style==="pixel")ctx.fillRect(Math.round(x),Math.round(y),3,2);else{ctx.beginPath();ctx.ellipse(x,y,4,1.5,(seeded(seed+i)-.5)*2,0,Math.PI*2);ctx.fill();}
     }
   }
-  const snow = smoothstep(790,940,worldX);
+  const snow = smoothstep(495,588,worldX);
   if (snow > .08) { ctx.globalAlpha = snow * .72; ctx.fillStyle = style === "pixel" ? "#e7efe5" : "#f4f1e4"; ctx.fillRect(-10,-4,20,3); }
   ctx.restore(); ctx.globalAlpha = 1; ctx.shadowColor = "transparent";
 }
@@ -402,11 +420,11 @@ function drawForest(p: Palette) {
   const items: { station:number; lateral:number; kind:"tree"|"shrub"|"detail"; size:number; seed:number }[]=[];
   const start=Math.floor((displayProgress-8)/11),end=Math.ceil((displayProgress+560)/11);
   for(let i=start;i<=end;i++){
-    const station=i*11+(seeded(i+90)-.5)*7;if(station<10||station>1138)continue;
+    const station=i*11+(seeded(i+90)-.5)*7;if(station<10||station>TRAIL_LENGTH-12)continue;
     const side=i%2?1:-1, lateral=side*(13+seeded(i+12)*48);
-    const high=smoothstep(900,1120,station),growth=smoothstep(10,430,station);
-    if(i%2===0&&!(station>910&&i%4!==0))items.push({station,lateral:lateral+(seeded(i+3)-.5)*15,kind:"tree",size:25+growth*72+seeded(i+9)*20-high*27,seed:i});
-    else if(station<990&&i%3!==0)items.push({station,lateral,kind:"shrub",size:11+seeded(i+3)*13,seed:i});
+    const high=smoothstep(564,701,station),growth=smoothstep(10,269,station);
+    if(i%2===0&&!(station>570&&i%4!==0))items.push({station,lateral:lateral+(seeded(i+3)-.5)*15,kind:"tree",size:25+growth*72+seeded(i+9)*20-high*27,seed:i});
+    else if(station<620&&i%3!==0)items.push({station,lateral,kind:"shrub",size:11+seeded(i+3)*13,seed:i});
     items.push({station:station+2,lateral:side*(9+seeded(i+50)*60),kind:"detail",size:1,seed:i+700});
   }
   items.sort((a,b)=>b.station-a.station);
@@ -462,7 +480,7 @@ function drawTrailTunnel(p: Palette) {
 }
 
 function drawFog(p: Palette) {
-  const fog=smoothstep(500,650,displayProgress)*(1-smoothstep(850,990,displayProgress));if(fog<.01)return;
+  const fog=smoothstep(313,407,displayProgress)*(1-smoothstep(532,620,displayProgress));if(fog<.01)return;
   ctx.save();ctx.globalAlpha=fog*.24;ctx.fillStyle=style==="pixel"?"#e6f1e8":"#f5f1df";const drift=(elapsed*9)%180;
   if(style==="pixel"){for(let i=-1;i<6;i++)ctx.fillRect(i*190-drift,height*(.45+(i%3)*.07),160,18+(i%2)*12);}else{for(let i=-1;i<7;i++){const x=i*190-drift,y=height*(.42+(i%3)*.08);ctx.beginPath();ctx.ellipse(x,y,160,25+(i%2)*11,0,0,Math.PI*2);ctx.fill();}}
   ctx.restore();
@@ -471,9 +489,14 @@ function drawFog(p: Palette) {
 function eventTarget(id: string, x: number, y: number, r = 30) { targets.push({ id, x, y, r }); }
 function isFound(id: string) { return completed.has(id); }
 
-const surpriseSides: Record<string, number> = { trash: 10, bird: -14, cloud: 0, twins: 16, door: -15, choir: 11, waterfall: -14, moth: 3 };
+const surpriseSides: Record<string, number> = {
+  marker: -12, mushrooms: 14, trash: 10, squirrel: -16, bird: 14, creek: -3,
+  cloud: 0, deer: -18, twins: 16, cairn: 13, door: -15, flowers: 17,
+  choir: 11, fox: -17, waterfall: -14, bridge: 0, moth: 3, marmot: 16,
+  teatable: -15, lake: 13, boot: -5, flag: 10,
+};
 function drawSurprise(s: Surprise, p: Palette) {
-  if(isFound(s.id))return;
+  if(isFound(s.id)||s.x<displayProgress-18||s.x>displayProgress+90)return;
   const lift=s.id==="cloud"?132:s.id==="moth"?94:0;
   const point=project(s.x,surpriseSides[s.id]??0,lift);
   if(!point.visible||point.scale<.28)return;
@@ -487,20 +510,48 @@ function drawSurprise(s: Surprise, p: Palette) {
   }else{
     ctx.save();ctx.translate(point.x,point.y);ctx.scale(sc,sc);ctx.lineJoin="round";ctx.lineCap="round";
     if(style==="paper"){ctx.shadowColor=p.shadow;ctx.shadowOffsetX=4;ctx.shadowOffsetY=5;}
-    if(s.id==="trash"){
+    if(s.id==="marker"){
+      ctx.fillStyle=p.ink;ctx.fillRect(-3,-54,6,56);ctx.fillStyle=p.paper;ctx.fillRect(-16,-53,32,23);ctx.strokeStyle=p.ink;ctx.lineWidth=1.5;ctx.strokeRect(-16,-53,32,23);ctx.fillStyle=p.accent2;ctx.fillRect(-12,-46,24,7);ty=point.y-42*sc;
+    }else if(s.id==="mushrooms"){
+      [-13,0,14].forEach((dx,i)=>{const h=13+i*5;ctx.fillStyle=p.paper;ctx.fillRect(dx-2,-h,4,h);ctx.fillStyle=i===1?p.accent:p.sun;ctx.beginPath();ctx.arc(dx,-h,7+i*2,Math.PI,Math.PI*2);ctx.fill();ctx.strokeStyle=p.ink;ctx.lineWidth=1;ctx.stroke();});ty=point.y-14*sc;
+    }else if(s.id==="trash"){
       ctx.translate(0,-5);ctx.rotate(-.12);ctx.fillStyle=p.accent;ctx.beginPath();ctx.moveTo(-15,-8);ctx.lineTo(-5,-12);ctx.lineTo(3,-8);ctx.lineTo(14,-12);ctx.lineTo(12,5);ctx.lineTo(-11,8);ctx.closePath();ctx.fill();ctx.strokeStyle=p.ink;ctx.lineWidth=1.3;ctx.stroke();ctx.beginPath();ctx.moveTo(-5,-8);ctx.lineTo(-1,4);ctx.lineTo(7,-7);ctx.stroke();ty=point.y-5*sc;
+    }else if(s.id==="squirrel"){
+      ctx.translate(0,-11);ctx.fillStyle=p.accent;ctx.beginPath();ctx.ellipse(1,0,12,9,-.1,0,7);ctx.fill();ctx.beginPath();ctx.arc(11,-9,7,0,7);ctx.fill();ctx.beginPath();ctx.arc(-11,-9,13,-1.4,2.2);ctx.lineWidth=8;ctx.strokeStyle=p.accent;ctx.stroke();ctx.fillStyle=p.ink;ctx.beginPath();ctx.arc(13,-11,1.3,0,7);ctx.fill();ty=point.y-12*sc;
     }else if(s.id==="bird"){
       ctx.strokeStyle=p.ink;ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(-30,-47);ctx.lineTo(28,-58);ctx.stroke();ctx.translate(0,-68+bob);ctx.fillStyle=p.accent2;ctx.beginPath();ctx.ellipse(0,0,14,10,-.12,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.arc(10,-7,7,0,Math.PI*2);ctx.fill();ctx.fillStyle=p.accent;ctx.beginPath();ctx.moveTo(16,-8);ctx.lineTo(24,-5);ctx.lineTo(16,-3);ctx.fill();ctx.fillStyle=p.ink;ctx.beginPath();ctx.arc(11,-9,1.5,0,Math.PI*2);ctx.fill();ty=point.y+(-68+bob)*sc;
+    }else if(s.id==="creek"){
+      ctx.strokeStyle=p.accent2;ctx.lineWidth=7;ctx.beginPath();ctx.moveTo(-30,2);ctx.bezierCurveTo(-18,-10,-7,8,3,-3);ctx.bezierCurveTo(13,-13,20,2,31,-9);ctx.stroke();ctx.fillStyle=p.near;[-20,-3,18].forEach((dx,i)=>{ctx.beginPath();ctx.ellipse(dx,-2-i*2,6,3,0,0,7);ctx.fill();});ty=point.y-4*sc;
     }else if(s.id==="cloud"){
       ctx.translate(0,bob);ctx.fillStyle=p.paper;ctx.strokeStyle=p.ink;ctx.lineWidth=style==="paper"?0:1.5;ctx.beginPath();ctx.roundRect(-32,-26,64,52,10);ctx.fill();if(style!=="paper")ctx.stroke();ctx.strokeStyle=p.accent;ctx.lineWidth=2;ctx.setLineDash([4,5]);ctx.strokeRect(-22,-17,44,34);ctx.setLineDash([]);ty=point.y+bob*sc;
+    }else if(s.id==="deer"){
+      ctx.translate(0,-25);ctx.fillStyle=p.accent;ctx.beginPath();ctx.ellipse(-3,0,18,10,0,0,7);ctx.fill();ctx.fillRect(8,-18,5,20);ctx.beginPath();ctx.ellipse(12,-19,7,5,-.2,0,7);ctx.fill();ctx.strokeStyle=p.ink;ctx.lineWidth=2;[-11,4].forEach(dx=>{ctx.beginPath();ctx.moveTo(dx,7);ctx.lineTo(dx-2,26);ctx.stroke();});ctx.beginPath();ctx.moveTo(13,-22);ctx.lineTo(9,-33);ctx.moveTo(13,-28);ctx.lineTo(18,-35);ctx.stroke();ty=point.y-26*sc;
+    }else if(s.id==="cairn"){
+      ctx.translate(0,-2);[18,14,10,7,4].forEach((w,i)=>{ctx.fillStyle=i%2?p.near:p.mid;ctx.beginPath();ctx.ellipse(0,-i*7,w,5,-.08+i*.04,0,7);ctx.fill();ctx.strokeStyle=p.ink;ctx.lineWidth=.8;ctx.stroke();});ty=point.y-18*sc;
     }else if(s.id==="door"){
       ctx.translate(0,-18);ctx.fillStyle=p.near;ctx.beginPath();ctx.ellipse(0,0,32,24,0,Math.PI,Math.PI*2);ctx.lineTo(32,8);ctx.lineTo(-32,8);ctx.closePath();ctx.fill();ctx.fillStyle=p.accent;ctx.beginPath();ctx.roundRect(-9,-17,18,25,[9,9,1,1]);ctx.fill();ctx.strokeStyle=p.ink;ctx.lineWidth=1.3;ctx.stroke();ctx.fillStyle=p.sun;ctx.beginPath();ctx.arc(5,-4,1.6,0,Math.PI*2);ctx.fill();ty=point.y-18*sc;
+    }else if(s.id==="flowers"){
+      ctx.strokeStyle=p.near;ctx.lineWidth=2;[-16,-6,5,16].forEach((dx,i)=>{const h=12+(i%2)*8;ctx.beginPath();ctx.moveTo(dx,1);ctx.lineTo(dx,-h);ctx.stroke();ctx.fillStyle=i%2?p.accent:p.sun;ctx.beginPath();for(let petal=0;petal<5;petal++){const a=petal*Math.PI*2/5;ctx.moveTo(dx,-h);ctx.arc(dx+Math.cos(a)*4,-h+Math.sin(a)*4,2.5,0,7);}ctx.fill();});ty=point.y-13*sc;
     }else if(s.id==="choir"){
       ctx.translate(0,-14+bob*.3);[-21,0,22].forEach((dx,i)=>{ctx.fillStyle=i===1?p.accent2:p.near;ctx.beginPath();ctx.ellipse(dx,i===1?-3:2,13,17+i*3,0,0,Math.PI*2);ctx.fill();ctx.strokeStyle=p.ink;ctx.lineWidth=1;ctx.stroke();ctx.fillStyle=p.ink;ctx.beginPath();ctx.arc(dx-4,-3,1.3,0,7);ctx.arc(dx+4,-3,1.3,0,7);ctx.fill();ctx.beginPath();ctx.arc(dx,5,3+i,0,Math.PI);ctx.stroke();});ctx.strokeStyle=p.accent;ctx.lineWidth=1.4;for(let i=0;i<3;i++){const yy=-27-i*7;ctx.beginPath();ctx.arc(20+i*9,yy,3,0,7);ctx.stroke();ctx.beginPath();ctx.moveTo(23+i*9,yy);ctx.lineTo(23+i*9,yy-8);ctx.stroke();}ty=point.y-14*sc;
+    }else if(s.id==="fox"){
+      ctx.translate(0,-13);ctx.fillStyle=p.accent;ctx.beginPath();ctx.ellipse(-2,0,18,9,-.15,0,7);ctx.fill();ctx.beginPath();ctx.moveTo(9,-6);ctx.lineTo(18,-18);ctx.lineTo(25,-4);ctx.closePath();ctx.fill();ctx.beginPath();ctx.moveTo(-16,0);ctx.quadraticCurveTo(-34,-13,-35,3);ctx.quadraticCurveTo(-29,13,-18,6);ctx.fill();ctx.fillStyle=p.paper;ctx.beginPath();ctx.moveTo(15,-8);ctx.lineTo(23,-4);ctx.lineTo(15,-1);ctx.fill();ty=point.y-14*sc;
     }else if(s.id==="waterfall"){
       ctx.strokeStyle=p.near;ctx.lineWidth=18;ctx.beginPath();ctx.moveTo(-25,3);ctx.quadraticCurveTo(5,-25,17,-83);ctx.stroke();ctx.strokeStyle=p.accent2;ctx.lineWidth=5;ctx.setLineDash([10,8]);ctx.lineDashOffset=-elapsed*24;ctx.beginPath();ctx.moveTo(-20,0);ctx.quadraticCurveTo(7,-28,18,-80);ctx.stroke();ctx.setLineDash([]);ctx.fillStyle=p.accent2;ctx.beginPath();ctx.moveTo(18,-91+bob);ctx.quadraticCurveTo(8,-78,18,-72);ctx.quadraticCurveTo(28,-78,18,-91+bob);ctx.fill();ty=point.y-60*sc;
+    }else if(s.id==="bridge"){
+      ctx.strokeStyle=p.accent2;ctx.lineWidth=5;ctx.beginPath();ctx.moveTo(-34,1);ctx.quadraticCurveTo(0,-13,34,1);ctx.stroke();ctx.strokeStyle=p.ink;ctx.lineWidth=3;[-1,7,15].forEach((yy,i)=>{ctx.beginPath();ctx.moveTo(-28+i*2,yy);ctx.lineTo(29+i*2,yy-6);ctx.stroke();});ty=point.y-3*sc;
     }else if(s.id==="moth"){
       ctx.translate(0,bob*2);ctx.fillStyle=p.sun;ctx.beginPath();ctx.arc(0,0,17,0,7);ctx.fill();ctx.strokeStyle=p.ink;ctx.lineWidth=1;ctx.stroke();ctx.fillStyle=p.paper;ctx.beginPath();ctx.ellipse(-13,0,13,8,-.5,0,7);ctx.ellipse(13,0,13,8,.5,0,7);ctx.fill();ctx.stroke();ctx.fillStyle=p.ink;ctx.fillRect(-1,-7,2,14);ty=point.y+bob*2*sc;
+    }else if(s.id==="marmot"){
+      ctx.translate(0,-15);ctx.fillStyle=p.accent;ctx.beginPath();ctx.ellipse(0,1,15,18,0,0,7);ctx.fill();ctx.beginPath();ctx.arc(0,-14,11,0,7);ctx.fill();ctx.fillStyle=p.ink;ctx.beginPath();ctx.arc(-4,-16,1.5,0,7);ctx.arc(4,-16,1.5,0,7);ctx.fill();ctx.strokeStyle=p.ink;ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(-4,-8);ctx.lineTo(4,-8);ctx.stroke();ty=point.y-16*sc;
+    }else if(s.id==="teatable"){
+      ctx.fillStyle=p.paper;ctx.fillRect(-25,-22,50,6);ctx.fillStyle=p.ink;ctx.fillRect(-20,-16,4,18);ctx.fillRect(16,-16,4,18);ctx.strokeStyle=p.accent2;ctx.lineWidth=4;ctx.beginPath();ctx.arc(2,-29,7,0,Math.PI);ctx.stroke();ctx.fillStyle=p.accent2;ctx.fillRect(-5,-30,14,9);ctx.strokeStyle=p.ink;ctx.lineWidth=2;ctx.beginPath();ctx.arc(11,-27,4,-1.5,1.5);ctx.stroke();ty=point.y-22*sc;
+    }else if(s.id==="lake"){
+      ctx.fillStyle=p.accent2;ctx.beginPath();ctx.ellipse(0,-3,38,12,-.1,0,7);ctx.fill();ctx.globalAlpha=.65;ctx.fillStyle=p.paper;ctx.beginPath();ctx.ellipse(7,-5,16,3,-.1,0,7);ctx.fill();ctx.globalAlpha=1;ctx.fillStyle=p.near;ctx.beginPath();ctx.moveTo(-32,-6);ctx.lineTo(-20,-24);ctx.lineTo(-8,-6);ctx.fill();ty=point.y-5*sc;
+    }else if(s.id==="boot"){
+      ctx.translate(0,-26+bob*2);ctx.rotate(.16);ctx.fillStyle=p.accent;ctx.beginPath();ctx.moveTo(-12,-18);ctx.lineTo(7,-17);ctx.lineTo(9,-3);ctx.lineTo(24,2);ctx.quadraticCurveTo(20,10,-3,7);ctx.lineTo(-12,2);ctx.closePath();ctx.fill();ctx.strokeStyle=p.ink;ctx.lineWidth=1.5;ctx.stroke();ty=point.y+(-26+bob*2)*sc;
+    }else if(s.id==="flag"){
+      ctx.strokeStyle=p.ink;ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(-9,2);ctx.lineTo(-9,-62);ctx.stroke();ctx.fillStyle=p.accent;ctx.beginPath();ctx.moveTo(-7,-60);ctx.quadraticCurveTo(14,-51,30,-59);ctx.lineTo(27,-37);ctx.quadraticCurveTo(10,-32,-7,-40);ctx.closePath();ctx.fill();ty=point.y-46*sc;
     }
     ctx.restore();ctx.shadowColor="transparent";
   }
@@ -521,7 +572,7 @@ function drawHiker(p: Palette) {
 function update(dt: number) {
   if (walking && !finished) progress = Math.min(TRAIL_LENGTH, progress + dt * WALK_SPEED * debugSpeed);
   displayProgress += (progress - displayProgress) * Math.min(1, dt * 5.5);
-  const percent = Math.min(100, Math.round(progress / 11.5));
+  const percent = Math.min(100, Math.round(progress / TRAIL_LENGTH * 100));
   progressFill.style.width = `${percent}%`;
   progressCaption.textContent = `${percent}%`;
   biomeLabel.textContent = vistaAmount(progress) > .62 ? "mountain overlook" : trailPhase(progress);
@@ -566,6 +617,7 @@ function collect(id: string) {
   const surprise = surprises.find((s) => s.id === id);
   if (!surprise || completed.has(id) || Math.abs(progress - surprise.x) > 80) return;
   completed.add(id);
+  toast.querySelector<HTMLElement>("small")!.textContent = surprise.tone === "odd" ? "Something strange" : "Trail moment";
   toast.querySelector<HTMLElement>("b")!.textContent = surprise.title;
   toast.querySelector<HTMLElement>("p")!.textContent = surprise.note;
   toast.classList.add("show");
@@ -659,7 +711,7 @@ if(debug){
     const button=(event.target as HTMLElement).closest<HTMLButtonElement>("button"); if(!button)return;
     const speed=Number(button.dataset.speed); const action=button.dataset.action;
     if(speed){debugSpeed=speed;panel.querySelectorAll("[data-speed]").forEach((item)=>item.classList.toggle("active",item===button));}
-    if(action==="next"){const next=surprises.find((s)=>!completed.has(s.id));if(next)progress=next.x-17;}
+    if(action==="next"){const next=surprises.find((s)=>!completed.has(s.id)&&s.x>progress+2);if(next)progress=next.x-17;}
     if(action==="all"){surprises.forEach((s)=>completed.add(s.id));progress=TRAIL_LENGTH;}
     if(action==="reset")document.querySelector<HTMLButtonElement>(".again")!.click();
   });
