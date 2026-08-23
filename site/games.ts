@@ -13,7 +13,7 @@ export const games: GameConfig[] = [
     slug: "maison-morrow",
     date: "2026-08-23",
     cover: "artifacts/gameplay.png",
-    crop: { left: 45, top: 0, width: 1350, height: 900 },
+    crop: { left: 0, top: 0, width: 1280, height: 853 },
   },
   {
     directory: "hike",
