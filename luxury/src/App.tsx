@@ -8,8 +8,9 @@ import {
   Gem,
   Hammer,
   Layers3,
+  Newspaper,
   RotateCcw,
-  Sparkles,
+  Utensils,
   Volume2,
   VolumeX,
 } from 'lucide-react'
@@ -19,7 +20,9 @@ import {
   DECISION_ROUNDS,
   deltaLabel,
   evaluate,
+  getCompanyStatus,
   INITIAL_METRICS,
+  type CompanyStatus,
   type Decision,
   type Metrics,
 } from './game'
@@ -28,17 +31,81 @@ import { playStamp, startMusic, stopMusic, updateMusic } from './audio'
 const params = new URLSearchParams(window.location.search)
 const DEBUG = params.get('debug') === 'true'
 const MUSIC_OFF = params.get('music') === 'off'
+const BASE_URL = import.meta.env.BASE_URL
+const MAX_LUXURY_SCORE = CRISES.reduce((total, crisis) => total + Math.max(...crisis.choices.map(choice => choice.luxury)), 0)
+const INTERLUDE_AFTER_ROUND = 3
 
-type Stage = 'intro' | 'decision' | 'outcome' | 'end'
+type Stage = 'history' | 'decision' | 'outcome' | 'interlude' | 'end'
 type PendingSelections = Record<number, number>
 type Resolution = Decision & { timedOut: boolean }
-type Aftershock = { quarter: string; text: string; delta: string }
 
 const metricMeta = {
   aura: { label: 'Aura', icon: Gem },
   craft: { label: 'Craft', icon: Hammer },
   cash: { label: 'Reserve', icon: Banknote },
 } as const
+
+const historyChapters = [
+  {
+    year: '1949',
+    title: 'Made for the meal between shifts',
+    image: 'archive/1949-first-box.webp',
+    alt: 'Founder Éloise Morrow and metalworker Luc Vautrin examine the first metal lunchbox in a workshop.',
+    body: 'Éloise Morrow did not set out to make a status object. She designed field kitchens for the French railways, then used one rejected sheet of aluminum to make a lunchbox for Luc Vautrin, the metalworker at the next bench. It had a silent piano hinge, rounded corners that would not tear a coat, and three enamel compartments sized for bread, fruit, and whatever remained from supper.',
+    caption: 'Éloise Morrow and Luc Vautrin with prototype No. 0. Rue Oberkampf atelier, winter 1949.',
+  },
+  {
+    year: '1976',
+    title: 'Repair became the signature',
+    image: 'archive/1976-night-train.webp',
+    alt: 'A worn blue compartmented lunchbox has its brass clasp repaired on an overnight train.',
+    body: 'The boxes became known on night trains and long jobs, not runways. Morrow promised to repair any one that had carried a thousand lunches. Traveling fitters replaced clasps in dining cars and factory canteens, leaving each repair visible in brass. A used Morrow slowly became more desirable than a new one: proof that the box had belonged to a life rather than a shelf.',
+    caption: 'Clasp repair aboard the Paris–Milan night service. The owner’s cheese and bread were kept in place.',
+  },
+  {
+    year: '1996',
+    title: 'Useful enough to become a symbol',
+    image: 'archive/1996-courthouse.webp',
+    alt: 'Three Paris commuters in the rain carry small rectangular metal lunchboxes.',
+    body: 'A photograph of three young barristers carrying repaired Morrows made the lunchbox fashionable by accident. The maison refused handbags, perfume, and an easier miniature. It made the same food-safe box, slowly, while cooks, architects, and musicians began carrying one. Scarcity followed use—not the other way around. That distinction is the inheritance now placed in your hands.',
+    caption: 'The courthouse photograph. One brass-corner repair, three packed lunches, and no placement fee.',
+  },
+] as const
+
+const interludes: Record<CompanyStatus, {
+  kicker: string
+  title: string
+  body: string
+  stories: [string, string]
+}> = {
+  bad: {
+    kicker: 'MIDYEAR SERVICE REPORT · COOLING',
+    title: 'The boxes are coming back empty.',
+    body: 'Cash is thin and the object itself has become part of the argument. Owners still send Morrows to Paris, but too many arrive polished, photographed, and unused. In the canteen, artisans have started taking home their own lunches rather than risk hearing another rumor over the soup.',
+    stories: [
+      'Repair queue fills with nearly new boxes whose owners want old-looking dents added.',
+      'A reseller now advertises an “unused food compartment” as a mark of quality.',
+    ],
+  },
+  okay: {
+    kicker: 'MIDYEAR SERVICE REPORT · HOLDING',
+    title: 'Tomorrow’s lunch is still packed.',
+    body: 'The maison is neither fever nor failure. The reserve can cover the hard months, the benches are busy, and real owners still know why the dividers are shaped this way. Yet every easy growth idea is waiting outside the door, carrying a presentation and asking to be let in.',
+    stories: [
+      'The oldest box repaired this month contained a handwritten list of thirty years of favorite soups.',
+      'Waiting time holds steady as apprentices clear a backlog of handles, hinges, and mustard stains.',
+    ],
+  },
+  good: {
+    kicker: 'MIDYEAR SERVICE REPORT · HEATING',
+    title: 'The important tables have lunchboxes on them.',
+    body: 'The reserve is sound, the workshop is trusted, and demand has become almost impolite. More encouragingly, the most discussed Morrows are scratched, warm, and full of food. The danger now is success itself: everyone wants the symbol, and fewer people understand the meal that made it matter.',
+    stories: [
+      'A six-seat restaurant removes its plates and serves every course from repaired 1960s boxes.',
+      'Owners form unofficial Friday lunch clubs with one rule: an empty Morrow stays outside.',
+    ],
+  },
+}
 
 function Crest() {
   return (
@@ -70,7 +137,7 @@ function Metric({ name, value }: { name: keyof typeof metricMeta; value: number 
 }
 
 function App() {
-  const [stage, setStage] = useState<Stage>('intro')
+  const [stage, setStage] = useState<Stage>('history')
   const [roundIndex, setRoundIndex] = useState(0)
   const [metrics, setMetrics] = useState<Metrics>({ ...INITIAL_METRICS })
   const [pending, setPending] = useState<PendingSelections>({})
@@ -78,7 +145,6 @@ function App() {
   const resolvingRef = useRef(false)
   const [resolutions, setResolutions] = useState<Resolution[]>([])
   const [remaining, setRemaining] = useState<number | null>(null)
-  const [aftershocks, setAftershocks] = useState<Aftershock[]>([])
   const [luxuryScore, setLuxuryScore] = useState(0)
   const [musicOn, setMusicOn] = useState(!MUSIC_OFF)
   const [history, setHistory] = useState<number[]>([])
@@ -87,6 +153,8 @@ function App() {
   const roundCrises = round.crisisIndices.map(crisisIndex => ({ crisisIndex, crisis: CRISES[crisisIndex] }))
   const isParallel = round.crisisIndices.length > 1
   const result = stage === 'end' ? evaluate(metrics, luxuryScore) : null
+  const companyStatus = getCompanyStatus(metrics)
+  const interlude = interludes[companyStatus]
   const markedCount = round.crisisIndices.filter(crisisIndex => pending[crisisIndex] !== undefined).length
   const allMarked = markedCount === round.crisisIndices.length
 
@@ -159,15 +227,6 @@ function App() {
     resolveRound(submitted)
   }, [resolveRound, roundIndex])
 
-  useEffect(() => {
-    const api = {
-      resolve: playRound,
-      skip: () => resolveRound({}, true),
-      getState: () => ({ stage, roundIndex, crisisIndices: [...round.crisisIndices], metrics, history, pending, remaining }),
-    }
-    ;(window as Window & { __MORROW__?: typeof api }).__MORROW__ = api
-  }, [history, metrics, pending, playRound, remaining, resolveRound, round.crisisIndices, roundIndex, stage])
-
   function begin() {
     resolvingRef.current = false
     setStage('decision')
@@ -184,11 +243,6 @@ function App() {
     const decisions = resolutions.map(({ crisisIndex, choiceIndex }) => ({ crisisIndex, choiceIndex }))
     const settled = applyDecisionPhase(metrics, decisions, 'later')
     setMetrics(settled)
-    setAftershocks(resolutions.map(({ crisisIndex, choiceIndex }) => {
-      const crisis = CRISES[crisisIndex]
-      const choice = crisis.choices[choiceIndex]
-      return { quarter: crisis.quarter, text: choice.consequence, delta: deltaLabel(choice.later) }
-    }))
     setResolutions([])
     setPending({})
     pendingRef.current = {}
@@ -198,9 +252,27 @@ function App() {
       setStage('end')
       return
     }
-    setRoundIndex(current => current + 1)
+
+    const nextRound = roundIndex + 1
+    setRoundIndex(nextRound)
+    setStage(roundIndex === INTERLUDE_AFTER_ROUND ? 'interlude' : 'decision')
+  }
+
+  function continueInterlude() {
+    if (stage !== 'interlude') return
     setStage('decision')
   }
+
+  useEffect(() => {
+    const api = {
+      resolve: playRound,
+      skip: () => resolveRound({}, true),
+      acknowledge: advance,
+      continue: continueInterlude,
+      getState: () => ({ stage, roundIndex, crisisIndices: [...round.crisisIndices], metrics, history, pending, remaining }),
+    }
+    ;(window as Window & { __MORROW__?: typeof api }).__MORROW__ = api
+  })
 
   function toggleMusic() {
     if (musicOn) {
@@ -214,7 +286,7 @@ function App() {
 
   function restart() {
     stopMusic()
-    setStage('intro')
+    setStage('history')
     setRoundIndex(0)
     setMetrics({ ...INITIAL_METRICS })
     setPending({})
@@ -222,7 +294,6 @@ function App() {
     resolvingRef.current = false
     setResolutions([])
     setRemaining(null)
-    setAftershocks([])
     setLuxuryScore(0)
     setHistory([])
     if (!MUSIC_OFF) setMusicOn(true)
@@ -231,13 +302,13 @@ function App() {
   const timerClass = remaining !== null && remaining <= 7 ? 'timer urgent' : 'timer'
   const firstBrief = round.crisisIndices[0] + 1
   const lastBrief = round.crisisIndices[round.crisisIndices.length - 1] + 1
-  const briefProgress = firstBrief === lastBrief ? `${firstBrief} / 8` : `${firstBrief}—${lastBrief} / 8`
+  const briefProgress = firstBrief === lastBrief ? `${firstBrief} / ${CRISES.length}` : `${firstBrief}—${lastBrief} / ${CRISES.length}`
 
   return (
     <main className={`game-shell stage-${stage} ${isParallel ? 'parallel-session' : 'solo-session'}`}>
       <header className="topbar">
-        <div className="brand-lockup"><Crest /><div><span className="eyebrow">Maison Morrow</span><strong>Objects for the private hour</strong></div></div>
-        <div className="tenure"><span>Brief</span><b>{briefProgress}</b></div>
+        <div className="brand-lockup"><Crest /><div><span className="eyebrow">Maison Morrow</span><strong>Lunch, made worth carrying</strong></div></div>
+        <div className="tenure"><span>Decision</span><b>{briefProgress}</b></div>
         <button className="icon-button" onClick={toggleMusic} aria-label={musicOn ? 'Mute music' : 'Play music'}>
           {musicOn ? <Volume2 size={18} /> : <VolumeX size={18} />}
         </button>
@@ -251,22 +322,12 @@ function App() {
 
       <div className="board-layout">
         <section className="decision-area">
-          {aftershocks.length > 0 && stage === 'decision' && (
-            <div className="aftershock" role="status">
-              <Sparkles size={16} />
-              <div className="aftershock-list">
-                {aftershocks.map(item => <span key={item.quarter}>{item.text}</span>)}
-              </div>
-              <strong>{aftershocks.map(item => item.delta || 'No ledger movement').join(' · ')}</strong>
-            </div>
-          )}
-
-          {(stage === 'decision' || stage === 'outcome' || stage === 'intro') && (
+          {(stage === 'decision' || stage === 'outcome') && (
             <>
               <div className="round-console">
                 <div>
                   <span>SESSION {roundIndex + 1} / {DECISION_ROUNDS.length}</span>
-                  <b><Layers3 size={14} />{round.label}</b>
+                  <b><Layers3 size={14} />{stage === 'outcome' ? 'The lunch-hour report' : round.label}</b>
                 </div>
                 {stage === 'decision' && (
                   <div className={timerClass} role="timer" aria-live="off" aria-label={remaining === null ? 'Untimed decision' : `${remaining} seconds remaining`}>
@@ -282,14 +343,12 @@ function App() {
                   const selectedChoice = selectedIndex === undefined ? null : crisis.choices[selectedIndex]
 
                   return (
-                    <article className="crisis-card" key={crisis.quarter}>
-                      <div className="crisis-topline"><span>{crisis.quarter}</span></div>
-                      <div className="source">{crisis.source}</div>
-                      <h1>{crisis.headline}</h1>
-                      <p className="brief">{crisis.brief}</p>
+                    <article className="crisis-card" key={crisis.title}>
+                      <h1>{crisis.title}</h1>
+                      <p className="brief">{crisis.body}</p>
 
-                      {stage !== 'outcome' && (
-                        <div className="choices" aria-label={`Choices for ${crisis.headline}`}>
+                      {stage === 'decision' && (
+                        <div className="choices" aria-label={`Choices for ${crisis.title}`}>
                           {crisis.choices.map((choice, choiceIndex) => {
                             const selected = selectedIndex === choiceIndex
                             return (
@@ -297,11 +356,9 @@ function App() {
                                 className={`choice ${selected ? 'selected' : ''}`}
                                 key={choice.id}
                                 onClick={() => selectChoice(crisisIndex, choiceIndex)}
-                                disabled={stage !== 'decision'}
                                 aria-pressed={selected}
                               >
-                                <span className="choice-number">0{choiceIndex + 1}</span>
-                                <span><b>{choice.title}</b><small>{choice.detail}</small></span>
+                                <span><b>{choice.title}</b><small>{choice.body}</small></span>
                                 {selected ? <Check size={18} /> : <ArrowRight size={18} />}
                               </button>
                             )
@@ -310,11 +367,16 @@ function App() {
                       )}
 
                       {stage === 'outcome' && selectedChoice && (
-                        <div className="outcome" role="group" aria-label={`Outcome for ${crisis.headline}`}>
-                          <span className="outcome-label">{resolution?.timedOut ? 'BOARD CHOICE' : 'SEALED'}</span>
+                        <div className="outcome" role="group" aria-label={`Outcome for ${crisis.title}`}>
+                          <span className="outcome-label">{resolution?.timedOut ? 'THE CLOCK CHOSE' : `YOU CHOSE · ${selectedChoice.title}`}</span>
                           <p>{selectedChoice.response}</p>
-                          <div className="immediate"><b>NOW</b><span>{deltaLabel(selectedChoice.now) || 'No immediate ledger movement'}</span></div>
-                          <blockquote><b>ARCHIVE PRINCIPLE</b>{crisis.note}</blockquote>
+                          <div className="immediate"><b>AT ONCE</b><span>{deltaLabel(selectedChoice.now) || 'No immediate ledger movement'}</span></div>
+                          <section className="news-clipping" aria-label="Later news report">
+                            <div><Newspaper size={15} /><span>THE MORROW REGISTER · THREE MONTHS LATER</span></div>
+                            <h2>{selectedChoice.newsHeadline}</h2>
+                            <p>{selectedChoice.consequence}</p>
+                            <strong>{deltaLabel(selectedChoice.later) || 'No later ledger movement'}</strong>
+                          </section>
                         </div>
                       )}
                     </article>
@@ -333,8 +395,9 @@ function App() {
 
               {stage === 'outcome' && (
                 <div className="outcome-footer">
+                  <span>Read the report before the ledger closes.</span>
                   <button className="advance-button" onClick={advance}>
-                    {roundIndex === DECISION_ROUNDS.length - 1 ? 'Legacy ledger' : 'Next session'} <ArrowRight size={18} aria-hidden="true" />
+                    {roundIndex === DECISION_ROUNDS.length - 1 ? 'Acknowledge & close tenure' : 'Acknowledge report'} <ArrowRight size={18} aria-hidden="true" />
                   </button>
                 </div>
               )}
@@ -343,18 +406,60 @@ function App() {
         </section>
       </div>
 
-      {stage === 'intro' && (
-        <div className="modal-backdrop">
-          <section className="intro-modal">
-            <Crest />
-            <div className="intro-kicker">PARIS · 75TH YEAR · PRIVATE READING</div>
-            <h1>You inherit a legend<br />the world has begun to doubt.</h1>
-            <div className="strategy-reading">
-              <div><b>01</b><span><strong>Never chase volume.</strong> Attention is not desire.</span></div>
-              <div><b>02</b><span><strong>Protect the object.</strong> The story cannot rescue weak craft.</span></div>
-              <div><b>03</b><span><strong>Access is the product.</strong> A refusal can create more value than a sale.</span></div>
+      {stage === 'history' && (
+        <div className="modal-backdrop history-backdrop">
+          <section className="history-modal">
+            <header className="history-header">
+              <Crest />
+              <div>
+                <div className="intro-kicker">THE OBJECT YOU HAVE INHERITED</div>
+                <h1>Before it was luxury,<br />it was lunch.</h1>
+                <p>Three moments from the private archive of Maison Morrow. Read them carefully: every decision that follows asks what made a useful metal box worth keeping for seventy-five years.</p>
+              </div>
+            </header>
+            <div className="history-timeline">
+              {historyChapters.map(chapter => (
+                <article className="history-chapter" key={chapter.year}>
+                  <figure>
+                    <img src={`${BASE_URL}${chapter.image}`} alt={chapter.alt} />
+                    <figcaption>{chapter.caption}</figcaption>
+                  </figure>
+                  <div>
+                    <span>{chapter.year}</span>
+                    <h2>{chapter.title}</h2>
+                    <p>{chapter.body}</p>
+                  </div>
+                </article>
+              ))}
             </div>
-            <button onClick={begin}>Enter the atelier <ArrowRight size={18} aria-hidden="true" /></button>
+            <footer className="history-footer">
+              <div><Utensils size={19} /><p><strong>Your inheritance:</strong> Make it useful enough to scar, good enough to repair, and rare because the work is slow—not because the story says so.</p></div>
+              <button onClick={begin}>Open the first brief <ArrowRight size={18} aria-hidden="true" /></button>
+            </footer>
+          </section>
+        </div>
+      )}
+
+      {stage === 'interlude' && (
+        <div className="modal-backdrop interlude-backdrop">
+          <section className={`interlude-modal status-${companyStatus}`}>
+            <div className="interlude-visual" aria-hidden="true">
+              <span className="lunchbox-handle" />
+              <div className="lunchbox-case"><i /><i /><i /></div>
+              <b>{companyStatus === 'bad' ? 'RETURNED' : companyStatus === 'good' ? 'PACKED' : 'IN USE'}</b>
+            </div>
+            <div className="intro-kicker">{interlude.kicker}</div>
+            <h1>{interlude.title}</h1>
+            <p>{interlude.body}</p>
+            <div className="interlude-ledger">
+              <div><span>AURA</span><b>{metrics.aura}</b></div>
+              <div><span>CRAFT</span><b>{metrics.craft}</b></div>
+              <div><span>RESERVE</span><b>${metrics.cash}m</b></div>
+            </div>
+            <div className="interlude-stories">
+              {interlude.stories.map(story => <p key={story}><Newspaper size={14} />{story}</p>)}
+            </div>
+            <button onClick={continueInterlude}>Return to the table <ArrowRight size={18} /></button>
           </section>
         </div>
       )}
@@ -363,20 +468,20 @@ function App() {
         <div className="modal-backdrop end-backdrop">
           <section className={`end-modal result-${result}`}>
             <div className="end-seal"><Crown size={31} /></div>
-            <div className="intro-kicker">THE 150TH ANNIVERSARY LEDGER</div>
-            <h1>{result === 'icon' ? 'The impossible object.' : result === 'independent' ? 'The maison endures.' : result === 'insolvent' ? 'The doors close quietly.' : 'Just another lunchbox.'}</h1>
+            <div className="intro-kicker">THE 75TH ANNIVERSARY LEDGER</div>
+            <h1>{result === 'icon' ? 'A lunchbox worth inheriting.' : result === 'independent' ? 'Tomorrow’s lunch is packed.' : result === 'insolvent' ? 'The last box leaves empty.' : 'Just another lunchbox.'}</h1>
             <p>{result === 'icon'
-              ? 'You made fewer objects, refused louder opportunities, and left the next custodian a legend stronger than the one you inherited.'
+              ? 'You protected the meal, the maker, and the marks left by use. The next custodian inherits an object more alive than the legend you were given.'
               : result === 'independent'
-                ? 'Morrow remains independent. Its mystique is intact, though collectors will debate a few choices for decades.'
+                ? 'Morrow remains independent and its boxes remain useful. Collectors will debate a few choices over lunch for decades.'
                 : result === 'insolvent'
-                  ? 'Taste without a reserve is only a beautiful liquidation. The final artisans leave before dawn.'
-                  : 'The company grew. The category noticed. Then the public found something newer, cheaper, and almost identical.'}</p>
+                  ? 'Taste without a reserve is only a beautiful liquidation. The final artisans pack their lunches and leave before dawn.'
+                  : 'The company grew and the category noticed. Then the public found something newer, cheaper, and almost identical for carrying lunch.'}</p>
             <div className="final-ledger">
               <div><span>AURA</span><b>{metrics.aura}</b></div>
               <div><span>CRAFT</span><b>{metrics.craft}</b></div>
               <div><span>RESERVE</span><b>${metrics.cash}m</b></div>
-              <div><span>PLAYBOOK</span><b>{luxuryScore} / 16</b></div>
+              <div><span>PLAYBOOK</span><b>{luxuryScore} / {MAX_LUXURY_SCORE}</b></div>
             </div>
             <button onClick={restart}><RotateCcw size={16} /> Begin another tenure</button>
           </section>
