@@ -17,11 +17,11 @@ bun install
 bun run dev
 ```
 
-Make eight decisions across a five-session tutorial while balancing aura, craft, and cash. The opening strategy reading and first brief are untimed. A timed solo brief follows; then the remaining decisions arrive in simultaneous pairs with a longer shared clock. Choices can be revised before sealing, and no principles, forecasts, or results appear during deliberation. Immediate ledger movements appear only after the whole session is sealed; deeper consequences arrive in the next session.
+Read the company’s illustrated private history, then make twelve decisions across seven sessions while balancing aura, craft, and cash. The first brief is untimed. A timed solo brief follows; then decisions arrive in simultaneous pairs with a longer shared clock. Choices can be revised before sealing.
 
-The default timed portion is 150 seconds, leaving the complete prototype comfortably within its five-minute target.
+Every sealed session produces an immediate account and a small news story about what followed; the player must acknowledge the full report before continuing. A midyear service report interrupts the tenure after six decisions, with distinct struggling, steady, and thriving versions based on the condition of the maison. The default timed portion is 190 seconds.
 
 - `?music=off` disables music for testing.
 - `?debug=true` quadruples timed sessions and provides neutral resolve/skip controls without identifying strong choices.
-- Programmatic playtesting can use `window.__MORROW__.resolve([choiceIndex, ...])`, `skip()`, and `getState()`.
+- Programmatic playtesting can use `window.__MORROW__.resolve([choiceIndex, ...])`, `skip()`, `acknowledge()`, `continue()`, and `getState()`.
 - `bun test` validates the tutorial cadence and runs the exhaustive balance simulation over all 6,561 strategies.
