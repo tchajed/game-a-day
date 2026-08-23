@@ -26,7 +26,7 @@ import {
   type Decision,
   type Metrics,
 } from './game'
-import { playStamp, startMusic, stopMusic, updateMusic } from './audio'
+import { playStamp, startMusic, stopMusic } from './audio'
 
 const params = new URLSearchParams(window.location.search)
 const DEBUG = params.get('debug') === 'true'
@@ -161,11 +161,6 @@ function App() {
   useEffect(() => {
     pendingRef.current = pending
   }, [pending])
-
-  useEffect(() => {
-    const latestBrief = round.crisisIndices[round.crisisIndices.length - 1]
-    updateMusic(latestBrief, (metrics.aura + metrics.craft) / 200)
-  }, [metrics.aura, metrics.craft, round.crisisIndices])
 
   const resolveRound = useCallback((submitted: PendingSelections, timedOut = false) => {
     if (stage !== 'decision' || resolvingRef.current) return
