@@ -220,6 +220,24 @@ function clamp(value: number) {
   return Math.max(0, Math.min(10, value))
 }
 
+const characterNames: Record<Character, string> = {
+  balthazar: 'Balthazar',
+  hector: 'Hector',
+  brindle: 'Brindle',
+  calyx: 'Calyx',
+  nix: 'Nix',
+  customer: 'Customer',
+}
+
+const characterJobs: Record<Character, string> = {
+  balthazar: 'Proprietor',
+  hector: 'Returns Desk',
+  brindle: 'Stock Associate',
+  calyx: 'Visual Merchandising',
+  nix: 'Closing Supervisor',
+  customer: 'Customer',
+}
+
 function CharacterPortrait({ type, speaking = false }: { type: Character; speaking?: boolean }) {
   return (
     <div className={`portrait portrait--${type} ${speaking ? 'is-speaking' : ''}`} aria-hidden="true">
@@ -255,8 +273,14 @@ function CharacterPortrait({ type, speaking = false }: { type: Character; speaki
           </>
         )}
         <path className="lapel" d="m126 268 34 57 34-57 22 152H104Z"/>
-        <path className="badge" d="M181 315h47v26h-47z"/>
-        <path className="badge-line" d="M187 323h34M187 332h22"/>
+        <path className="badge" d="M158 306h78v42h-78z"/>
+        <text className="badge-name" x="197" y="324" textAnchor="middle" textLength="64" lengthAdjust="spacingAndGlyphs">
+          {characterNames[type].toUpperCase()}
+        </text>
+        <path className="badge-rule" d="M165 329h64"/>
+        <text className="badge-title" x="197" y="341" textAnchor="middle" textLength="64" lengthAdjust="spacingAndGlyphs">
+          {characterJobs[type].toUpperCase()}
+        </text>
       </svg>
     </div>
   )
