@@ -12,7 +12,7 @@ The writing is supposed to be humorous and tongue in cheek despite a creepy sett
 
 ## Prototype
 
-Play one five-minute night shift by resolving five mundane retail problems with supernatural consequences. Every choice affects the **Till**, **Staff**, or **Veil**; Balthazar grades the final balance.
+Play one five-minute night shift by resolving eight mundane retail problems in a supernatural shop. Outcomes are hidden when you choose: repaired equipment can help with a later delivery, neglected staff tensions can disrupt it, and an improvised returns decision can come back as policy trouble. Follow-up cases are clearly marked when an earlier decision caused or changed the problem, and Balthazar grades the final balance of **Till**, **Staff**, and **Veil**.
 
 ```bash
 bun install

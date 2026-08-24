@@ -23,6 +23,10 @@ type Decision = {
   dialogue: string
   detail: string
   choices: Choice[]
+  consequence?: {
+    label: string
+    text: string
+  }
 }
 
 const INITIAL_STATS: Stats = { till: 5, morale: 5, veil: 5 }
@@ -143,41 +147,140 @@ const decisions: Decision[] = [
     ],
   },
   {
-    id: 'invoice',
+    id: 'trolley',
     number: '04',
-    speaker: 'Balthazar',
-    role: 'Demon · Proprietor',
-    character: 'balthazar',
-    item: 'SUPPLIER INVOICE',
-    dialogue: 'The screaming kettles are nearly sold out. The supplier offers a bulk rate, payable in cash or one fond memory per unit.',
-    detail: 'A larger order would meet the quarterly target. The contract treats both forms of payment as equivalent.',
+    speaker: 'Hector',
+    role: 'Gargoyle · Returns Desk',
+    character: 'hector',
+    item: 'DAMAGED STOCK TROLLEY',
+    dialogue: 'The supplier dented our stock trolley. They will cover a repair, offer us cash to scrap it, or collect it next week.',
+    detail: 'It still rolls, mostly. Tonight’s kettle delivery is due before closing.',
     choices: [
       {
-        label: 'Pay cash for a small order',
-        note: 'Limit the risk and the margin',
-        effects: { till: -2, morale: 1, veil: 1 },
-        reply: 'A small order, then. I’ll amend the forecast.',
-        stamp: 'ORDER: SMALL',
+        label: 'Repair it and keep it',
+        note: 'Spend time now to keep useful equipment',
+        effects: { till: -1, morale: 1 },
+        reply: 'I’ll straighten the axle. Brindle knows where the proper tools are.',
+        stamp: 'REPAIR APPROVED',
       },
       {
-        label: 'Trade your own memory',
-        note: 'Preserve cash, give up something personal',
-        effects: { till: 2, morale: 1, veil: -1 },
-        reply: 'The supplier has accepted. You may notice a gap later.',
-        stamp: 'MEMORY TENDERED',
+        label: 'Take the scrap credit',
+        note: 'Improve tonight’s figures and lose the trolley',
+        effects: { till: 2 },
+        reply: 'I’ll send it back. We can carry the delivery in by hand.',
+        stamp: 'CREDIT ACCEPTED',
       },
       {
-        label: 'Ask staff to contribute',
-        note: 'Maximize margin, burden the staff',
-        effects: { till: 3, morale: -3, veil: -1 },
-        reply: 'I’ll pass the jar around before closing. Quietly.',
-        stamp: 'COST DISTRIBUTED',
+        label: 'Ask Brindle to fix it after shift',
+        note: 'Keep the trolley without using paid time',
+        effects: { till: 1, morale: -2 },
+        reply: 'I’ll ask him. This may not be the best evening for it.',
+        stamp: 'STAFF REPAIR',
+      },
+    ],
+  },
+  {
+    id: 'conflict',
+    number: '05',
+    speaker: 'Calyx',
+    role: 'Mothkin · Visual Merchandising',
+    character: 'calyx',
+    item: 'STOCKROOM INCIDENT NOTE',
+    dialogue: 'Brindle keeps leaving delivery cages in my display aisle. He says I keep moving his labels. We are no longer discussing the cages.',
+    detail: 'The kettle delivery is due shortly. Both of them are needed to receive it.',
+    choices: [
+      {
+        label: 'Mediate for ten minutes',
+        note: 'Pause the floor and agree who owns the aisle',
+        effects: { till: -1, morale: 2 },
+        reply: 'I’ll get Brindle. Ten minutes, neutral table, no historical grievances.',
+        stamp: 'MEDIATION HELD',
+      },
+      {
+        label: 'Set an aisle rule yourself',
+        note: 'Resolve the blockage without resolving the argument',
+        effects: { till: 1, morale: -1 },
+        reply: 'Understood. I’ll follow the rule. I cannot promise enthusiasm.',
+        stamp: 'RULE IMPOSED',
+      },
+      {
+        label: 'Deal with it after closing',
+        note: 'Keep working and leave the conflict active',
+        effects: { till: 2, morale: -2 },
+        reply: 'Fine. We will both continue exactly as we were until then.',
+        stamp: 'FOLLOW-UP DEFERRED',
+      },
+    ],
+  },
+  {
+    id: 'delivery',
+    number: '06',
+    speaker: 'Brindle',
+    role: 'Werewolf · Stock Associate',
+    character: 'brindle',
+    item: 'EARLY KETTLE DELIVERY',
+    dialogue: 'The kettle shipment is early. The driver has ten minutes, half the cages are blocking Calyx’s aisle, and the shop floor is filling up.',
+    detail: 'Someone needs to receive, count, and move twenty-four heavy boxes before the driver leaves.',
+    choices: [
+      {
+        label: 'Put Brindle and Calyx on it together',
+        note: 'Keep yourself on the floor and trust the team',
+        effects: { till: 2, morale: 1 },
+        reply: 'We’ll unload together. I’ll take the cages if Calyx takes the manifest.',
+        stamp: 'TEAM ASSIGNED',
+      },
+      {
+        label: 'Receive the delivery yourself',
+        note: 'Separate the staff and leave the floor thin',
+        effects: { till: -1, morale: 1 },
+        reply: 'I’ll cover the shop. Check every box; the driver counts quickly.',
+        stamp: 'MANAGER RECEIVED',
+      },
+      {
+        label: 'Refuse the early delivery',
+        note: 'Protect the floor and pay for redelivery',
+        effects: { till: -2, morale: 1 },
+        reply: 'I’ll turn the cages around. The driver will want your name for the fee.',
+        stamp: 'DELIVERY REFUSED',
+      },
+    ],
+  },
+  {
+    id: 'followup',
+    number: '07',
+    speaker: 'Hector',
+    role: 'Gargoyle · Returns Desk',
+    character: 'hector',
+    item: 'CUSTOMER FOLLOW-UP',
+    dialogue: 'The prophecy customer is back, and the way we handled the return has acquired an audience.',
+    detail: 'Whatever we do now will become the version other customers repeat.',
+    choices: [
+      {
+        label: 'Handle it at the desk',
+        note: 'Apply the earlier decision consistently',
+        effects: { till: -1, morale: 1 },
+        reply: 'I’ll bring up the original transaction and keep the queue moving.',
+        stamp: 'CASE REOPENED',
+      },
+      {
+        label: 'Write a clear returns rule',
+        note: 'Spend time now to prevent another argument',
+        effects: { till: -1, morale: 2 },
+        reply: 'Good. I’ll put the rule beside the till where everyone can use it.',
+        stamp: 'POLICY POSTED',
+      },
+      {
+        label: 'Leave Hector to contain it',
+        note: 'Stay on target and make the desk absorb the problem',
+        effects: { till: 2, morale: -2 },
+        reply: 'Of course. I have already moved the breakable stock out of reach.',
+        stamp: 'DESK DELEGATED',
       },
     ],
   },
   {
     id: 'closing',
-    number: '05',
+    number: '08',
     speaker: 'Nix',
     role: 'Kelpie · Closing Supervisor',
     character: 'nix',
@@ -209,6 +312,138 @@ const decisions: Decision[] = [
     ],
   },
 ]
+
+function getDecision(index: number, history: number[]): Decision {
+  const original = decisions[index]
+  const decision: Decision = {
+    ...original,
+    choices: original.choices.map(choice => ({ ...choice, effects: { ...choice.effects } })),
+  }
+
+  if (index === 4) {
+    const causes: string[] = []
+    if (history[1] === 2) causes.push('CASE 02 · BREAK REQUEST DENIED')
+    if (history[3] === 2) causes.push('CASE 04 · UNPAID REPAIR ASSIGNED')
+    if (causes.length) {
+      decision.consequence = { label: 'FOLLOW-UP FROM AN EARLIER DECISION', text: causes.join('  /  ') }
+      decision.dialogue = history[1] === 2
+        ? 'Brindle says this started when his moonrise break was denied. Now he keeps leaving delivery cages in my display aisle, and neither of us will move them.'
+        : 'Brindle says the trolley repair is now his responsibility as well as the delivery cages. The cages are in my aisle, and neither of us will move them.'
+      decision.detail = 'The unresolved staff issue now threatens the incoming delivery. Both employees are needed to receive it.'
+    }
+  }
+
+  if (index === 5) {
+    const trolley = history[3]
+    const conflict = history[4]
+    decision.consequence = {
+      label: 'EARLIER DECISIONS AFFECT THIS CASE',
+      text: `CASE 04 · ${trolley === 0 ? 'TROLLEY REPAIRED' : trolley === 1 ? 'TROLLEY SCRAPPED' : 'STAFF REPAIR'}  /  CASE 05 · ${conflict === 0 ? 'MEDIATED' : conflict === 1 ? 'RULE IMPOSED' : 'DEFERRED'}`,
+    }
+    decision.detail = trolley === 0
+      ? 'The repaired trolley is ready. Someone still needs to receive, count, and move twenty-four boxes before the driver leaves.'
+      : trolley === 1
+        ? 'There is no trolley, so every box must be carried by hand before the driver leaves.'
+        : 'Brindle finished the trolley off the clock. It works, but he has made a point of telling Calyx who repaired it.'
+
+    const teamChoice = decision.choices[0]
+    teamChoice.label = trolley === 0 ? 'Use the repaired trolley together' : trolley === 1 ? 'Have them carry it in together' : 'Use Brindle’s repaired trolley'
+    if (conflict === 0) {
+      teamChoice.note = 'Use the roles agreed during mediation'
+      teamChoice.reply = 'We’ll use the aisle plan we agreed. Calyx has the manifest; I have the cages.'
+    } else if (conflict === 1) {
+      teamChoice.note = 'Rely on the aisle rule despite the tension'
+      teamChoice.reply = 'We’ll follow your rule. Calyx can decide whether following it counts as cooperation.'
+    } else {
+      teamChoice.note = 'Put the unresolved argument under time pressure'
+      teamChoice.reply = 'Calyx says I can take the cages and the manifest. I have put the manifest down.'
+    }
+  }
+
+  if (index === 6) {
+    const returnChoice = history[0]
+    decision.consequence = {
+      label: 'FOLLOW-UP FROM AN EARLIER DECISION',
+      text: `CASE 01 · ${returnChoice === 0 ? 'REFUND APPROVED' : returnChoice === 1 ? 'STORE CREDIT ISSUED' : 'RETURN DENIED'}`,
+    }
+
+    if (returnChoice === 0) {
+      decision.dialogue = 'The prophecy customer praised our refund in the market forum. Four people are now queueing with opened prophecies and screenshots of the post.'
+      decision.detail = 'The first exception has become an expectation. Hector needs a rule he can apply before the queue reaches the candles.'
+      decision.choices = [
+        { label: 'Honor the same promise', note: 'Accept every return in the queue', effects: { till: -3, morale: 1 }, reply: 'I’ll process them. We should order more opaque return bags.', stamp: 'PROMISE HONORED' },
+        { label: 'Post a case-by-case policy', note: 'Keep the first refund exceptional', effects: { till: -1, morale: 2 }, reply: 'I’ll put it in writing and explain the first refund was discretionary.', stamp: 'POLICY CLARIFIED' },
+        { label: 'End prophecy refunds now', note: 'Protect the till and reverse the precedent', effects: { till: 2, morale: -2 }, reply: 'I’ll tell the queue. Please move the breakable stock first.', stamp: 'EXCEPTION ENDED' },
+      ]
+    } else if (returnChoice === 1) {
+      decision.dialogue = 'The prophecy customer is back with two relatives. The credit slip does not say whether it is transferable, and all three have selected merchandise.'
+      decision.detail = 'A quick compromise in case 01 has left Hector without a rule for the next transaction.'
+      decision.choices = [
+        { label: 'Honor all three purchases', note: 'Treat the credit as transferable', effects: { till: -2, morale: 1 }, reply: 'I’ll ring them through and mark future credit slips more carefully.', stamp: 'CREDIT TRANSFERRED' },
+        { label: 'Honor the original customer only', note: 'Clarify the rule at the desk', effects: { till: 1, morale: 2 }, reply: 'Clear enough. One customer, one credit, and a line on the new slips.', stamp: 'CREDIT CLARIFIED' },
+        { label: 'Void the ambiguous credit', note: 'Protect the till and leave Hector to explain', effects: { till: 2, morale: -2 }, reply: 'I’ll explain that our paperwork was wrong but our refusal is firm.', stamp: 'CREDIT VOIDED' },
+      ]
+    } else {
+      decision.dialogue = 'The prophecy customer filed a complaint with the night market office. An inspector wants our written returns policy; we do not have one.'
+      decision.detail = 'Ignoring the original complaint has turned a desk dispute into a compliance deadline.'
+      decision.choices = [
+        { label: 'Reverse the denial', note: 'Close the complaint with a late refund', effects: { till: -2, morale: 1 }, reply: 'I’ll call the customer and tell the inspector the matter is resolved.', stamp: 'DENIAL REVERSED' },
+        { label: 'Write and submit a policy', note: 'Defend the decision with proper records', effects: { till: -1, morale: 2 }, reply: 'I’ll attach the receipt log. A written rule will help at the desk.', stamp: 'POLICY SUBMITTED' },
+        { label: 'Ignore the inspector tonight', note: 'Keep selling and let the deadline pass', effects: { till: 2, morale: -3 }, reply: 'I’ll add the second letter to the first. The red envelope is new.', stamp: 'NOTICE DEFERRED' },
+      ]
+    }
+  }
+
+  if (index === 7) {
+    const pressures: string[] = []
+    if (history[1] === 2) pressures.push('CASE 02 · BRINDLE LEAVES ON TIME')
+    if (history[2] === 0) pressures.push('CASE 03 · ENTRANCE DISPLAY ACTIVE')
+    if (history[4] === 2) pressures.push('CASE 05 · STAFF CONFLICT UNRESOLVED')
+    if (pressures.length) {
+      decision.consequence = { label: 'CLOSING PRESSURE FROM EARLIER DECISIONS', text: pressures.join('  /  ') }
+      const staffCopy = history[4] === 2
+        ? 'Calyx and Brindle are waiting separately to discuss the argument you deferred.'
+        : history[1] === 2
+          ? 'Brindle clocked out exactly on time, so closing cover is thin.'
+          : 'The staff are ready to close.'
+      const displayCopy = history[2] === 0 ? ' The entrance candles are still drawing people to the locked door.' : ''
+      decision.detail = `${staffCopy}${displayCopy}`
+    }
+  }
+
+  return decision
+}
+
+function getChoiceEffects(index: number, choiceIndex: number, history: number[], base: Partial<Stats>): Partial<Stats> {
+  const effects = { ...base }
+  const add = (key: StatKey, amount: number) => { effects[key] = (effects[key] ?? 0) + amount }
+
+  if (index === 4) {
+    if (history[1] === 2) add('morale', -1)
+    if (history[3] === 2) add('morale', -1)
+  }
+
+  if (index === 5) {
+    if (choiceIndex < 2 && history[3] === 0) add('till', 1)
+    if (choiceIndex === 0 && history[3] === 1) add('morale', -1)
+    if (choiceIndex === 0 && history[3] === 2) add('morale', -1)
+    if (choiceIndex === 0 && history[4] === 0) add('morale', 1)
+    if (choiceIndex === 0 && history[4] === 1) add('morale', -1)
+    if (choiceIndex === 0 && history[4] === 2) {
+      add('till', -2)
+      add('morale', -2)
+    }
+    if (choiceIndex === 1 && history[4] === 2) add('morale', -1)
+  }
+
+  if (index === 7) {
+    if (choiceIndex === 0 && history[2] === 0) add('veil', -1)
+    if (choiceIndex === 0 && history[4] === 2) add('morale', -1)
+    if (choiceIndex === 2 && history[1] === 0) add('morale', 1)
+  }
+
+  return effects
+}
 
 const statInfo: Record<StatKey, { label: string; icon: string }> = {
   till: { label: 'Till', icon: '◈' },
@@ -463,34 +698,34 @@ function StatMeter({ name, value }: { name: StatKey; value: number }) {
   )
 }
 
-function EffectTags({ effects }: { effects: Partial<Stats> }) {
-  return <span className="effect-tags">{(Object.entries(effects) as [StatKey, number][]).map(([key, value]) => <i className={value > 0 ? 'up' : 'down'} key={key}>{value > 0 ? '+' : ''}{value} {statInfo[key].label}</i>)}</span>
-}
-
 function ShiftScreen({
   index,
   stats,
+  history,
   resolved,
   onChoose,
   onContinue,
 }: {
   index: number
   stats: Stats
-  resolved: { choice: Choice; before: Stats } | null
+  history: number[]
+  resolved: { choice: Choice } | null
   onChoose: (choiceIndex: number) => void
   onContinue: () => void
 }) {
-  const decision = decisions[index]
+  const decision = getDecision(index, history)
+  const shiftMinutes = 13 + index * 9
+  const shiftHour = 1 + Math.floor(shiftMinutes / 60)
   return (
     <section className="screen shift-screen" aria-live="polite">
       <StoreBackdrop item={decision.item} />
       <header className="shift-header">
         <div className="brand"><span className="brand-mark">E</span><div><b>THE ELDRICH STORE</b><small>ASSISTANT MANAGER TERMINAL</small></div></div>
         <div className="stats-row">{(Object.keys(stats) as StatKey[]).map(key => <StatMeter key={key} name={key} value={stats[key]} />)}</div>
-        <div className="shift-clock"><small>NIGHT SHIFT</small><b>0{index + 1}:<span>{13 + index * 9}</span></b></div>
+        <div className="shift-clock"><small>NIGHT SHIFT</small><b>{String(shiftHour).padStart(2, '0')}:<span>{String(shiftMinutes % 60).padStart(2, '0')}</span></b></div>
       </header>
 
-      <div className="case-number"><small>CASE</small><b>{decision.number}</b><i>/ 05</i></div>
+      <div className="case-number"><small>CASE</small><b>{decision.number}</b><i>/ {String(decisions.length).padStart(2, '0')}</i></div>
       <div className="character-stage">
         <div className="character-label"><i/><div><b>{decision.speaker}</b><span>{decision.role}</span></div></div>
         <CharacterPortrait type={decision.character} speaking={!resolved} />
@@ -500,6 +735,11 @@ function ShiftScreen({
         {!resolved ? (
           <>
             <div className="dialogue-block">
+              {decision.consequence && (
+                <div className="consequence-alert" data-testid="earlier-consequence">
+                  <span>↳</span><div><small>{decision.consequence.label}</small><b>{decision.consequence.text}</b></div>
+                </div>
+              )}
               <span className="quote-mark">“</span>
               <h2>{decision.dialogue}</h2>
               <p>{decision.detail}</p>
@@ -510,7 +750,6 @@ function ShiftScreen({
                 <button key={choice.label} className="choice-button" onClick={() => onChoose(choiceIndex)} data-testid={`choice-${choiceIndex}`}>
                   <span className="choice-key">{String.fromCharCode(65 + choiceIndex)}</span>
                   <span className="choice-copy"><b>{choice.label}</b><small>{choice.note}</small></span>
-                  <EffectTags effects={choice.effects} />
                   <span className="choice-arrow">→</span>
                 </button>
               ))}
@@ -522,9 +761,8 @@ function ShiftScreen({
               <small>MANAGEMENT DECISION · {decision.number}</small>
               <div className="stamp">{resolved.choice.stamp}</div>
               <div className="receipt-dots"/>
-              {(Object.entries(resolved.choice.effects) as [StatKey, number][]).map(([key, delta]) => (
-                <div className="receipt-line" key={key}><span>{statInfo[key].label}</span><b className={delta > 0 ? 'up' : 'down'}>{resolved.before[key]} {delta > 0 ? '+' : '−'} {Math.abs(delta)} → {stats[key]}</b></div>
-              ))}
+              <div className="receipt-line"><span>ENTRY</span><b>RECORDED</b></div>
+              <div className="receipt-line"><span>EFFECT</span><b>REVIEW PENDING</b></div>
               <div className="receipt-total"><span>DECISIONS REMAINING</span><b>{decisions.length - index - 1}</b></div>
             </div>
             <div className="response-copy">
@@ -568,8 +806,11 @@ function ReviewScreen({ stats, history, restart }: { stats: Stats; history: numb
               {(Object.keys(stats) as StatKey[]).map(key => <StatMeter key={key} name={key} value={stats[key]} />)}
             </div>
             <div className="score-line"><span>MANAGERIAL INTEGRITY INDEX</span><b>{total}<i>/ 30</i></b></div>
-            <div className="decision-tape" aria-label="Your five decisions">
-              {history.map((choiceIndex, index) => <span key={index} title={decisions[index].choices[choiceIndex].label}>{decisions[index].number}<b>{String.fromCharCode(65 + choiceIndex)}</b></span>)}
+            <div className="decision-tape" aria-label="Your eight decisions">
+              {history.map((choiceIndex, index) => {
+                const pastDecision = getDecision(index, history.slice(0, index))
+                return <span key={index} title={pastDecision.choices[choiceIndex].label}>{pastDecision.number}<b>{String.fromCharCode(65 + choiceIndex)}</b></span>
+              })}
             </div>
             <button className="primary-button" onClick={restart} data-testid="restart"><span>Work another shift</span><b>↻</b></button>
           </div>
@@ -593,7 +834,7 @@ function App() {
   const [index, setIndex] = useState(0)
   const [stats, setStats] = useState<Stats>(INITIAL_STATS)
   const [history, setHistory] = useState<number[]>([])
-  const [resolved, setResolved] = useState<{ choice: Choice; before: Stats } | null>(null)
+  const [resolved, setResolved] = useState<{ choice: Choice } | null>(null)
   const [soundOn, setSoundOn] = useState(false)
   const audioRef = useRef<{ context: AudioContext; nodes: AudioNode[]; timer: number } | null>(null)
 
@@ -657,16 +898,17 @@ function App() {
   const beginShift = () => setScene('shop')
 
   const choose = (choiceIndex: number) => {
-    if (resolved || choiceIndex < 0 || choiceIndex >= decisions[index].choices.length) return
-    const choice = decisions[index].choices[choiceIndex]
-    const before = { ...stats }
+    const decision = getDecision(index, history)
+    if (resolved || choiceIndex < 0 || choiceIndex >= decision.choices.length) return
+    const choice = decision.choices[choiceIndex]
+    const effects = getChoiceEffects(index, choiceIndex, history, choice.effects)
     setStats(current => {
       const next = { ...current }
-      for (const [key, delta] of Object.entries(choice.effects) as [StatKey, number][]) next[key] = clamp(next[key] + delta)
+      for (const [key, delta] of Object.entries(effects) as [StatKey, number][]) next[key] = clamp(next[key] + delta)
       return next
     })
     setHistory(current => [...current, choiceIndex])
-    setResolved({ choice, before })
+    setResolved({ choice: { ...choice, effects } })
   }
 
   const continueShift = () => {
@@ -700,7 +942,7 @@ function App() {
     <main>
       {scene === 'market' && <MarketScene step={marketStep} advance={() => setMarketStep(1)} start={beginInterview} />}
       {scene === 'interview' && <ManagerScene onHired={beginShift} />}
-      {scene === 'shop' && <ShiftScreen index={index} stats={stats} resolved={resolved} onChoose={choose} onContinue={continueShift} />}
+      {scene === 'shop' && <ShiftScreen index={index} stats={stats} history={history} resolved={resolved} onChoose={choose} onContinue={continueShift} />}
       {scene === 'review' && <ReviewScreen stats={stats} history={history} restart={restart} />}
       <SoundToggle enabled={soundOn} toggle={soundOn ? stopSound : startSound} />
       {debug && (
@@ -709,7 +951,7 @@ function App() {
           <button onClick={() => setScene('interview')}>Interview</button>
           <button onClick={() => setScene('shop')}>Shop</button>
           {decisions.map((decision, i) => <button key={decision.id} onClick={() => { setScene('shop'); setIndex(i); setResolved(null); setHistory(Array(i).fill(1)) }}>{i + 1}</button>)}
-          <button onClick={() => { setStats({ till: 8, morale: 8, veil: 8 }); setHistory([1, 0, 1, 0, 1]); setScene('review') }}>Review</button>
+          <button onClick={() => { setStats({ till: 8, morale: 8, veil: 8 }); setHistory([1, 0, 1, 0, 1, 0, 1, 2]); setScene('review') }}>Review</button>
         </aside>
       )}
     </main>
