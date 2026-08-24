@@ -63,6 +63,33 @@ button:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
 .chapter-mark { position: absolute; left: 2vw; bottom: 3vh; margin: 0; color: #716a80; font-size: 8px; letter-spacing: .25em; writing-mode: vertical-rl; transform: rotate(180deg); }
 .step-0 .shopfront { filter: blur(1px) brightness(.6); transform: translateX(8vw) scale(.9); }
 
+/* Manager interview */
+.manager-screen { min-height:100vh; display:grid; grid-template-rows:68px 1fr 27px; background:#0d0b1b; }
+.manager-header { z-index:5; display:flex; align-items:center; justify-content:space-between; padding:0 3vw; background:#100d22ed; border-bottom:1px solid #5a496c; box-shadow:0 9px 25px #0005; }
+.manager-header>span { color:#8f849a; font-size:8px; letter-spacing:.16em; }
+.manager-layout { min-height:0; display:grid; grid-template-columns:43% 57%; }
+.manager-stage { position:relative; min-height:0; }
+.manager-stage::after { content:''; position:absolute; inset:8% 6% 8% 9%; z-index:-1; border:1px solid #8d72b733; background:linear-gradient(140deg,#6f568124,transparent 58%); }
+.manager-stage .portrait { inset:3% 0 0 3%; }
+.manager-stage .character-label { left:4vw; bottom:6vh; }
+.interview-panel { position:relative; z-index:3; display:flex; flex-direction:column; justify-content:center; padding:clamp(35px,7vh,76px) clamp(35px,6vw,92px); background:linear-gradient(90deg,#0d0b1be8,#121027fc 18%); border-left:1px solid #493c58; }
+.interview-panel h1 { max-width:720px; margin:0; color:var(--cream); font:600 clamp(38px,4.7vw,72px)/1.02 'Fraunces'; letter-spacing:-.035em; }
+.interview-dialogue { max-width:680px; margin:26px 0 29px; color:#c1b5c5; font:600 clamp(17px,1.55vw,23px)/1.55 'Fraunces'; }
+.interview-answers { max-width:680px; display:flex; flex-direction:column; gap:8px; }
+.interview-answers button { min-height:58px; display:grid; grid-template-columns:34px 1fr 24px; align-items:center; gap:12px; padding:8px 15px; color:#eee2c2; background:#211b35ee; border:1px solid #4e405d; cursor:pointer; text-align:left; transition:.15s ease; }
+.interview-answers button:hover { border-color:var(--yellow); background:#302443; transform:translateX(5px); box-shadow:-5px 0 var(--yellow); }
+.interview-answers button span { width:28px; height:28px; display:grid; place-content:center; color:#9e8fad; border:1px solid #5c4d6b; font-size:9px; }
+.interview-answers button b { font:600 clamp(13px,1.15vw,17px) 'Fraunces'; }
+.interview-answers button i { color:var(--yellow); font-style:normal; }
+.job-offer { animation:appear .35s ease-out; }
+.job-offer>p { margin:18px 0 22px; color:#a89dad; font-size:11px; line-height:1.6; }
+.offer-slip { width:min(430px,100%); margin-bottom:27px; padding:21px 24px; display:grid; gap:8px; color:#37303f; background:#eee7ce; border-left:5px solid #765a82; box-shadow:7px 8px 0 #46364f; transform:rotate(-.5deg); }
+.offer-slip small { color:#817887; font-size:7px; letter-spacing:.15em; }
+.offer-slip b { font:800 clamp(18px,1.8vw,27px) 'Fraunces'; }
+.offer-slip span { padding-top:10px; border-top:1px dotted #9d9595; font-size:9px; }
+.offer-slip em { width:max-content; margin-top:4px; padding:5px 8px; color:#80566e; border:2px solid #80566e; font-size:10px; font-style:normal; letter-spacing:.1em; transform:rotate(-2deg); }
+.manager-screen>.shift-footer { grid-row:3; }
+
 /* Store scene */
 .shift-screen { background: #0d0b1b; display: grid; grid-template-rows: 78px 1fr 27px; grid-template-columns: 46% 54%; }
 .store-backdrop { position: absolute; inset: 0; z-index: -2; overflow: hidden; background: radial-gradient(circle at 30% 34%, #45345e 0, #27203e 28%, #141126 66%); }
@@ -118,12 +145,14 @@ button:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
 
 @media (max-width: 900px) {
   .market-screen { align-items:flex-start; padding:8vh 7vw; }.market-copy{width:70vw}.shopfront{right:-7vw;width:55vw;height:58vh;opacity:.7}.market-copy h1{font-size:clamp(42px,9vw,74px)}
+  .manager-layout{grid-template-columns:36% 64%}.manager-stage .portrait{inset:8% -24% 0 -18%}.interview-panel{padding-left:5vw;padding-right:5vw}.manager-stage .character-label{left:2vw}.manager-header .brand div{display:flex}
   .shift-screen { min-height:100svh; grid-template-columns:34% 66%; grid-template-rows:68px 1fr 24px; }.brand div{display:none}.brand{min-width:38px}.stats-row{gap:10px}.stat{min-width:80px;grid-template-columns:15px 1fr 14px;gap:4px}.shift-clock{display:none}.case-number{display:none}.character-label{left:2vw;bottom:3vh;padding:8px 10px}.character-label span{display:none}.portrait{inset:10% -30% 0 -20%}.decision-panel{padding:25px 3vw 20px 2vw}.dialogue-block,.choices{padding-left:10px}.dialogue-block h2{font-size:clamp(21px,3.2vw,29px)}.choice-heading{padding-left:10px}.choice-button{grid-template-columns:30px 1fr 22px}.effect-tags{display:none}.resolution{grid-template-columns:45% 55%;gap:20px}.receipt{padding:21px 15px}.response-copy h2{font-size:24px}.shelf,.counter{width:35%}
   .review-content{grid-template-columns:28% 72%}.review-copy{padding-left:35px;padding-right:35px}.review-portrait .portrait{inset:12% -55% 0 -50%}
 }
 
 @media (max-width: 650px) {
   .market-screen{padding:6vh 24px;align-items:flex-start}.market-copy{width:100%;z-index:3}.market-copy h1{font-size:52px}.market-copy .narration{max-width:90%;font-size:12px}.shopfront{right:-14%;bottom:2vh;width:89vw;height:52vh;opacity:.55}.market-stalls{opacity:.5}.chapter-mark{display:none}.primary-button{min-width:240px}
+  .manager-screen{display:block;min-height:100svh;padding-top:58px;padding-bottom:23px;overflow:auto}.manager-header{position:absolute;inset:0 0 auto;height:58px;padding:0 15px}.manager-header .brand div{display:flex}.manager-header>span{display:none}.manager-layout{display:block}.manager-stage{height:31vh;min-height:220px}.manager-stage .portrait{inset:-8% 0 0}.manager-stage .portrait svg{height:120%}.manager-stage .character-label{left:16px;bottom:8px}.interview-panel{min-height:calc(69svh - 81px);padding:29px 22px 38px;border-left:0;border-top:1px solid #493c58;justify-content:flex-start}.interview-panel h1{font-size:39px}.interview-dialogue{margin:19px 0 21px;font-size:17px}.interview-answers button{min-height:55px}.offer-slip{margin-top:20px}.manager-screen>.shift-footer{position:absolute;inset:auto 0 0;height:23px;padding:0 14px}.manager-screen>.shift-footer span:last-child{display:none}
   .shift-screen{display:block;min-height:100svh;padding-top:64px;padding-bottom:23px;overflow:auto}.shift-header{position:absolute;top:0;left:0;right:0;height:64px;padding:0 13px}.brand{display:none}.stats-row{width:100%;justify-content:space-between}.stat{min-width:27%;}.character-stage{height:28vh;min-height:215px}.portrait{inset:-6% 0 0}.portrait svg{height:120%}.character-label{left:15px;bottom:8px}.store-backdrop::before{background:linear-gradient(0deg,#0d0b1b 42%,transparent 80%)}.shelf{width:80%;opacity:.6}.shelf-one{top:10%}.shelf-two{display:none}.counter{width:100%;bottom:auto;top:29vh}.decision-panel{min-height:calc(72svh - 87px);padding:25px 18px 30px;border-left:0;border-top:1px solid #493c58;background:#0f0c20f7;justify-content:flex-start}.dialogue-block{padding-left:15px}.dialogue-block h2{font-size:24px}.dialogue-block p{font-size:10px}.choice-heading{margin-top:24px}.choice-heading i{display:none}.choices{padding-left:0}.choice-button{min-height:65px;padding:7px 10px}.choice-copy b{font-size:14px}.choice-copy small{font-size:7px}.shift-footer{position:absolute;bottom:0;left:0;right:0;height:23px;padding:0 14px}.shift-footer span:last-child{display:none}.resolution{grid-template-columns:1fr;gap:28px}.receipt{width:min(300px,90%);margin:auto}.response-copy h2{font-size:26px}.is-resolved{justify-content:center}.sound-toggle{right:8px;bottom:31px}
   .review-screen{padding:20px 14px 47px;display:block;overflow:auto}.review-card{width:100%;min-height:0}.review-heading{min-height:52px;padding-left:20px}.review-grade{width:70px;font-size:29px}.review-content{display:block}.review-portrait{height:170px}.review-portrait .portrait{inset:-30% 0 -80%}.review-portrait .portrait svg{height:180%}.review-copy{padding:28px 23px 35px}.review-copy h1{font-size:42px}.review-text{font-size:15px}.final-stats{gap:9px}.final-stats .stat{min-width:0}.review-fineprint{display:none}
 }

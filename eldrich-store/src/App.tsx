@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 
 type StatKey = 'till' | 'morale' | 'veil'
 type Stats = Record<StatKey, number>
-type Scene = 'market' | 'shop' | 'review'
+type Scene = 'market' | 'interview' | 'shop' | 'review'
 type Character = 'balthazar' | 'hector' | 'brindle' | 'calyx' | 'nix' | 'customer'
 
 type Choice = {
@@ -26,6 +26,21 @@ type Decision = {
 }
 
 const INITIAL_STATS: Stats = { till: 5, morale: 5, veil: 5 }
+
+const interviewAnswers = [
+  {
+    label: 'I worked nights at a pharmacy.',
+    reply: 'Retail, then. Close enough for our purposes.',
+  },
+  {
+    label: 'I learn quickly.',
+    reply: 'Most things here do. You should fit in.',
+  },
+  {
+    label: 'I found the door, didn’t I?',
+    reply: 'You did. The previous applicant is still looking for it.',
+  },
+]
 
 const decisions: Decision[] = [
   {
@@ -295,6 +310,56 @@ function MarketScene({ step, advance, start }: { step: number; advance: () => vo
   )
 }
 
+function ManagerScene({ onHired }: { onHired: () => void }) {
+  const [answer, setAnswer] = useState<number | null>(null)
+
+  return (
+    <section className="screen manager-screen" aria-live="polite" data-testid="manager-interview">
+      <StoreBackdrop item="APPLICATION · NIGHT STAFF" />
+      <header className="manager-header">
+        <div className="brand"><span className="brand-mark">E</span><div><b>THE ELDRICH STORE</b><small>EMPLOYMENT OFFICE / STOCKROOM</small></div></div>
+        <span>APPLICANT: WALK-IN</span>
+      </header>
+      <div className="manager-layout">
+        <div className="manager-stage">
+          <CharacterPortrait type="balthazar" speaking={answer === null} />
+          <div className="character-label"><i/><div><b>Balthazar</b><span>Proprietor</span></div></div>
+        </div>
+        <div className="interview-panel">
+          <p className="eyebrow">A VERY SHORT INTERVIEW</p>
+          {answer === null ? (
+            <>
+              <h1>You’re here about the vacancy.</h1>
+              <p className="interview-dialogue">“Assistant manager. Nights. Some lifting, some listening at locked doors. What experience do you have?”</p>
+              <div className="interview-answers" aria-label="Choose your answer">
+                {interviewAnswers.map((option, index) => (
+                  <button key={option.label} onClick={() => setAnswer(index)} data-testid={`interview-choice-${index}`}>
+                    <span>{String.fromCharCode(65 + index)}</span><b>{option.label}</b><i>→</i>
+                  </button>
+                ))}
+              </div>
+            </>
+          ) : (
+            <div className="job-offer" data-testid="job-offer">
+              <span className="response-label">Balthazar considers this</span>
+              <h1>“{interviewAnswers[answer].reply}”</h1>
+              <p>He signs the application without turning it over.</p>
+              <div className="offer-slip">
+                <small>NOTICE OF APPOINTMENT</small>
+                <b>ASSISTANT STORE MANAGER</b>
+                <span>START DATE&nbsp;&nbsp; TONIGHT</span>
+                <em>THE JOB IS YOURS</em>
+              </div>
+              <button className="primary-button" onClick={onHired} data-testid="accept-job"><span>Take the name badge</span><b>→</b></button>
+            </div>
+          )}
+        </div>
+      </div>
+      <div className="shift-footer"><span>INTERVIEWS BY APPOINTMENT OR ARRIVAL</span><span>REFERENCES MAY BE CONTACTED IN DREAMS</span></div>
+    </section>
+  )
+}
+
 function StatMeter({ name, value }: { name: StatKey; value: number }) {
   const info = statInfo[name]
   return (
@@ -492,10 +557,12 @@ function App() {
     }
   }, [])
 
-  const beginShift = () => {
+  const beginInterview = () => {
     startSound()
-    setScene('shop')
+    setScene('interview')
   }
+
+  const beginShift = () => setScene('shop')
 
   const choose = (choiceIndex: number) => {
     if (resolved || choiceIndex < 0 || choiceIndex >= decisions[index].choices.length) return
@@ -539,13 +606,15 @@ function App() {
 
   return (
     <main>
-      {scene === 'market' && <MarketScene step={marketStep} advance={() => setMarketStep(1)} start={beginShift} />}
+      {scene === 'market' && <MarketScene step={marketStep} advance={() => setMarketStep(1)} start={beginInterview} />}
+      {scene === 'interview' && <ManagerScene onHired={beginShift} />}
       {scene === 'shop' && <ShiftScreen index={index} stats={stats} resolved={resolved} onChoose={choose} onContinue={continueShift} />}
       {scene === 'review' && <ReviewScreen stats={stats} history={history} restart={restart} />}
       <SoundToggle enabled={soundOn} toggle={soundOn ? stopSound : startSound} />
       {debug && (
         <aside className="debug-tools">
           <b>DEBUG</b>
+          <button onClick={() => setScene('interview')}>Interview</button>
           <button onClick={() => setScene('shop')}>Shop</button>
           {decisions.map((decision, i) => <button key={decision.id} onClick={() => { setScene('shop'); setIndex(i); setResolved(null); setHistory(Array(i).fill(1)) }}>{i + 1}</button>)}
           <button onClick={() => { setStats({ till: 8, morale: 8, veil: 8 }); setHistory([1, 0, 1, 0, 1]); setScene('review') }}>Review</button>
