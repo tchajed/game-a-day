@@ -339,14 +339,14 @@ function CharacterPortrait({ type, speaking = false }: { type: Character; speaki
         <path className="lapel-edge" d="m126 269-18 30 30 28-15 18m71-76 18 30-30 28 15 18"/>
         <path className="tie" d="m153 306 7 12 7-12-2 78-5 13-5-13Z"/>
         <circle className="coat-button" cx="160" cy="362" r="3"/><circle className="coat-button" cx="160" cy="392" r="3"/>
-        <path className="pocket" d="M153 302h90v50h-90z"/>
-        <path className="badge" d="M158 306h78v42h-78z"/>
-        <circle className="badge-pin" cx="164" cy="312" r="2"/>
-        <text className="badge-name" x="197" y="324" textAnchor="middle" textLength="64" lengthAdjust="spacingAndGlyphs">
+        <path className="pocket" d="M137 294h112v62H137z"/>
+        <path className="badge" d="M142 298h102v54H142z"/>
+        <circle className="badge-pin" cx="149" cy="305" r="2"/>
+        <text className="badge-name" x="193" y="318" textAnchor="middle" textLength="82" lengthAdjust="spacingAndGlyphs">
           {characterNames[type].toUpperCase()}
         </text>
-        <path className="badge-rule" d="M165 329h64"/>
-        <text className="badge-title" x="197" y="341" textAnchor="middle" textLength="64" lengthAdjust="spacingAndGlyphs">
+        <path className="badge-rule" d="M150 325h86"/>
+        <text className="badge-title" x="193" y="343" textAnchor="middle" textLength="82" lengthAdjust="spacingAndGlyphs">
           {characterJobs[type].toUpperCase()}
         </text>
       </svg>
