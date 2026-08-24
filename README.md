@@ -6,6 +6,7 @@ A collection of games each built in one day, with AI assistance. Each game focus
 
 | Game | Directory | Description |
 | --- | --- | --- |
+| [The Eldrich Store](eldrich-store/) | `eldrich-store` | Balance profit, staff morale, and reality itself through one supernatural retail shift. |
 | [Maison Morrow](luxury/) | `luxury` | Protect the mystique of a 75-year-old luxury lunchbox maker across eight tense quarters. |
 | [Hike](hike/) | `hike` | Follow a ribbon of switchbacks through a warm cut-paper forest to the snowline. |
 | [Two Top](cooking-sim/) | `cooking-sim` | Program two tiny chefs and debug their kitchen strategy through a frantic dinner shift. |
