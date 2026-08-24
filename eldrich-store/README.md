@@ -9,3 +9,14 @@ Everyone else's dialogue is supposed to be creepy, and the items have ill effect
 I'm not sure what the gameplay should look like but I want to emphasize dialogue rather than moving around, and it should take place within the store after the opening market scene.
 
 The writing is supposed to be humorous and tongue in cheek despite a creepy setting, like Welcome to Night Vale.
+
+## Prototype
+
+Play one five-minute night shift by resolving five mundane retail problems with supernatural consequences. Every choice affects the **Till**, **Staff**, or **Veil**; Balthazar grades the final balance.
+
+```bash
+bun install
+bun run dev
+```
+
+Use `?music=off` to disable ambience. `?debug=true` adds scene-jump controls. Programmatic playtests can inspect `window.__ELDRICH_STORE__.getState()` and use `choose(index)`, `continue()`, and `restart()`.
