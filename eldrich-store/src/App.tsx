@@ -30,15 +30,15 @@ const INITIAL_STATS: Stats = { till: 5, morale: 5, veil: 5 }
 const interviewAnswers = [
   {
     label: 'I worked nights at a pharmacy.',
-    reply: 'Retail, then. Close enough for our purposes.',
+    reply: 'Night retail is useful. People behave differently after midnight.',
   },
   {
     label: 'I learn quickly.',
-    reply: 'Most things here do. You should fit in.',
+    reply: 'You may have to. The stock changes often.',
   },
   {
     label: 'I found the door, didn’t I?',
-    reply: 'You did. The previous applicant is still looking for it.',
+    reply: 'Yes. It doesn’t let every applicant in.',
   },
 ]
 
@@ -50,28 +50,28 @@ const decisions: Decision[] = [
     role: 'Gargoyle · Returns Desk',
     character: 'hector',
     item: 'PRE-OWNED PROPHECY',
-    dialogue: 'The customer says this prophecy “did not spark joy.” It did accurately predict the divorce, which feels like user error.',
-    detail: 'The receipt is legible, but only when held under a funeral moon. Our policy is, regrettably, your policy now.',
+    dialogue: 'A customer has brought back this prophecy. They say the outcome was unsatisfactory. It was, however, accurate.',
+    detail: 'The receipt appears in the right light. The returns policy does not mention divination.',
     choices: [
       {
         label: 'Approve the refund',
-        note: 'Keep the customer, eat the cost',
+        note: 'Keep the customer, absorb the cost',
         effects: { till: -2, morale: 1, veil: 1 },
-        reply: 'A generous precedent. I will place the returned future in the staff room, facing down.',
+        reply: 'I’ll record it as unopened. We should keep it covered until the tense settles.',
         stamp: 'REFUND APPROVED',
       },
       {
         label: 'Offer store credit',
-        note: 'A compromise with an expiry date',
+        note: 'A smaller loss with a time limit',
         effects: { till: -1, morale: 1 },
-        reply: 'Store credit issued. It expires last Thursday. That is apparently permitted.',
+        reply: 'I’ll issue the credit. The date field has already filled itself in.',
         stamp: 'CREDIT ISSUED',
       },
       {
         label: 'Enforce final sale',
-        note: 'Protect the margin, test the wards',
+        note: 'Protect the margin, risk a complaint',
         effects: { till: 2, morale: -1, veil: -1 },
-        reply: 'Understood. The customer has promised to haunt our reviews. So, a normal one-star.',
+        reply: 'Very well. They asked for your full name before leaving.',
         stamp: 'RETURN DENIED',
       },
     ],
@@ -83,28 +83,28 @@ const decisions: Decision[] = [
     role: 'Werewolf · Stock Associate',
     character: 'brindle',
     item: 'BREAK ROTA',
-    dialogue: 'My dinner break overlaps the moonrise again. I can skip it, but then I may unionize with my other selves.',
-    detail: 'Reassigning the rota leaves the shop floor uncovered for twelve minutes. The mannequins have offered to help.',
+    dialogue: 'My break is scheduled for moonrise. I can stay on the floor, but I would rather not be around customers then.',
+    detail: 'Cover is thin for twelve minutes. There is an old mannequin in the stockroom.',
     choices: [
       {
         label: 'Cover the floor yourself',
-        note: 'Lose sales, earn loyalty',
+        note: 'Reduce coverage, support the team',
         effects: { till: -1, morale: 2 },
-        reply: 'Thank you. If anyone asks for fitting-room access, remember: never count the mirrors aloud.',
+        reply: 'Thank you. The fitting rooms should remain closed while I’m away.',
         stamp: 'BREAK COVERED',
       },
       {
         label: 'Put a mannequin on till',
-        note: 'Efficient, technically forbidden',
+        note: 'Maintain coverage, accept the risk',
         effects: { till: 1, morale: 1, veil: -2 },
-        reply: 'Bold. It already has an employee number. I have chosen not to ask since when.',
+        reply: 'I’ll bring it down. It has used the till before, according to the log.',
         stamp: 'TEMP ASSIGNED',
       },
       {
         label: 'Deny the request',
-        note: 'Keep coverage, lose goodwill',
+        note: 'Keep coverage, strain the team',
         effects: { till: 2, morale: -2 },
-        reply: 'Of course. I will simply be professional about this in every body I currently possess.',
+        reply: 'Understood. I’ll remain in the stockroom for the worst of it.',
         stamp: 'REQUEST DENIED',
       },
     ],
@@ -116,28 +116,28 @@ const decisions: Decision[] = [
     role: 'Mothkin · Visual Merchandising',
     character: 'calyx',
     item: 'WHISPER CANDLES',
-    dialogue: 'The Whisper Candles sell three times faster by the entrance. They also tell passersby their childhood nicknames.',
-    detail: 'Our conversion rate is excellent. So is the rate at which the front window has begun to breathe.',
+    dialogue: 'The Whisper Candles sell better by the entrance. Some customers say they hear familiar names as they pass.',
+    detail: 'Sales have risen since the move. There is condensation on the inside of the front window.',
     choices: [
       {
         label: 'Keep the display',
-        note: 'Strong sales, porous reality',
+        note: 'Keep the sales lift and the exposure',
         effects: { till: 2, veil: -2 },
-        reply: 'Wonderful. I have adjusted the lighting from “ominous” to “commercially ominous.”',
+        reply: 'I’ll leave them where they are and lower the display lighting.',
         stamp: 'DISPLAY KEPT',
       },
       {
         label: 'Move them behind glass',
-        note: 'Modest sales, modest screaming',
+        note: 'Trade some sales for containment',
         effects: { till: 1, veil: 1 },
-        reply: 'Tasteful and cautious. The glass has begun whispering instead, but more quietly.',
+        reply: 'I’ll use the cabinet glass. It muffles most of the names.',
         stamp: 'DISPLAY MOVED',
       },
       {
         label: 'Pull them from sale',
-        note: 'Safety first, targets second',
+        note: 'Protect the floor, miss the target',
         effects: { till: -2, morale: 1, veil: 2 },
-        reply: 'I will extinguish them. Please ignore anything they say in your mother’s voice.',
+        reply: 'I’ll extinguish them and return the display to storage.',
         stamp: 'STOCK RECALLED',
       },
     ],
@@ -149,28 +149,28 @@ const decisions: Decision[] = [
     role: 'Demon · Proprietor',
     character: 'balthazar',
     item: 'SUPPLIER INVOICE',
-    dialogue: 'Our screaming kettles are nearly sold out. The supplier offers a bulk rate, payable in cash or one fond memory per unit.',
-    detail: 'Quarterly targets favor volume. Staff retention guidelines are frustratingly silent on abstract collateral.',
+    dialogue: 'The screaming kettles are nearly sold out. The supplier offers a bulk rate, payable in cash or one fond memory per unit.',
+    detail: 'A larger order would meet the quarterly target. The contract treats both forms of payment as equivalent.',
     choices: [
       {
         label: 'Pay cash for a small order',
-        note: 'Safe stock, thinner margin',
+        note: 'Limit the risk and the margin',
         effects: { till: -2, morale: 1, veil: 1 },
-        reply: 'Conservative. Sensible. I feel unclean saying both words, but the books will survive.',
+        reply: 'A small order, then. I’ll amend the forecast.',
         stamp: 'ORDER: SMALL',
       },
       {
         label: 'Trade your own memory',
-        note: 'Save cash, misplace something nice',
+        note: 'Preserve cash, give up something personal',
         effects: { till: 2, morale: 1, veil: -1 },
-        reply: 'Excellent initiative. You no longer remember your first day here. This is still your first day here.',
+        reply: 'The supplier has accepted. You may notice a gap later.',
         stamp: 'MEMORY TENDERED',
       },
       {
         label: 'Ask staff to contribute',
-        note: 'Great margin, terrible meeting',
+        note: 'Maximize margin, burden the staff',
         effects: { till: 3, morale: -3, veil: -1 },
-        reply: 'Efficient delegation. HR requests that we stop calling the collection jar “voluntary.”',
+        reply: 'I’ll pass the jar around before closing. Quietly.',
         stamp: 'COST DISTRIBUTED',
       },
     ],
@@ -182,28 +182,28 @@ const decisions: Decision[] = [
     role: 'Kelpie · Closing Supervisor',
     character: 'nix',
     item: 'AFTER-HOURS SALE',
-    dialogue: 'There is one customer outside. They want the Last Umbrella, but only have seven years of good luck. It costs ten.',
-    detail: 'We closed four minutes ago. The customer has no face, but has maintained excellent eye contact.',
+    dialogue: 'There is a customer outside asking for the Last Umbrella. They have seven years of good luck. It costs ten.',
+    detail: 'We closed four minutes ago. I cannot see their face from here.',
     choices: [
       {
         label: 'Honor the discount',
-        note: 'Make the sale, bend the rules',
+        note: 'Make the sale below the listed price',
         effects: { till: 1, morale: -1, veil: -1 },
-        reply: 'I’ll let them in. Please stand clear when I unlock the door; it dislikes being perceived after two.',
+        reply: 'I’ll let them in. Stand back while I unlock the door.',
         stamp: 'DISCOUNT HONORED',
       },
       {
         label: 'Hold it until tomorrow',
-        note: 'Good service, extra admin',
+        note: 'Offer service without reopening',
         effects: { morale: 2, veil: 1 },
-        reply: 'A hold slip, then. I will write their name as a tasteful blank space.',
+        reply: 'I’ll write a hold slip. They can give me a name tomorrow.',
         stamp: 'ITEM HELD',
       },
       {
         label: 'Close on time',
-        note: 'Protect the team, miss the sale',
+        note: 'Protect closing time, lose the sale',
         effects: { till: -1, morale: 1, veil: 2 },
-        reply: 'Finally, a manager who respects closing hours. The customer has unfolded and gone home.',
+        reply: 'All right. They seem to have gone.',
         stamp: 'DOORS LOCKED',
       },
     ],
@@ -298,14 +298,14 @@ function MarketScene({ step, advance, start }: { step: number; advance: () => vo
         <div className="window"><i/><i/><i/></div>
       </div>
       <div className="market-copy">
-        <p className="eyebrow">SOMEWHERE BETWEEN MIDNIGHT &amp; REGRET</p>
+        <p className="eyebrow">SOMEWHERE AFTER MIDNIGHT</p>
         <h1 id="market-title">{step === 0 ? <>The night market<br/><em>wasn’t here yesterday.</em></> : <>WANTED:<br/><em>Assistant store manager.</em></>}</h1>
-        <p className="narration">{step === 0 ? 'You came out looking for work. The yellow lights appear to be looking back.' : 'Competitive wage. Flexible hours. Dental, pending verification that you possess teeth.'}</p>
+        <p className="narration">{step === 0 ? 'You came out looking for work. A yellow sign is lit at the far end of the market.' : 'Night work. References preferred. Applicants should be comfortable with inventory that moves after counting.'}</p>
         <button className="primary-button" onClick={step === 0 ? advance : start} data-testid={step === 0 ? 'enter-market' : 'start-shift'}>
-          <span>{step === 0 ? 'Follow the yellow light' : 'Apply immediately'}</span><b>→</b>
+          <span>{step === 0 ? 'Follow the yellow light' : 'Ask about the position'}</span><b>→</b>
         </button>
       </div>
-      <p className="chapter-mark">A TINY MANAGEMENT NIGHTMARE</p>
+      <p className="chapter-mark">OPEN UNTIL FURTHER NOTICE</p>
     </section>
   )
 }
@@ -326,11 +326,11 @@ function ManagerScene({ onHired }: { onHired: () => void }) {
           <div className="character-label"><i/><div><b>Balthazar</b><span>Proprietor</span></div></div>
         </div>
         <div className="interview-panel">
-          <p className="eyebrow">A VERY SHORT INTERVIEW</p>
+          <p className="eyebrow">EMPLOYMENT INTERVIEW</p>
           {answer === null ? (
             <>
               <h1>You’re here about the vacancy.</h1>
-              <p className="interview-dialogue">“Assistant manager. Nights. Some lifting, some listening at locked doors. What experience do you have?”</p>
+              <p className="interview-dialogue">“Assistant manager. Nights. There is lifting, closing, and some inventory that requires discretion. Where were you before this?”</p>
               <div className="interview-answers" aria-label="Choose your answer">
                 {interviewAnswers.map((option, index) => (
                   <button key={option.label} onClick={() => setAnswer(index)} data-testid={`interview-choice-${index}`}>
@@ -343,7 +343,7 @@ function ManagerScene({ onHired }: { onHired: () => void }) {
             <div className="job-offer" data-testid="job-offer">
               <span className="response-label">Balthazar considers this</span>
               <h1>“{interviewAnswers[answer].reply}”</h1>
-              <p>He signs the application without turning it over.</p>
+              <p>He reads the first line of the application, then signs it.</p>
               <div className="offer-slip">
                 <small>NOTICE OF APPOINTMENT</small>
                 <b>ASSISTANT STORE MANAGER</b>
@@ -355,7 +355,7 @@ function ManagerScene({ onHired }: { onHired: () => void }) {
           )}
         </div>
       </div>
-      <div className="shift-footer"><span>INTERVIEWS BY APPOINTMENT OR ARRIVAL</span><span>REFERENCES MAY BE CONTACTED IN DREAMS</span></div>
+      <div className="shift-footer"><span>INTERVIEWS BY APPOINTMENT OR WALK-IN</span><span>REFERENCES WILL BE CONTACTED IF REQUIRED</span></div>
     </section>
   )
 }
@@ -412,7 +412,7 @@ function ShiftScreen({
               <h2>{decision.dialogue}</h2>
               <p>{decision.detail}</p>
             </div>
-            <div className="choice-heading"><span>YOUR DECISION</span><i>Choose before the bell rings</i></div>
+            <div className="choice-heading"><span>YOUR DECISION</span><i>The bell will ring shortly</i></div>
             <div className="choices">
               {decision.choices.map((choice, choiceIndex) => (
                 <button key={choice.label} className="choice-button" onClick={() => onChoose(choiceIndex)} data-testid={`choice-${choiceIndex}`}>
@@ -445,17 +445,17 @@ function ShiftScreen({
           </div>
         )}
       </div>
-      <div className="shift-footer"><span>EMPLOYEE ID: TEMP-000</span><span>PLEASE KEEP ALL LIMBS BEHIND THE VEIL</span></div>
+      <div className="shift-footer"><span>EMPLOYEE ID: TEMP-000</span><span>INCIDENTS MUST BE ENTERED IN THE CLOSING LOG</span></div>
     </section>
   )
 }
 
 function getEnding(stats: Stats) {
-  if (stats.veil <= 2) return { grade: 'D', title: 'Employee of the Apocalypse', copy: 'Sales were brisk right up until the shop became an open concept portal. Excellent quarter. No further quarters expected.' }
-  if (stats.morale <= 2) return { grade: 'C−', title: 'Acting Assistant to Nobody', copy: 'The team has left. Some resigned, some transformed, and Hector is “working remotely” from the cathedral gutter.' }
-  if (stats.till <= 2) return { grade: 'C', title: 'Spiritually Rich, Fiscally Dead', copy: 'Everyone likes you and reality remains stubbornly intact. Regrettably, the till contains one button and a moth.' }
-  if (stats.till >= 6 && stats.morale >= 6 && stats.veil >= 6) return { grade: 'A+', title: 'Assistant Manager of the Month', copy: 'Profit, people, and planar integrity: balanced. Your portrait will hang beside the exits, where it can watch both of them.' }
-  return { grade: 'B', title: 'Permanently on Probation', copy: 'The store survived, the numbers mostly add up, and only one complaint was written in blood. Balthazar calls this “leadership potential.”' }
+  if (stats.veil <= 2) return { grade: 'D', title: 'Containment Failure', copy: 'The shop is still trading, though it now opens onto several locations. We will discuss access procedures next shift.' }
+  if (stats.morale <= 2) return { grade: 'C−', title: 'A Quiet Shop Floor', copy: 'The rota has several new vacancies. Hector left his keys on the desk and has returned to the cathedral.' }
+  if (stats.till <= 2) return { grade: 'C', title: 'Below Target', copy: 'The staff support your decisions and the premises remain stable. The till will need attention before morning.' }
+  if (stats.till >= 6 && stats.morale >= 6 && stats.veil >= 6) return { grade: 'A+', title: 'A Balanced Shift', copy: 'Sales, staff, and the premises are all in good order. Your name will remain on next week’s rota.' }
+  return { grade: 'B', title: 'Kept On', copy: 'The store survived the shift and most of the figures reconcile. Balthazar has scheduled you again tomorrow.' }
 }
 
 function ReviewScreen({ stats, history, restart }: { stats: Stats; history: number[]; restart: () => void }) {
@@ -469,7 +469,7 @@ function ReviewScreen({ stats, history, restart }: { stats: Stats; history: numb
         <div className="review-content">
           <div className="review-portrait"><CharacterPortrait type="balthazar" speaking /><span>BALTHAZAR<br/><small>Proprietor / Line Manager</small></span></div>
           <div className="review-copy">
-            <p className="eyebrow">CONGRATULATIONS, PROBABLY</p>
+            <p className="eyebrow">MANAGER’S NOTES</p>
             <h1>{ending.title}</h1>
             <p className="review-text">“{ending.copy}”</p>
             <div className="final-stats">
@@ -483,7 +483,7 @@ function ReviewScreen({ stats, history, restart }: { stats: Stats; history: numb
           </div>
         </div>
       </div>
-      <p className="review-fineprint">EMPLOYMENT IS AT-WILL · THE WILL IN QUESTION IS BALTHAZAR’S</p>
+      <p className="review-fineprint">EMPLOYMENT CONTINUES AT THE PROPRIETOR’S DISCRETION</p>
     </section>
   )
 }
