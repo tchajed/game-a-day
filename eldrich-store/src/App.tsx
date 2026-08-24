@@ -244,36 +244,104 @@ function CharacterPortrait({ type, speaking = false }: { type: Character; speaki
       <svg viewBox="0 0 320 420" role="img">
         <defs>
           <linearGradient id={`coat-${type}`} x1="0" y1="0" x2="1" y2="1">
-            <stop stopColor="#3e315e" />
-            <stop offset="1" stopColor="#18152f" />
+            <stop stopColor="#49376b" />
+            <stop offset=".55" stopColor="#2b2449" />
+            <stop offset="1" stopColor="#141127" />
           </linearGradient>
+          <radialGradient id={`iris-${type}`} cx="40%" cy="35%">
+            <stop stopColor="#fff6a8" />
+            <stop offset=".35" stopColor="#ffd85c" />
+            <stop offset="1" stopColor="#9c5d2f" />
+          </radialGradient>
           <filter id={`glow-${type}`}><feGaussianBlur stdDeviation="5" /></filter>
         </defs>
-        {type === 'balthazar' && <><path className="horn" d="M114 99C57 78 54 21 79 4c-3 38 26 48 69 46Z"/><path className="horn" d="M206 99c57-21 60-78 35-95 3 38-26 48-69 46Z"/></>}
-        {type === 'hector' && <><path className="ear" d="m92 116-66-69 88 18Z"/><path className="ear" d="m228 116 66-69-88 18Z"/><path className="crack" d="m210 105-22 36 17 29-24 28"/></>}
-        {type === 'brindle' && <><path className="ear" d="m96 106 8-94 57 72Z"/><path className="ear" d="m224 106-8-94-57 72Z"/></>}
-        {type === 'calyx' && <><path className="wing wing-left" d="M130 124C54 54 9 80 20 189c8 82 74 96 126 49Z"/><path className="wing wing-right" d="M190 124c76-70 121-44 110 65-8 82-74 96-126 49Z"/><path className="antenna" d="M140 84C111 38 112 19 86 12M180 84c29-46 28-65 54-72"/></>}
-        {type === 'nix' && <path className="mane" d="M83 104C30 124 52 178 18 202c42 19 11 73 73 79l163-13c47-34 4-56 43-88-49-5-19-63-78-76Z"/>}
+        {type === 'balthazar' && <>
+          <path className="horn" d="M114 99C57 78 54 21 79 4c-3 38 26 48 69 46Z"/><path className="horn" d="M206 99c57-21 60-78 35-95 3 38-26 48-69 46Z"/>
+          <path className="horn-ridge" d="M101 76 76 56m44 8L91 38m128 38 25-20m-44 8 29-26"/>
+          <path className="demon-ear" d="m101 127-36-13 33 38m121-25 36-13-33 38"/>
+        </>}
+        {type === 'hector' && <>
+          <path className="ear" d="m92 116-66-69 88 18Z"/><path className="ear" d="m228 116 66-69-88 18Z"/>
+          <path className="ear-inner" d="M83 91 45 59l56 15m136 17 38-32-56 15"/>
+        </>}
+        {type === 'brindle' && <>
+          <path className="ear" d="m96 106 8-94 57 72Z"/><path className="ear" d="m224 106-8-94-57 72Z"/>
+          <path className="ear-inner" d="m109 76 2-45 29 46m71-1-2-45-29 46"/>
+          <path className="fur-outline" d="m104 187-19 17 19 6-12 21 24-4m100-40 19 17-19 6 12 21-24-4"/>
+        </>}
+        {type === 'calyx' && <>
+          <path className="wing wing-left" d="M130 124C54 54 9 80 20 189c8 82 74 96 126 49Z"/><path className="wing wing-right" d="M190 124c76-70 121-44 110 65-8 82-74 96-126 49Z"/>
+          <path className="wing-vein" d="M129 128 36 102m99 58-101 46m106-15-71 56m122-119 93-26m-99 58 101 46m-106-15 71 56"/>
+          <path className="wing-spot" d="M55 120c18-17 45-8 56 15-20 11-43 5-56-15Zm210 0c-18-17-45-8-56 15 20 11 43 5 56-15Z"/>
+          <path className="antenna" d="M140 84C111 38 112 19 86 12M180 84c29-46 28-65 54-72"/>
+          <circle className="antenna-tip" cx="85" cy="12" r="8"/><circle className="antenna-tip" cx="235" cy="12" r="8"/>
+        </>}
+        {type === 'nix' && <>
+          <path className="mane" d="M83 104C30 124 52 178 18 202c42 19 11 73 73 79l163-13c47-34 4-56 43-88-49-5-19-63-78-76Z"/>
+          <path className="mane-strand" d="M76 130c-32 28 10 50-29 75m22-13c-19 27 16 42-7 66m182-128c32 28-10 50 29 75m-22-13c19 27-16 42 7 66"/>
+        </>}
         {type === 'customer' && <path className="hood" d="M54 260C58 91 92 31 160 26s102 65 106 234Z"/>}
         <path className="body" fill={`url(#coat-${type})`} d="M53 420c4-103 29-160 74-172h66c45 12 70 69 74 172Z"/>
+        <path className="shoulder-trim" d="M58 383c23-72 45-112 75-122m129 122c-23-72-45-112-75-122"/>
         <path className="neck" d="M126 221h68v65h-68z"/>
+        <path className="neck-shadow" d="M128 234q32 26 64 0v33q-32 22-64 0Z"/>
         <path className="head" d={type === 'hector' ? 'M84 105 126 57h71l42 48-22 128-57 33-57-33Z' : type === 'brindle' ? 'M88 103 127 62h66l39 41-16 115-56 55-56-55Z' : 'M91 100c9-47 38-68 69-68s60 21 69 68l-13 123-56 43-56-43Z'} />
-        {type === 'calyx' && <path className="fuzz" d="M105 102q55-47 110 0l-16-58-39 26-39-26Z"/>}
-        {type === 'nix' && <path className="forelock" d="M87 122c-8-72 53-107 125-73-49 5-29 43-94 80Z"/>}
+        <path className="face-shadow" d="M102 170c8 45 29 73 58 86 28-13 49-41 58-86-18 14-37 20-58 20s-40-6-58-20Z"/>
+        <path className="temple-detail" d="M109 115q20-15 42-5m60 5q-20-15-42-5"/>
+        {type === 'calyx' && <>
+          <path className="fuzz" d="M105 102q55-47 110 0l-16-58-39 26-39-26Z"/>
+          <path className="ruff" d="m116 241-24 24 24 4-8 25 25-9 27 25 27-25 25 9-8-25 24-4-24-24-44 19Z"/>
+        </>}
+        {type === 'nix' && <>
+          <path className="forelock" d="M87 122c-8-72 53-107 125-73-49 5-29 43-94 80Z"/>
+          <path className="fin" d="m96 158-27 19 25 13m130-32 27 19-25 13"/>
+          <path className="gill" d="m112 192-18 8m20 4-18 9m112-21 18 8m-20 4 18 9"/>
+        </>}
+        {type === 'hector' && <>
+          <path className="stone-facet" d="m91 108 38 14 31-61 34 61 35-14m-116 94 47 54 47-54"/>
+          <path className="crack" d="m210 105-22 36 17 29-24 28m-78-54 18 16-12 24 17 14m30-127 9 19-10 12"/>
+          <circle className="stone-pit" cx="122" cy="96" r="4"/><circle className="stone-pit" cx="202" cy="188" r="5"/><circle className="stone-pit" cx="110" cy="219" r="3"/>
+        </>}
+        {type === 'brindle' && <>
+          <path className="fur-marking" d="m119 91 12 22m15-31 5 29m50-20-12 22m-15-31-5 29M112 184l23 13m73-13-23 13"/>
+          <path className="muzzle" d="M120 178q18-19 40 0 22-19 40 0l-6 39-34 22-34-22Z"/>
+          <path className="whisker" d="m132 199-45-3m46 14-42 12m97-23 45-3m-46 14 42 12"/>
+          <circle className="whisker-dot" cx="128" cy="201" r="2"/><circle className="whisker-dot" cx="123" cy="210" r="2"/><circle className="whisker-dot" cx="192" cy="201" r="2"/><circle className="whisker-dot" cx="197" cy="210" r="2"/>
+        </>}
+        {type === 'balthazar' && <>
+          <path className="demon-mark" d="m160 86-11 17 11 11 11-11Zm-50 96 19-9m81 9-19-9"/>
+          <path className="goatee" d="m145 226 15 38 15-38-15 9Z"/>
+        </>}
         {type === 'customer' ? (
-          <path className="void-face" d="M110 96q50-45 100 0l-10 122-40 27-40-27Z"/>
+          <>
+            <path className="void-face" d="M110 96q50-45 100 0l-10 122-40 27-40-27Z"/>
+            <path className="hood-fold" d="M90 222c-3-86 16-144 70-173m70 173c3-86-16-144-70-173M76 253l38-17m130 17-38-17"/>
+            <path className="void-eyes" d="m126 151 20-6-16 16m64-10-20-6 16 16"/>
+          </>
         ) : (
           <>
+            <path className="eye-socket" d="M108 145q22-24 44 0-22 21-44 0Zm60 0q22-24 44 0-22 21-44 0Z"/>
             <ellipse className="eye-glow" cx="130" cy="145" rx="13" ry="8" filter={`url(#glow-${type})`} />
             <ellipse className="eye-glow" cx="190" cy="145" rx="13" ry="8" filter={`url(#glow-${type})`} />
-            <path className="eye" d="m115 145 15-7 15 7-15 7Z"/><path className="eye" d="m175 145 15-7 15 7-15 7Z"/>
-            <path className="nose" d={type === 'brindle' ? 'm147 176 13-8 13 8-13 11Z' : 'm157 163-6 29 13 2'} />
+            <ellipse className="iris" fill={`url(#iris-${type})`} cx="130" cy="145" rx="10" ry="9"/><ellipse className="iris" fill={`url(#iris-${type})`} cx="190" cy="145" rx="10" ry="9"/>
+            <ellipse className="pupil" cx="130" cy="145" rx="3" ry="7"/><ellipse className="pupil" cx="190" cy="145" rx="3" ry="7"/>
+            <circle className="eye-shine" cx="127" cy="142" r="2"/><circle className="eye-shine" cx="187" cy="142" r="2"/>
+            <path className="eyelid" d="m109 145q21-21 42 0m18 0q21-21 42 0"/>
+            <path className="nose" d={type === 'brindle' ? 'm147 176 13-8 13 8-13 11Z' : type === 'hector' ? 'm160 157-14 37 14 7 14-7Z' : 'm157 163-6 29 13 2'} />
+            <path className="mouth-shadow" d={speaking ? 'M137 214q23 25 46 0-23-13-46 0Z' : 'M137 215q23 10 46 0'} />
             <path className="mouth" d={speaking ? 'M138 215q22 18 44 0-22-8-44 0Z' : 'M137 215q23 10 46 0'} />
-            {type === 'balthazar' && <><path className="brow" d="m111 126 34 8M209 126l-34 8"/><path className="fang" d="m144 219 7 14 6-13M176 219l-7 14-6-13"/></>}
+            {type === 'balthazar' && <><path className="brow" d="m111 126 34 8m64-8-34 8"/><path className="fang" d="m144 219 7 14 6-13m19-1-7 14-6-13"/></>}
+            {type === 'hector' && <path className="tusk" d="m125 216 8 22 8-19m54-3-8 22-8-19"/>}
           </>
         )}
+        <path className="shirt" d="m127 260 33 50 33-50 14 25-47 62-47-62Z"/>
         <path className="lapel" d="m126 268 34 57 34-57 22 152H104Z"/>
+        <path className="lapel-edge" d="m126 269-18 30 30 28-15 18m71-76 18 30-30 28 15 18"/>
+        <path className="tie" d="m153 306 7 12 7-12-2 78-5 13-5-13Z"/>
+        <circle className="coat-button" cx="160" cy="362" r="3"/><circle className="coat-button" cx="160" cy="392" r="3"/>
+        <path className="pocket" d="M153 302h90v50h-90z"/>
         <path className="badge" d="M158 306h78v42h-78z"/>
+        <circle className="badge-pin" cx="164" cy="312" r="2"/>
         <text className="badge-name" x="197" y="324" textAnchor="middle" textLength="64" lengthAdjust="spacingAndGlyphs">
           {characterNames[type].toUpperCase()}
         </text>
